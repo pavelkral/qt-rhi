@@ -14,5 +14,6 @@ add_subdirectory(simplerhiwidget)
 add_subdirectory(cuberhiwidget)
 add_subdirectory(rhi-cube-window)
 add_subdirectory(rhi-cube-widget)
+add_subdirectory(rhi-box)
 
 set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT rhiwindow)
