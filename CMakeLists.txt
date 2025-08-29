@@ -8,7 +8,7 @@ set(CMAKE_AUTOUIC ON)
 
 find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets)
 
-add_subdirectory(rasterwindow)
+
 add_subdirectory(rhiwindow)
 add_subdirectory(simplerhiwidget)
 add_subdirectory(cuberhiwidget)
