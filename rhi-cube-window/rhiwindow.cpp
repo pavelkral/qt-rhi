@@ -436,6 +436,7 @@ void HelloWindow::customRender()
     const QSize outputSizeInPixels = m_sc->currentPixelSize();
 
     const QColor clearColor = QColor::fromRgbF(0.4f, 0.7f, 0.0f, 1.0f);
+
     cb->beginPass(m_sc->currentFrameRenderTarget(), clearColor, { 1.0f, 0 }, resourceUpdates);
     // --- DŮLEŽITÉ: explicitní clear hodnoty (ne QColor) ---
    // const QRhiColorClearValue clr = { 0.0f, 0.0f, 0.0f, 1.0f };

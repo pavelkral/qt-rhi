@@ -150,11 +150,13 @@ void ExampleRhiWidget::render(QRhiCommandBuffer *cb)
         scene.resourceUpdates = nullptr;
 
     const QColor clearColor = QColor::fromRgbF(0.4f, 0.7f, 0.0f, 1.0f);
+
     cb->beginPass(renderTarget(), clearColor, { 1.0f, 0 }, resourceUpdates);
 
     cb->setGraphicsPipeline(scene.ps.get());
     cb->setViewport(QRhiViewport(0, 0, m_pixelSize.width(), m_pixelSize.height()));
     cb->setShaderResources();
+
     const QRhiCommandBuffer::VertexInput vbufBindings[] = {
         { scene.vbuf.get(), 0 },
         { scene.vbuf.get(), quint32(36 * 3 * sizeof(float)) }

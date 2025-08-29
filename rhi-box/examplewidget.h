@@ -1,21 +1,35 @@
 #ifndef RHIWIDGET_H
 #define RHIWIDGET_H
 
-#include <QFile>
 #include <QRhiWidget>
 #include <rhi/qrhi.h>
-
 #include <QMatrix4x4>
+#include <QFile>
 #include <QTimer>
 #include "RhiFBXModel.h"
 
+
 class RhiWidget : public QRhiWidget {
     Q_OBJECT
+
+private:
+    QRhi* m_rhi = nullptr;
+    std::unique_ptr<RhiFBXModel> m_model;
+    std::unique_ptr<QRhiGraphicsPipeline> m_ps;
+    std::unique_ptr<QRhiSampler> m_sampler;
+    QShader* m_vs = nullptr;
+    QShader* m_fs = nullptr;
+    using QRhiWidget::QRhiWidget;
+    QTimer* m_timer = nullptr;
+    float m_angle = 0.0f;
+
 public:
+
+
     RhiWidget(QWidget *parent = nullptr)
         : QRhiWidget(parent)
     {
-        // animace
+        // jednoduchá animace modelu
         m_timer = new QTimer(this);
         connect(m_timer, &QTimer::timeout, this, [this]{
             m_angle += 1.0f;
@@ -30,17 +44,16 @@ protected:
         m_rhi = this->rhi();
 
         // sampler
-        m_sampler.reset(m_rhi->newSampler(QRhiSampler::Linear, QRhiSampler::Linear,
-                                          QRhiSampler::None, QRhiSampler::Repeat, QRhiSampler::Repeat));
+        m_sampler.reset(m_rhi->newSampler(QRhiSampler::Linear,
+                                          QRhiSampler::Linear,
+                                          QRhiSampler::None,
+                                          QRhiSampler::Repeat,
+                                          QRhiSampler::Repeat));
         m_sampler->create();
 
         // načtení modelu
         m_model = std::make_unique<RhiFBXModel>(m_rhi, "assets/models/Player/untitled.fbx");
         m_model->createResources(m_sampler.get());
-
-        // vertex a fragment shadery
-        QShader vs = QShader::fromSerialized(QFile(":/shaders/prebuild/model.vert.qsb").readAll());
-        QShader fs = QShader::fromSerialized(QFile(":/shaders/prebuild/model.frag.qsb").readAll());
 
         // pipeline
         m_ps.reset(m_rhi->newGraphicsPipeline());
@@ -50,7 +63,7 @@ protected:
         m_ps->setDepthTest(true);
         m_ps->setDepthWrite(true);
 
-        // vertex input layout
+        // vertex input
         QRhiVertexInputLayout inputLayout;
         inputLayout.setBindings({ {14 * sizeof(float)} });
         inputLayout.setAttributes({
@@ -62,34 +75,24 @@ protected:
         });
         m_ps->setVertexInputLayout(inputLayout);
 
-        // shader stages (reference, ne pointer)
-        std::vector<QRhiShaderStage> stages = {
-            { QRhiShaderStage::Vertex, vs },
-            { QRhiShaderStage::Fragment, fs }
-        };
-        //m_ps->setShaderStages(stages);
-        QRhiShaderStage stagesArr[2] = { vs, fs };
-        m_ps->setShaderStages(stagesArr, stagesArr + 2);
-        // SRB (dummy)
-        auto dummyUBO = m_rhi->newBuffer(QRhiBuffer::Dynamic, QRhiBuffer::UniformBuffer, sizeof(UBufData));
-        dummyUBO->create();
-        auto dummySRB = m_rhi->newShaderResourceBindings();
-        dummySRB->setBindings({
-            QRhiShaderResourceBinding::uniformBuffer(0,
-                                                     QRhiShaderResourceBinding::VertexStage|QRhiShaderResourceBinding::FragmentStage,
-                                                     dummyUBO)
-        });
-        dummySRB->create();
-        m_ps->setShaderResourceBindings(dummySRB);
+        // shader stages
+        QRhiShaderStage vsStage(QRhiShaderStage::Vertex, loadShader(":/shaders/prebuild/model.vert.qsb"));
+        QRhiShaderStage fsStage(QRhiShaderStage::Fragment, loadShader(":/shaders/prebuild/model.frag.qsb"));
+        m_ps->setShaderStages({ vsStage, fsStage });
+        m_ps->setShaderResourceBindings(nullptr); // SRB je per-mesh
 
         m_ps->setRenderPassDescriptor(renderTarget()->renderPassDescriptor());
         m_ps->create();
     }
 
     void render(QRhiCommandBuffer *cb) override {
+
+
+
         cb->beginPass(this->renderTarget(), QColor(30,30,30), {1.0f, 0});
         cb->setGraphicsPipeline(m_ps.get());
 
+        // UBO data
         UBufData u;
         u.uModel.setToIdentity();
         u.uModel.rotate(m_angle, 0,1,0);
@@ -104,22 +107,32 @@ protected:
         u.uSmoothnessFactor = 0.5f;
         u.uHasAlbedo = u.uHasNormal = u.uHasMetallic = u.uHasSmoothness = 0;
 
-        // vykreslení modelu
-        m_model->draw(cb, u);
+        m_model->draw(cb,u);
 
         cb->endPass();
     }
 
 private:
-    QRhi* m_rhi = nullptr;
-    std::unique_ptr<RhiFBXModel> m_model;
-    std::unique_ptr<QRhiGraphicsPipeline> m_ps;
-    std::unique_ptr<QRhiSampler> m_sampler;
-    QTimer* m_timer = nullptr;
-    float m_angle = 0.0f;
+    QShader* loadShaderFile(const QString& path) {
+        QFile f(path);
+        f.open(QIODevice::ReadOnly);
+        QByteArray data = f.readAll();
+        QShader* s = new QShader(QShader::fromSerialized(data));
+        return s;
+    }
+
+    QShader loadShader(const QString& path) {
+        QFile f(path);
+        f.open(QIODevice::ReadOnly);
+        QByteArray data = f.readAll();
+        return QShader::fromSerialized(data);
+    }
+
 };
 
 #endif // RHIWIDGET_H
+
+
 
 
 
