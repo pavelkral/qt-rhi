@@ -1,5 +1,3 @@
-// Copyright (C) 2023 The Qt Company Ltd.
-// SPDX-License-Identifier: LicenseRef-Qt-Commercial OR BSD-3-Clause
 
 #include <QApplication>
 #include <QVBoxLayout>
@@ -20,11 +18,13 @@ int main(int argc, char **argv)
 {
     QApplication app(argc, argv);
 
-
+qputenv("QT_GRAPHICSSYSTEM", "vulkan");
 
    RhiWidget w;
    // w.setLayout(layout);
     w.resize(1280, 720);
+   //w.setPreferredBackend(QRhi::Vulkan);
+    w.setApi(QRhiWidget::Api::Vulkan);
     w.show();
 
     return app.exec();

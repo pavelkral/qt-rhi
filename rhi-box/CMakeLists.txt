@@ -68,10 +68,10 @@ qt_add_resources(rhibox "rhibox"
     PREFIX
         "/"
     FILES
-        "shader_assets/texture.vert.qsb"
-        "shader_assets/texture.frag.qsb"
-        "shaders/texture.vert"
-        "shaders/texture.frag"
+        "shaders/prebuild/model.vert.qsb"
+        "shaders/prebuild/model.frag.qsb"
+        "shaders/model.vert"
+        "shaders/model.frag"
 )
 
 install(TARGETS rhibox
