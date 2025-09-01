@@ -16,6 +16,9 @@ if [ ! -x "$QSB_CMD" ]; then
 fi
 "$QSB_CMD" shaders/model.vert -o shaders/prebuild/model.vert.qsb --glsl 450 --hlsl 50
 "$QSB_CMD" shaders/model.frag -o shaders/prebuild/model.frag.qsb --glsl 450 --hlsl 50
+"$QSB_CMD" shaders/cube.vert -o shaders/prebuild/cube.vert.qsb --glsl 450 --hlsl 50
+"$QSB_CMD" shaders/lambert.frag -o shaders/prebuild/lambert.frag.qsb --glsl 450 --hlsl 50
+"$QSB_CMD" shaders/toon.frag -o shaders/prebuild/toon.frag.qsb --glsl 450 --hlsl 50
 #"$QSB_CMD" --fragment -o frag.qsb shader.frag
 
 if [ ! -f "vert.qsb" ] || [ ! -f "frag.qsb" ]; then

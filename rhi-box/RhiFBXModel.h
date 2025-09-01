@@ -1,6 +1,8 @@
 #ifndef RHIFBXMODEL_H
 #define RHIFBXMODEL_H
 
+
+
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
@@ -229,9 +231,15 @@ public:
             // set vertex/index buffers and draw
             const QRhiCommandBuffer::VertexInput v(mesh.vbuf.get(), 0);
             cb->setVertexInput(0, 1, &v, mesh.ibuf.get(), 0, QRhiCommandBuffer::IndexUInt32);
+
+           //  cb->beginPass(W->renderTarget(), QColor(30,30,30), {1.0f, 0});
+            //  cb->setGraphicsPipeline(m_ps.get());
+
             cb->drawIndexed(mesh.indexCount);
         }
     }
+       // cb->endPass();
+
 
 private:
     void loadModel(const std::string& path) {

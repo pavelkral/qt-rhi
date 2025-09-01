@@ -17,6 +17,7 @@ qt_add_executable(rhibox
     examplewidget.cpp examplewidget.h cube.h
     main.cpp
     RhiFBXModel.h
+    twocubesrhiwidget.h twocubesrhiwidget.cpp
 )
 
 set_target_properties(rhibox PROPERTIES
@@ -72,6 +73,12 @@ qt_add_resources(rhibox "rhibox"
         "shaders/prebuild/model.frag.qsb"
         "shaders/model.vert"
         "shaders/model.frag"
+        "shaders/prebuild/cube.vert.qsb"
+        "shaders/prebuild/lambert.frag.qsb"
+        "shaders/prebuild/toon.frag.qsb"
+        "shaders/cube.vert"
+        "shaders/lambert.frag"
+        "shaders/toon.frag"
 )
 
 install(TARGETS rhibox
