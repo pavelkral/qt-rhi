@@ -24,18 +24,18 @@ private:
     void createGeometry();
     void createTexture();
 
-    struct UBOData {
-        QMatrix4x4 mvp;
-        QMatrix4x4 model;
-        QMatrix3x3 normalMat;
-        QVector3D lightPos;
-        float pad = 0.0f;
+    struct UBOData
+    {
+        float mvp[16];       // mat4
+        float model[16];     // mat4
+        float normalMat[16]; // mat4
+        float lightPos[4];   // vec4 (x,y,z,w)
     };
-
+    // celkem 208 B
+  //  static_assert(sizeof(UBOData) == 208,"UBOData size must be exactly 208 bytes (std140 layout).");
     // QRhi
     QRhi *m_rhi = nullptr;
-    std::unique_ptr<QRhiRenderPassDescriptor> m_rpDesc;
-
+    QRhiRenderPassDescriptor* m_rpDesc = nullptr;
     // Geometry
     std::unique_ptr<QRhiBuffer> m_vbuf;
     std::unique_ptr<QRhiBuffer> m_ibuf;

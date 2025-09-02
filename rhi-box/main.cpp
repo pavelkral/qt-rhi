@@ -1,12 +1,13 @@
 #include <QApplication>
-//#include "examplewidget.h"
+#include "examplewidget.h"
 #include "TwoCubesRhiWidget.h"
 
 int main(int argc, char** argv)
 {
     QApplication app(argc, argv);
     qputenv("QT_RHI", "vulkan"); // nebo: d3d11, metal, opengl
-    TwoCubesRhiWidget  widget;
+   // RhiWidget  widget;
+     TwoCubesRhiWidget widget;
     widget.resize(800,600);
     widget.show();
 
