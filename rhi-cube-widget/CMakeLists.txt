@@ -19,6 +19,8 @@ qt_add_resources(cube-widget "cube-widget"
     FILES
         "shader_assets/cube.vert.qsb"
         "shader_assets/cube.frag.qsb"
+        "shaders/cube.frag"
+        "shaders/cube.vert"
         "text.jpg"
 )
 target_link_libraries(cube-widget

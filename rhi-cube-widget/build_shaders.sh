@@ -2,7 +2,7 @@
 
 # Cesta ke vstupním shaderům
 SHADER_DIR="shaders"
-OUT_DIR="$SHADER_DIR/compiled"
+OUT_DIR="shader_assets"
 
 # Vytvoř výstupní složku
 mkdir -p "$OUT_DIR"

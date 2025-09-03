@@ -14,8 +14,8 @@ if [ ! -x "$QSB_CMD" ]; then
     echo "CHYBA: Nástroj 'qsb' nebyl nalezen v '$QSB_CMD'. Zkontrolujte cestu QT_PATH."
     exit 1
 fi
-"$QSB_CMD" shaders/cube.vert -o cube.vert.qsb --glsl 450 --hlsl 50
-"$QSB_CMD" shaders/cube.frag -o cube.frag.qsb --glsl 450 --hlsl 50
+"$QSB_CMD" shaders/cube.vert -o shader_assets/cube.vert.qsb --glsl 450 --hlsl 50
+"$QSB_CMD" shaders/cube.frag -o shader_assets/cube.frag.qsb --glsl 450 --hlsl 50
 #"$QSB_CMD" --fragment -o frag.qsb shader.frag
 
 if [ ! -f "vert.qsb" ] || [ ! -f "frag.qsb" ]; then
