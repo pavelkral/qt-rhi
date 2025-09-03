@@ -482,6 +482,7 @@ void HelloWindow::customRender()
         cb->setVertexInput(0, 1, &vbufBinding, m_ibuf.get(), 0, QRhiCommandBuffer::IndexUInt16);
         cb->drawIndexed(36);
     }
+    
     cb->endPass();
 }
 

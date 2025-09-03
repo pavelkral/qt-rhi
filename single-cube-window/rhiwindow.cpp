@@ -291,7 +291,7 @@ void HelloWindow::ensureFullscreenTexture(const QSize &, QRhiResourceUpdateBatch
     if (m_texture)
         return;
 
-    QImage image(":/crate.png");          // <- vlož svou texturu do resource pod tímto aliasem
+    QImage image(":/text.jpg");          // <- vlož svou texturu do resource pod tímto aliasem
     if (image.isNull()) {
         qWarning("Failed to load :/crate.png texture. Using 64x64 checker fallback.");
         image = QImage(64, 64, QImage::Format_RGBA8888);
@@ -388,7 +388,8 @@ void HelloWindow::customRender()
     //! [render-rotation]
     m_rotation += 1.0f;
     QMatrix4x4 modelViewProjection = m_viewProjection;
-    modelViewProjection.rotate(m_rotation, 0, 1, 0); // rotuj po více osách
+    modelViewProjection.rotate(m_rotation, 0, 1, 0);
+    // rotuj po více osách
     resourceUpdates->updateDynamicBuffer(m_ubuf.get(), 0, 64, modelViewProjection.constData());
     //! [render-rotation]
 

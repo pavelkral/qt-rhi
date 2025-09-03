@@ -61,6 +61,7 @@ qt_add_resources(cube-window "cube-window"
         "shaders/texture.frag"
         "shaders/texture.vert"
         "text.jpg"
+        "floor.png"
 )
 
 install(TARGETS cube-window
