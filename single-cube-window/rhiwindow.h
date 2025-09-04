@@ -4,6 +4,8 @@
 #ifndef WINDOW_H
 #define WINDOW_H
 
+#include "cube.h"
+
 #include <QWindow>
 #include <QOffscreenSurface>
 #include <rhi/qrhi.h>
@@ -57,7 +59,7 @@ public:
     void customRender() override;
 
 private:
-    void ensureFullscreenTexture(const QSize &pixelSize, QRhiResourceUpdateBatch *u);
+    void loadTexture(const QSize &pixelSize, QRhiResourceUpdateBatch *u);
 
     std::unique_ptr<QRhiBuffer> m_vbuf;
     std::unique_ptr<QRhiBuffer> m_ubuf;
@@ -67,6 +69,7 @@ private:
     std::unique_ptr<QRhiGraphicsPipeline> m_colorPipeline;
     std::unique_ptr<QRhiShaderResourceBindings> m_fullscreenQuadSrb;
     std::unique_ptr<QRhiGraphicsPipeline> m_fullscreenQuadPipeline;
+    Cube cube;
 
     QRhiResourceUpdateBatch *m_initialUpdates = nullptr;
 

@@ -284,8 +284,8 @@ HelloWindow::HelloWindow(QRhi::Implementation graphicsApi)
 {
 }
 
-// Nahradíme původní ensureFullscreenTexture za loader textury z resource.
-void HelloWindow::ensureFullscreenTexture(const QSize &, QRhiResourceUpdateBatch *u)
+// Nahradíme původní loadTexture za loader textury z resource.
+void HelloWindow::loadTexture(const QSize &, QRhiResourceUpdateBatch *u)
 {
     if (m_texture)
         return;
@@ -329,7 +329,7 @@ void HelloWindow::customInit()
     //! [render-init-1]
 
     // Načti texturu (používáme stávající API)
-    ensureFullscreenTexture(QSize(), m_initialUpdates);
+    loadTexture(QSize(), m_initialUpdates);
 
     // Sampler
     m_sampler.reset(m_rhi->newSampler(QRhiSampler::Linear, QRhiSampler::Linear, QRhiSampler::None,
@@ -369,6 +369,7 @@ void HelloWindow::customInit()
     m_colorPipeline->setRenderPassDescriptor(m_rp.get());
     m_colorPipeline->create();
 
+    cube.init(m_rhi.get(), m_initialUpdates);
     // (Nepotřebujeme fullscreen quad pipeline — tu prostě nevytváříme.)
 }
 
@@ -397,12 +398,10 @@ void HelloWindow::customRender()
 
     cb->beginPass(m_sc->currentFrameRenderTarget(), Qt::black, { 1.0f, 0 }, resourceUpdates);
 
+
     cb->setGraphicsPipeline(m_colorPipeline.get());
     cb->setViewport({ 0, 0, float(outputSizeInPixels.width()), float(outputSizeInPixels.height()) });
     cb->setShaderResources();
-    const QRhiCommandBuffer::VertexInput vbufBinding(m_vbuf.get(), 0);
-    cb->setVertexInput(0, 1, &vbufBinding);
-    cb->draw(36); // 36 vrcholů
-
+    cube.draw(cb);
     cb->endPass();
 }

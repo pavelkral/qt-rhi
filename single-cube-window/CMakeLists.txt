@@ -12,6 +12,7 @@ qt_add_executable(single-cube
     main.cpp
     rhiwindow.cpp rhiwindow.h
     cube.h
+    cube.h cube.cpp
 )
 
 set_target_properties(single-cube PROPERTIES
