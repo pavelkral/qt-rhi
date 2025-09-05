@@ -11,28 +11,25 @@ public:
               QRhiTexture *texture,
               QRhiSampler *sampler,
               QRhiRenderPassDescriptor *rp,
+              const QShader &vs,
+              const QShader &fs,
               QRhiResourceUpdateBatch *u);
 
     void setModelMatrix(const QMatrix4x4 &mvp, QRhiResourceUpdateBatch *u);
-    void draw(QRhiCommandBuffer *cb, QRhiGraphicsPipeline *pipeline);
+    void draw(QRhiCommandBuffer *cb);
 
 private:
-    // Sdílené mezi všemi krychlemi
-    static std::unique_ptr<QRhiBuffer> s_vbuf;
-    static std::unique_ptr<QRhiBuffer> s_ibuf;
-    static int s_indexCount;
-    static bool s_inited;
-
-    // Per-instance
-    std::unique_ptr<QRhiBuffer> m_ubuf; // uniform buffer s MVP
+    // Per-instance resources
+    std::unique_ptr<QRhiBuffer> m_vbuf;
+    std::unique_ptr<QRhiBuffer> m_ibuf;
+    std::unique_ptr<QRhiBuffer> m_ubuf;
     std::unique_ptr<QRhiShaderResourceBindings> m_srb;
+    std::unique_ptr<QRhiGraphicsPipeline> m_pipeline;
 
-    QMatrix4x4 m_modelMatrix;
+    int m_indexCount = 0;
 
-    static void ensureGeometry(QRhi *rhi, QRhiResourceUpdateBatch *u);
-
-    // Vertex & index data
-    static constexpr float vertices[] = {
+    // Per-instance vertex/index data
+    float m_vertices[8 * 5] = {
         // pos                  // uv
         -0.5f,-0.5f, 0.5f,      0.0f,0.0f, // 0
         0.5f,-0.5f, 0.5f,      1.0f,0.0f, // 1
@@ -44,7 +41,7 @@ private:
         -0.5f, 0.5f,-0.5f,      1.0f,1.0f  // 7
     };
 
-    static constexpr quint16 indices[] = {
+    quint16 m_indices[36] = {
         0,1,2,  0,2,3, // front
         5,4,7,  5,7,6, // back
         4,0,3,  4,3,7, // left

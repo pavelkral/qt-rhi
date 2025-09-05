@@ -325,8 +325,12 @@ void HelloWindow::customInit()
     m_colorPipeline->setRenderPassDescriptor(m_rp.get());
     m_colorPipeline->create();
 
-    m_cube1.init(m_rhi.get(), m_texture.get(), m_sampler.get(), m_rp.get(), m_initialUpdates);
-    m_cube2.init(m_rhi.get(), m_texture.get(), m_sampler.get(), m_rp.get(), m_initialUpdates);
+    QShader vs = getShader(":/texture.vert.qsb");
+    QShader fs = getShader(":/texture.frag.qsb");
+
+    m_cube1.init(m_rhi.get(), m_texture.get(), m_sampler.get(), m_rp.get(), vs, fs, m_initialUpdates);
+    m_cube2.init(m_rhi.get(), m_texture.get(), m_sampler.get(), m_rp.get(), vs, fs, m_initialUpdates);
+
 
     // (Nepotřebujeme fullscreen quad pipeline — tu prostě nevytváříme.)
 }
@@ -363,8 +367,7 @@ void HelloWindow::customRender()
     QMatrix4x4 mvp1 = m_viewProjection;
     mvp1.translate(-1.5f, 0, 0);
     mvp1.rotate(m_rotation, 0, 1, 0);
-
-   m_cube1.setModelMatrix(mvp1, resourceUpdates);
+    m_cube1.setModelMatrix(mvp1, resourceUpdates);
 
     QMatrix4x4 mvp2 = m_viewProjection;
     mvp2.translate(1.5f, 0, 0);
@@ -374,8 +377,9 @@ void HelloWindow::customRender()
     cb->beginPass(m_sc->currentFrameRenderTarget(), Qt::black, { 1.0f, 0 }, resourceUpdates);
     cb->setViewport({ 0, 0, float(outputSizeInPixels.width()), float(outputSizeInPixels.height()) });
 
-    m_cube1.draw(cb, m_colorPipeline.get());
-    m_cube2.draw(cb, m_colorPipeline.get());
+    m_cube1.draw(cb);
+    m_cube2.draw(cb);
 
     cb->endPass();
+
 }
