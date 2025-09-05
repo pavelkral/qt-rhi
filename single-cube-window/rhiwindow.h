@@ -62,8 +62,8 @@ public:
 private:
     void loadTexture(const QSize &pixelSize, QRhiResourceUpdateBatch *u);
 
-    std::unique_ptr<QRhiBuffer> m_vbuf;
-    std::unique_ptr<QRhiBuffer> m_ubuf;
+    //std::unique_ptr<QRhiBuffer> m_vbuf;
+    //std::unique_ptr<QRhiBuffer> m_ubuf;
     std::unique_ptr<QRhiTexture> m_texture;
     std::unique_ptr<QRhiSampler> m_sampler;
     std::unique_ptr<QRhiShaderResourceBindings> m_colorTriSrb;

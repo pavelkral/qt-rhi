@@ -261,14 +261,13 @@ void HelloWindow::loadTexture(const QSize &, QRhiResourceUpdateBatch *u)
 
     if (m_rhi->isYUpInNDC())
         image = image.mirrored(); // aby UV nebylo vzhůru nohama na některých backendech
-
+   // .flipped(Qt::Horizontal | Qt::Vertical);
     m_texture.reset(m_rhi->newTexture(QRhiTexture::RGBA8, image.size()));
     m_texture->create();
 
     u->uploadTexture(m_texture.get(), image);
 }
 
-//! [render-init-1]
 void HelloWindow::customInit()
 {
     m_initialUpdates = m_rhi->nextResourceUpdateBatch();
@@ -277,12 +276,11 @@ void HelloWindow::customInit()
     //m_vbuf.reset(m_rhi->newBuffer(QRhiBuffer::Immutable, QRhiBuffer::VertexBuffer, sizeof(cubeVertexData)));
     //m_vbuf->create();
     //m_initialUpdates->uploadStaticBuffer(m_vbuf.get(), cubeVertexData);
-
     // Uniform buffer: 64 B pro mat4 mvp
-    static const quint32 UBUF_SIZE = 64;
-    m_ubuf.reset(m_rhi->newBuffer(QRhiBuffer::Dynamic, QRhiBuffer::UniformBuffer, UBUF_SIZE));
-    m_ubuf->create();
-    //! [render-init-1]
+   // static const quint32 UBUF_SIZE = 64;
+  //  m_ubuf.reset(m_rhi->newBuffer(QRhiBuffer::Dynamic, QRhiBuffer::UniformBuffer, UBUF_SIZE));
+ //   m_ubuf->create();
+
 
     // Načti texturu (používáme stávající API)
     loadTexture(QSize(), m_initialUpdates);
@@ -293,37 +291,37 @@ void HelloWindow::customInit()
     m_sampler->create();
 
     // Shader resource bindings: binding 0 = UBO, binding 1 = texture+sampler
-    m_colorTriSrb.reset(m_rhi->newShaderResourceBindings());
-    m_colorTriSrb->setBindings({
-        QRhiShaderResourceBinding::uniformBuffer(0,
-                                                 QRhiShaderResourceBinding::VertexStage, m_ubuf.get()),
-        QRhiShaderResourceBinding::sampledTexture(1,
-                                                  QRhiShaderResourceBinding::FragmentStage, m_texture.get(), m_sampler.get())
-    });
-    m_colorTriSrb->create();
+  //  m_colorTriSrb.reset(m_rhi->newShaderResourceBindings());
+  //  m_colorTriSrb->setBindings({
+      //  QRhiShaderResourceBinding::uniformBuffer(0,
+   //                                              QRhiShaderResourceBinding::VertexStage, m_ubuf.get()),
+      //  QRhiShaderResourceBinding::sampledTexture(1,
+   //                                               QRhiShaderResourceBinding::FragmentStage, m_texture.get(), m_sampler.get())
+  //  });
+   // m_colorTriSrb->create();
 
     // Grafická pipeline pro texturovanou krychli
-    m_colorPipeline.reset(m_rhi->newGraphicsPipeline());
-    m_colorPipeline->setDepthTest(true);
-    m_colorPipeline->setDepthWrite(true);
+   // m_colorPipeline.reset(m_rhi->newGraphicsPipeline());
+   // m_colorPipeline->setDepthTest(true);
+  //  m_colorPipeline->setDepthWrite(true);
 
-    m_colorPipeline->setShaderStages({
-        { QRhiShaderStage::Vertex,   getShader(QLatin1String(":/texture.vert.qsb")) },
-        { QRhiShaderStage::Fragment, getShader(QLatin1String(":/texture.frag.qsb")) }
-    });
+  //  m_colorPipeline->setShaderStages({
+  //      { QRhiShaderStage::Vertex,   getShader(QLatin1String(":/texture.vert.qsb")) },
+  //      { QRhiShaderStage::Fragment, getShader(QLatin1String(":/texture.frag.qsb")) }
+ //   });
 
-    QRhiVertexInputLayout inputLayout;
-    inputLayout.setBindings({
-        { 5 * sizeof(float) } // pos(3) + uv(2)
-    });
-    inputLayout.setAttributes({
-        { 0, 0, QRhiVertexInputAttribute::Float3, 0 },
-        { 0, 1, QRhiVertexInputAttribute::Float2, 3 * sizeof(float) }
-    });
-    m_colorPipeline->setVertexInputLayout(inputLayout);
-    m_colorPipeline->setShaderResourceBindings(m_colorTriSrb.get());
-    m_colorPipeline->setRenderPassDescriptor(m_rp.get());
-    m_colorPipeline->create();
+    // QRhiVertexInputLayout inputLayout;
+    // inputLayout.setBindings({
+    //     { 5 * sizeof(float) } // pos(3) + uv(2)
+    // });
+    // inputLayout.setAttributes({
+    //     { 0, 0, QRhiVertexInputAttribute::Float3, 0 },
+    //     { 0, 1, QRhiVertexInputAttribute::Float2, 3 * sizeof(float) }
+    // });
+    // m_colorPipeline->setVertexInputLayout(inputLayout);
+    // m_colorPipeline->setShaderResourceBindings(m_colorTriSrb.get());
+    // m_colorPipeline->setRenderPassDescriptor(m_rp.get());
+    // m_colorPipeline->create();
 
     QShader vs = getShader(":/texture.vert.qsb");
     QShader fs = getShader(":/texture.frag.qsb");
@@ -335,7 +333,7 @@ void HelloWindow::customInit()
     // (Nepotřebujeme fullscreen quad pipeline — tu prostě nevytváříme.)
 }
 
-//! [render-1]
+
 void HelloWindow::customRender()
 {
     QRhiResourceUpdateBatch *resourceUpdates = m_rhi->nextResourceUpdateBatch();
@@ -345,25 +343,18 @@ void HelloWindow::customRender()
         m_initialUpdates->release();
         m_initialUpdates = nullptr;
     }
-    //! [render-1]
 
-    //! [render-rotation]
     m_rotation += 1.0f;
     QMatrix4x4 modelViewProjection = m_viewProjection;
     modelViewProjection.rotate(m_rotation, 0, 1, 0);
-    // rotuj po více osách
-    resourceUpdates->updateDynamicBuffer(m_ubuf.get(), 0, 64, modelViewProjection.constData());
-    //! [render-rotation]
 
     QRhiCommandBuffer *cb = m_sc->currentFrameCommandBuffer();
     const QSize outputSizeInPixels = m_sc->currentPixelSize();
-
   //  cb->beginPass(m_sc->currentFrameRenderTarget(), Qt::black, { 1.0f, 0 }, resourceUpdates);
-
-
   //  cb->setGraphicsPipeline(m_colorPipeline.get());
   //  cb->setViewport({ 0, 0, float(outputSizeInPixels.width()), float(outputSizeInPixels.height()) });
     // cb->setShaderResources();
+
     QMatrix4x4 mvp1 = m_viewProjection;
     mvp1.translate(-1.5f, 0, 0);
     mvp1.rotate(m_rotation, 0, 1, 0);
@@ -373,8 +364,8 @@ void HelloWindow::customRender()
     mvp2.translate(1.5f, 0, 0);
     mvp2.rotate(-m_rotation, 0, 1, 0);
     m_cube2.setModelMatrix(mvp2, resourceUpdates);
-
-    cb->beginPass(m_sc->currentFrameRenderTarget(), Qt::black, { 1.0f, 0 }, resourceUpdates);
+    const QColor clearColor = QColor::fromRgbF(0.4f, 0.7f, 0.0f, 1.0f);
+    cb->beginPass(m_sc->currentFrameRenderTarget(), clearColor, { 1.0f, 0 }, resourceUpdates);
     cb->setViewport({ 0, 0, float(outputSizeInPixels.width()), float(outputSizeInPixels.height()) });
 
     m_cube1.draw(cb);

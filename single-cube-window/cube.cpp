@@ -9,33 +9,46 @@ void Cube::init(QRhi *rhi,
                 QRhiResourceUpdateBatch *u)
 {
     // Vertex buffer
-    m_vbuf.reset(rhi->newBuffer(QRhiBuffer::Immutable, QRhiBuffer::VertexBuffer, sizeof(m_vertices)));
+    m_vbuf.reset(rhi->newBuffer(QRhiBuffer::Immutable,
+                                QRhiBuffer::VertexBuffer,
+                                sizeof(m_vertices)));
     m_vbuf->create();
     u->uploadStaticBuffer(m_vbuf.get(), m_vertices);
 
     // Index buffer
-    m_ibuf.reset(rhi->newBuffer(QRhiBuffer::Immutable, QRhiBuffer::IndexBuffer, sizeof(m_indices)));
+    m_ibuf.reset(rhi->newBuffer(QRhiBuffer::Immutable,
+                                QRhiBuffer::IndexBuffer,
+                                sizeof(m_indices)));
     m_ibuf->create();
     u->uploadStaticBuffer(m_ibuf.get(), m_indices);
 
     m_indexCount = sizeof(m_indices) / sizeof(m_indices[0]);
 
-    // Uniform buffer
-    m_ubuf.reset(rhi->newBuffer(QRhiBuffer::Dynamic, QRhiBuffer::UniformBuffer, 64));
+    // Uniform buffer (⚡ musí být 256 bajtů kvůli D3D12 CBV alignment)
+    const quint32 UBUF_SIZE = 256;
+    m_ubuf.reset(rhi->newBuffer(QRhiBuffer::Dynamic,
+                                QRhiBuffer::UniformBuffer,
+                                UBUF_SIZE));
     m_ubuf->create();
 
     // Shader resource bindings
     m_srb.reset(rhi->newShaderResourceBindings());
     m_srb->setBindings({
-        QRhiShaderResourceBinding::uniformBuffer(0, QRhiShaderResourceBinding::VertexStage, m_ubuf.get()),
-        QRhiShaderResourceBinding::sampledTexture(1, QRhiShaderResourceBinding::FragmentStage, texture, sampler)
+        QRhiShaderResourceBinding::uniformBuffer(0,
+                                                 QRhiShaderResourceBinding::VertexStage, m_ubuf.get()),
+        QRhiShaderResourceBinding::sampledTexture(1,
+                                                  QRhiShaderResourceBinding::FragmentStage, texture, sampler)
     });
     m_srb->create();
 
-    // Pipeline
+    // Graphics pipeline
     m_pipeline.reset(rhi->newGraphicsPipeline());
     m_pipeline->setDepthTest(true);
     m_pipeline->setDepthWrite(true);
+
+    // ⚡ DŮLEŽITÉ pro D3D12
+    m_pipeline->setTopology(QRhiGraphicsPipeline::Triangles);
+
     m_pipeline->setShaderStages({
         { QRhiShaderStage::Vertex, vs },
         { QRhiShaderStage::Fragment, fs }
@@ -43,7 +56,7 @@ void Cube::init(QRhi *rhi,
 
     QRhiVertexInputLayout inputLayout;
     inputLayout.setBindings({
-        { 5 * sizeof(float) } // stride
+        { 5 * sizeof(float) } // stride: pos(3) + uv(2)
     });
     inputLayout.setAttributes({
         { 0, 0, QRhiVertexInputAttribute::Float3, 0 },
@@ -56,11 +69,11 @@ void Cube::init(QRhi *rhi,
     m_pipeline->create();
 }
 
+
 void Cube::setModelMatrix(const QMatrix4x4 &mvp, QRhiResourceUpdateBatch *u)
 {
     u->updateDynamicBuffer(m_ubuf.get(), 0, 64, mvp.constData());
 }
-
 void Cube::draw(QRhiCommandBuffer *cb)
 {
     cb->setGraphicsPipeline(m_pipeline.get());
