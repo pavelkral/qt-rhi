@@ -35,7 +35,8 @@ protected:
 //! [swapchain-data]
     bool m_hasSwapChain = false;
     QMatrix4x4 m_viewProjection;
-
+    Cube m_cube1;
+    Cube m_cube2;
 private:
     void init();
     void resizeSwapChain();

@@ -231,51 +231,7 @@ static QShader getShader(const QString &name)
 
 //================================== HelloWindow =================================
 
-// 36 vrcholů = 6 stěn × 2 trojúhelníky × 3 vrcholy; každý vrchol: pos(3) + uv(2)
-static float cubeVertexData[] = {
-    // front
-    -0.5f,-0.5f, 0.5f, 0.0f,0.0f,
-    0.5f,-0.5f, 0.5f, 1.0f,0.0f,
-    0.5f, 0.5f, 0.5f, 1.0f,1.0f,
-    -0.5f,-0.5f, 0.5f, 0.0f,0.0f,
-    0.5f, 0.5f, 0.5f, 1.0f,1.0f,
-    -0.5f, 0.5f, 0.5f, 0.0f,1.0f,
-    // back
-    -0.5f,-0.5f,-0.5f, 1.0f,0.0f,
-    0.5f, 0.5f,-0.5f, 0.0f,1.0f,
-    0.5f,-0.5f,-0.5f, 0.0f,0.0f,
-    -0.5f,-0.5f,-0.5f, 1.0f,0.0f,
-    -0.5f, 0.5f,-0.5f, 1.0f,1.0f,
-    0.5f, 0.5f,-0.5f, 0.0f,1.0f,
-    // left
-    -0.5f,-0.5f,-0.5f, 0.0f,0.0f,
-    -0.5f,-0.5f, 0.5f, 1.0f,0.0f,
-    -0.5f, 0.5f, 0.5f, 1.0f,1.0f,
-    -0.5f,-0.5f,-0.5f, 0.0f,0.0f,
-    -0.5f, 0.5f, 0.5f, 1.0f,1.0f,
-    -0.5f, 0.5f,-0.5f, 0.0f,1.0f,
-    // right
-    0.5f,-0.5f,-0.5f, 1.0f,0.0f,
-    0.5f, 0.5f, 0.5f, 0.0f,1.0f,
-    0.5f,-0.5f, 0.5f, 0.0f,0.0f,
-    0.5f,-0.5f,-0.5f, 1.0f,0.0f,
-    0.5f, 0.5f,-0.5f, 1.0f,1.0f,
-    0.5f, 0.5f, 0.5f, 0.0f,1.0f,
-    // top
-    -0.5f, 0.5f, 0.5f, 0.0f,0.0f,
-    0.5f, 0.5f, 0.5f, 1.0f,0.0f,
-    0.5f, 0.5f,-0.5f, 1.0f,1.0f,
-    -0.5f, 0.5f, 0.5f, 0.0f,0.0f,
-    0.5f, 0.5f,-0.5f, 1.0f,1.0f,
-    -0.5f, 0.5f,-0.5f, 0.0f,1.0f,
-    // bottom
-    -0.5f,-0.5f, 0.5f, 0.0f,1.0f,
-    0.5f,-0.5f,-0.5f, 1.0f,0.0f,
-    0.5f,-0.5f, 0.5f, 1.0f,1.0f,
-    -0.5f,-0.5f, 0.5f, 0.0f,1.0f,
-    -0.5f,-0.5f,-0.5f, 0.0f,0.0f,
-    0.5f,-0.5f,-0.5f, 1.0f,0.0f
-};
+
 
 //------------------------------------------------------------------------------
 
@@ -318,9 +274,9 @@ void HelloWindow::customInit()
     m_initialUpdates = m_rhi->nextResourceUpdateBatch();
 
     // Vertex buffer s krychlí
-    m_vbuf.reset(m_rhi->newBuffer(QRhiBuffer::Immutable, QRhiBuffer::VertexBuffer, sizeof(cubeVertexData)));
-    m_vbuf->create();
-    m_initialUpdates->uploadStaticBuffer(m_vbuf.get(), cubeVertexData);
+    //m_vbuf.reset(m_rhi->newBuffer(QRhiBuffer::Immutable, QRhiBuffer::VertexBuffer, sizeof(cubeVertexData)));
+    //m_vbuf->create();
+    //m_initialUpdates->uploadStaticBuffer(m_vbuf.get(), cubeVertexData);
 
     // Uniform buffer: 64 B pro mat4 mvp
     static const quint32 UBUF_SIZE = 64;
@@ -369,7 +325,9 @@ void HelloWindow::customInit()
     m_colorPipeline->setRenderPassDescriptor(m_rp.get());
     m_colorPipeline->create();
 
-    cube.init(m_rhi.get(), m_initialUpdates);
+    m_cube1.init(m_rhi.get(), m_texture.get(), m_sampler.get(), m_rp.get(), m_initialUpdates);
+    m_cube2.init(m_rhi.get(), m_texture.get(), m_sampler.get(), m_rp.get(), m_initialUpdates);
+
     // (Nepotřebujeme fullscreen quad pipeline — tu prostě nevytváříme.)
 }
 
@@ -396,12 +354,28 @@ void HelloWindow::customRender()
     QRhiCommandBuffer *cb = m_sc->currentFrameCommandBuffer();
     const QSize outputSizeInPixels = m_sc->currentPixelSize();
 
+  //  cb->beginPass(m_sc->currentFrameRenderTarget(), Qt::black, { 1.0f, 0 }, resourceUpdates);
+
+
+  //  cb->setGraphicsPipeline(m_colorPipeline.get());
+  //  cb->setViewport({ 0, 0, float(outputSizeInPixels.width()), float(outputSizeInPixels.height()) });
+    // cb->setShaderResources();
+    QMatrix4x4 mvp1 = m_viewProjection;
+    mvp1.translate(-1.5f, 0, 0);
+    mvp1.rotate(m_rotation, 0, 1, 0);
+
+   m_cube1.setModelMatrix(mvp1, resourceUpdates);
+
+    QMatrix4x4 mvp2 = m_viewProjection;
+    mvp2.translate(1.5f, 0, 0);
+    mvp2.rotate(-m_rotation, 0, 1, 0);
+    m_cube2.setModelMatrix(mvp2, resourceUpdates);
+
     cb->beginPass(m_sc->currentFrameRenderTarget(), Qt::black, { 1.0f, 0 }, resourceUpdates);
-
-
-    cb->setGraphicsPipeline(m_colorPipeline.get());
     cb->setViewport({ 0, 0, float(outputSizeInPixels.width()), float(outputSizeInPixels.height()) });
-    cb->setShaderResources();
-    cube.draw(cb);
+
+    m_cube1.draw(cb, m_colorPipeline.get());
+    m_cube2.draw(cb, m_colorPipeline.get());
+
     cb->endPass();
 }
