@@ -217,7 +217,6 @@ void RhiWindow::render()
     m_rhi->endFrame(m_sc.get());
     requestUpdate();
 }
-//! [request-update]
 
 //================================== Helpery =====================================
 
@@ -231,22 +230,17 @@ static QShader getShader(const QString &name)
 
 //================================== HelloWindow =================================
 
-
-
-//------------------------------------------------------------------------------
-
 HelloWindow::HelloWindow(QRhi::Implementation graphicsApi)
     : RhiWindow(graphicsApi)
 {
 }
 
-// Nahradíme původní loadTexture za loader textury z resource.
 void HelloWindow::loadTexture(const QSize &, QRhiResourceUpdateBatch *u)
 {
     if (m_texture)
         return;
 
-    QImage image(":/text.jpg");          // <- vlož svou texturu do resource pod tímto aliasem
+    QImage image(":/txt.jpg");          // <- vlož svou texturu do resource pod tímto aliasem
     if (image.isNull()) {
         qWarning("Failed to load :/crate.png texture. Using 64x64 checker fallback.");
         image = QImage(64, 64, QImage::Format_RGBA8888);
@@ -363,8 +357,10 @@ void HelloWindow::customRender()
     QMatrix4x4 mvp2 = m_viewProjection;
     mvp2.translate(1.5f, 0, 0);
     mvp2.rotate(-m_rotation, 0, 1, 0);
+
     m_cube2.setModelMatrix(mvp2, resourceUpdates);
     const QColor clearColor = QColor::fromRgbF(0.4f, 0.7f, 0.0f, 1.0f);
+
     cb->beginPass(m_sc->currentFrameRenderTarget(), clearColor, { 1.0f, 0 }, resourceUpdates);
     cb->setViewport({ 0, 0, float(outputSizeInPixels.width()), float(outputSizeInPixels.height()) });
 

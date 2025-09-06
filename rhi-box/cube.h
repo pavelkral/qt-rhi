@@ -1,10 +1,9 @@
-// Copyright (C) 2023 The Qt Company Ltd.
-// SPDX-License-Identifier: LicenseRef-Qt-Commercial OR BSD-3-Clause
+
 
 #ifndef CUBE_H
 #define CUBE_H
 
-// clang-format off
+
 static const float cube[] = {
     -1.0f, -1.0f, -1.0f,  // -X
     -1.0f, -1.0f,  1.0f,
@@ -134,6 +133,5 @@ static const float cube[] = {
      0.0,  0.0,  1.0,
      0.0,  0.0,  1.0
 };
-// clang-format on
 
 #endif

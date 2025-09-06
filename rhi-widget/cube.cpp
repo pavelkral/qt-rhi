@@ -1,24 +1,17 @@
 #include "cube.h"
 
-void Cube::init(QRhi *rhi,
-                QRhiTexture *texture,
-                QRhiSampler *sampler,
-                QRhiRenderPassDescriptor *rp,
+void Cube::init(QRhi *rhi,QRhiTexture *texture,QRhiSampler *sampler,QRhiRenderPassDescriptor *rp,
                 const QShader &vs,
                 const QShader &fs,
                 QRhiResourceUpdateBatch *u)
 {
     // Vertex buffer
-    m_vbuf.reset(rhi->newBuffer(QRhiBuffer::Immutable,
-                                QRhiBuffer::VertexBuffer,
-                                sizeof(m_vertices)));
+    m_vbuf.reset(rhi->newBuffer(QRhiBuffer::Immutable,QRhiBuffer::VertexBuffer,sizeof(m_vertices)));
     m_vbuf->create();
     u->uploadStaticBuffer(m_vbuf.get(), m_vertices);
 
     // Index buffer
-    m_ibuf.reset(rhi->newBuffer(QRhiBuffer::Immutable,
-                                QRhiBuffer::IndexBuffer,
-                                sizeof(m_indices)));
+    m_ibuf.reset(rhi->newBuffer(QRhiBuffer::Immutable,QRhiBuffer::IndexBuffer,sizeof(m_indices)));
     m_ibuf->create();
     u->uploadStaticBuffer(m_ibuf.get(), m_indices);
 
@@ -26,18 +19,14 @@ void Cube::init(QRhi *rhi,
 
     // Uniform buffer (⚡ musí být 256 bajtů kvůli D3D12 CBV alignment)
     const quint32 UBUF_SIZE = 256;
-    m_ubuf.reset(rhi->newBuffer(QRhiBuffer::Dynamic,
-                                QRhiBuffer::UniformBuffer,
-                                UBUF_SIZE));
+    m_ubuf.reset(rhi->newBuffer(QRhiBuffer::Dynamic,QRhiBuffer::UniformBuffer, UBUF_SIZE));
     m_ubuf->create();
 
     // Shader resource bindings
     m_srb.reset(rhi->newShaderResourceBindings());
     m_srb->setBindings({
-        QRhiShaderResourceBinding::uniformBuffer(0,
-                                                 QRhiShaderResourceBinding::VertexStage, m_ubuf.get()),
-        QRhiShaderResourceBinding::sampledTexture(1,
-                                                  QRhiShaderResourceBinding::FragmentStage, texture, sampler)
+        QRhiShaderResourceBinding::uniformBuffer(0,QRhiShaderResourceBinding::VertexStage, m_ubuf.get()),
+        QRhiShaderResourceBinding::sampledTexture(1,QRhiShaderResourceBinding::FragmentStage, texture, sampler)
     });
     m_srb->create();
 

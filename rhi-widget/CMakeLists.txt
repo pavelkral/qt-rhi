@@ -11,6 +11,8 @@ qt_add_executable(cube-widget
     main.cpp
     cuberhiwidget.cpp
     cuberhiwidget.h
+    cube.cpp
+    cube.h
 
 )
 qt_add_resources(cube-widget "cube-widget"

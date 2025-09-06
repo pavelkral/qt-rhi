@@ -26,10 +26,14 @@ struct UBufData {
     QMatrix4x4 uModel;
     QMatrix4x4 uView;
     QMatrix4x4 uProj;
-    QVector3D uLightPos;       float uAmbientStrength;
-    QVector3D uLightColor;     float uMetallicFactor;
-    QVector3D uCameraPos;      float uSmoothnessFactor;
-    QVector3D uAlbedoColor;    float pad0;
+    QVector3D uLightPos;
+    float uAmbientStrength;
+    QVector3D uLightColor;
+    float uMetallicFactor;
+    QVector3D uCameraPos;
+    float uSmoothnessFactor;
+    QVector3D uAlbedoColor;
+    float pad0;
     int uHasAlbedo;
     int uHasNormal;
     int uHasMetallic;

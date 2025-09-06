@@ -21,9 +21,6 @@ protected:
     virtual void customInit() = 0;
     virtual void customRender() = 0;
 
-    // destruction order matters to a certain degree: the fallbackSurface must
-    // outlive the rhi, the rhi must outlive all other resources.  The resources
-    // need no special order when destroying.
 #if QT_CONFIG(opengl)
     std::unique_ptr<QOffscreenSurface> m_fallbackSurface;
 #endif
