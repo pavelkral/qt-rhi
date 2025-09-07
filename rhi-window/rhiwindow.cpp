@@ -144,12 +144,9 @@ void RhiWindow::init()
     if (!m_rhi)
         qFatal("Failed to create RHI backend");
     //! [rhi-init]
-
     //! [swapchain-init]
     m_sc.reset(m_rhi->newSwapChain());
-    m_ds.reset(m_rhi->newRenderBuffer(QRhiRenderBuffer::DepthStencil,
-                                      QSize(),
-                                      1,
+    m_ds.reset(m_rhi->newRenderBuffer(QRhiRenderBuffer::DepthStencil,QSize(),1,
                                       QRhiRenderBuffer::UsedWithSwapChainOnly));
     m_sc->setWindow(this);
     m_sc->setDepthStencil(m_ds.get());
@@ -171,7 +168,6 @@ void RhiWindow::resizeSwapChain()
     m_viewProjection.translate(0, 0, -4);
 }
 //! [swapchain-resize]
-
 void RhiWindow::releaseSwapChain()
 {
     if (m_hasSwapChain) {
@@ -179,14 +175,12 @@ void RhiWindow::releaseSwapChain()
         m_sc->destroy();
     }
 }
-
 //! [render-precheck]
 void RhiWindow::render()
 {
     if (!m_hasSwapChain || m_notExposed)
         return;
     //! [render-precheck]
-
     //! [render-resize]
     if (m_sc->currentPixelSize() != m_sc->surfacePixelSize() || m_newlyExposed) {
         resizeSwapChain();
@@ -195,7 +189,6 @@ void RhiWindow::render()
         m_newlyExposed = false;
     }
     //! [render-resize]
-
     //! [beginframe]
     QRhi::FrameOpResult result = m_rhi->beginFrame(m_sc.get());
     if (result == QRhi::FrameOpSwapChainOutOfDate) {
@@ -212,7 +205,6 @@ void RhiWindow::render()
 
     customRender();
     //! [beginframe]
-
     //! [request-update]
     m_rhi->endFrame(m_sc.get());
     requestUpdate();
@@ -266,17 +258,6 @@ void HelloWindow::customInit()
 {
     m_initialUpdates = m_rhi->nextResourceUpdateBatch();
 
-    // Vertex buffer s krychlí
-    //m_vbuf.reset(m_rhi->newBuffer(QRhiBuffer::Immutable, QRhiBuffer::VertexBuffer, sizeof(cubeVertexData)));
-    //m_vbuf->create();
-    //m_initialUpdates->uploadStaticBuffer(m_vbuf.get(), cubeVertexData);
-    // Uniform buffer: 64 B pro mat4 mvp
-   // static const quint32 UBUF_SIZE = 64;
-  //  m_ubuf.reset(m_rhi->newBuffer(QRhiBuffer::Dynamic, QRhiBuffer::UniformBuffer, UBUF_SIZE));
- //   m_ubuf->create();
-
-
-    // Načti texturu (používáme stávající API)
     loadTexture(QSize(), m_initialUpdates);
 
     // Sampler
@@ -320,11 +301,12 @@ void HelloWindow::customInit()
     QShader vs = getShader(":/texture.vert.qsb");
     QShader fs = getShader(":/texture.frag.qsb");
 
+    QShader vs1 = getShader(":/color.vert.qsb");
+    QShader fs1 = getShader(":/color.frag.qsb");
+
     m_cube1.init(m_rhi.get(), m_texture.get(), m_sampler.get(), m_rp.get(), vs, fs, m_initialUpdates);
-    m_cube2.init(m_rhi.get(), m_texture.get(), m_sampler.get(), m_rp.get(), vs, fs, m_initialUpdates);
+    m_cube2.init(m_rhi.get(), m_texture.get(), m_sampler.get(), m_rp.get(), vs1, fs1, m_initialUpdates);
 
-
-    // (Nepotřebujeme fullscreen quad pipeline — tu prostě nevytváříme.)
 }
 
 

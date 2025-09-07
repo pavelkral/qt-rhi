@@ -25,11 +25,10 @@ protected:
     std::unique_ptr<QOffscreenSurface> m_fallbackSurface;
 #endif
     std::unique_ptr<QRhi> m_rhi;
-//! [swapchain-data]
     std::unique_ptr<QRhiSwapChain> m_sc;
     std::unique_ptr<QRhiRenderBuffer> m_ds;
     std::unique_ptr<QRhiRenderPassDescriptor> m_rp;
-//! [swapchain-data]
+
     bool m_hasSwapChain = false;
     QMatrix4x4 m_viewProjection;
     Cube m_cube1;
@@ -59,16 +58,12 @@ public:
 private:
     void loadTexture(const QSize &pixelSize, QRhiResourceUpdateBatch *u);
 
-    //std::unique_ptr<QRhiBuffer> m_vbuf;
-    //std::unique_ptr<QRhiBuffer> m_ubuf;
     std::unique_ptr<QRhiTexture> m_texture;
     std::unique_ptr<QRhiSampler> m_sampler;
     std::unique_ptr<QRhiShaderResourceBindings> m_colorTriSrb;
     std::unique_ptr<QRhiGraphicsPipeline> m_colorPipeline;
     std::unique_ptr<QRhiShaderResourceBindings> m_fullscreenQuadSrb;
     std::unique_ptr<QRhiGraphicsPipeline> m_fullscreenQuadPipeline;
-    Cube cube;
-
     QRhiResourceUpdateBatch *m_initialUpdates = nullptr;
 
     float m_rotation = 0;
