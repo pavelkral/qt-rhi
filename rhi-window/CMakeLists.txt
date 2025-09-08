@@ -69,6 +69,7 @@ qt_add_resources(rhi-window "rhi-window"
         "shaders/texture.frag"
         "shaders/texture.vert"
         "text.jpg"
+        "../assets/textures/floor.jpg"
 )
 
 install(TARGETS rhi-window

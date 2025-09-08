@@ -73,10 +73,7 @@ private:
 
     std::unique_ptr<QRhiTexture> m_texture;
     std::unique_ptr<QRhiSampler> m_sampler;
-    std::unique_ptr<QRhiShaderResourceBindings> m_colorTriSrb;
-    std::unique_ptr<QRhiGraphicsPipeline> m_colorPipeline;
-    std::unique_ptr<QRhiShaderResourceBindings> m_fullscreenQuadSrb;
-    std::unique_ptr<QRhiGraphicsPipeline> m_fullscreenQuadPipeline;
+
     QRhiResourceUpdateBatch *m_initialUpdates = nullptr;
 
     float m_rotation = 0;

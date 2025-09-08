@@ -22,16 +22,15 @@ const float SENSITIVITY =  0.1f;
 class Camera
 {
 public:
-    // Atributy kamery
+
     QVector3D Position;
     QVector3D Front;
     QVector3D Up;
     QVector3D Right;
     QVector3D WorldUp;
-    // Eulerovy úhly
+    // Eulerov
     float Yaw;
     float Pitch;
-    // Nastavení kamery
     float MovementSpeed;
     float MouseSensitivity;
 

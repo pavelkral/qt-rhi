@@ -10,7 +10,7 @@
 
 //================================== RhiWindow ==================================
 
-//! [rhiwindow-ctor]
+
 RhiWindow::RhiWindow(QRhi::Implementation graphicsApi)
     : m_graphicsApi(graphicsApi)
 {
@@ -32,7 +32,6 @@ RhiWindow::RhiWindow(QRhi::Implementation graphicsApi)
         break; // RasterSurface
     }
 }
-//! [rhiwindow-ctor]
 
 QString RhiWindow::graphicsApiName() const
 {
@@ -53,7 +52,6 @@ QString RhiWindow::graphicsApiName() const
     return QString();
 }
 
-//! [expose]
 void RhiWindow::exposeEvent(QExposeEvent *)
 {
     if (isExposed() && !m_initialized) {
@@ -75,9 +73,7 @@ void RhiWindow::exposeEvent(QExposeEvent *)
     if (isExposed() && !surfaceSize.isEmpty())
         render();
 }
-//! [expose]
 
-//! [event]
 bool RhiWindow::event(QEvent *e)
 {
     switch (e->type()) {
@@ -93,9 +89,7 @@ bool RhiWindow::event(QEvent *e)
     }
     return QWindow::event(e);
 }
-//! [event]
 
-//! [rhi-init]
 void RhiWindow::init()
 {
     if (m_graphicsApi == QRhi::Null) {
@@ -143,8 +137,7 @@ void RhiWindow::init()
 
     if (!m_rhi)
         qFatal("Failed to create RHI backend");
-    //! [rhi-init]
-    //! [swapchain-init]
+
     m_sc.reset(m_rhi->newSwapChain());
     m_ds.reset(m_rhi->newRenderBuffer(QRhiRenderBuffer::DepthStencil,QSize(),1,
                                       QRhiRenderBuffer::UsedWithSwapChainOnly));
@@ -152,12 +145,10 @@ void RhiWindow::init()
     m_sc->setDepthStencil(m_ds.get());
     m_rp.reset(m_sc->newCompatibleRenderPassDescriptor());
     m_sc->setRenderPassDescriptor(m_rp.get());
-    //! [swapchain-init]
 
     customInit();
 }
 
-//! [swapchain-resize]
 void RhiWindow::resizeSwapChain()
 {
     m_hasSwapChain = m_sc->createOrResize(); // also handles m_ds
@@ -166,14 +157,13 @@ void RhiWindow::resizeSwapChain()
   //  m_viewProjection = m_rhi->clipSpaceCorrMatrix();
   //  m_viewProjection.perspective(45.0f, outputSize.width() / (float) outputSize.height(), 0.01f, 1000.0f);
   //  m_viewProjection.translate(0, 0, -4);
-
     //const QSize outputSize = m_sc->currentPixelSize();
     // Přejmenujeme m_viewProjection na m_projection
     m_projection = m_rhi->clipSpaceCorrMatrix();
     m_projection.perspective(45.0f, outputSize.width() / (float) outputSize.height(), 0.1f, 100.0f);
     // Odstraníme .translate(0, 0, -4); protože pozici řeší kamera
 }
-//! [swapchain-resize]
+
 void RhiWindow::releaseSwapChain()
 {
     if (m_hasSwapChain) {
@@ -181,7 +171,7 @@ void RhiWindow::releaseSwapChain()
         m_sc->destroy();
     }
 }
-//! [render-precheck]
+
 void RhiWindow::render()
 {
     if (!m_hasSwapChain || m_notExposed)
@@ -210,8 +200,6 @@ void RhiWindow::render()
     }
 
     customRender();
-    //! [beginframe]
-    //! [request-update]
     m_rhi->endFrame(m_sc.get());
     requestUpdate();
 }
@@ -242,7 +230,7 @@ void HelloWindow::loadTexture(const QSize &, QRhiResourceUpdateBatch *u)
     if (m_texture)
         return;
 
-    QImage image(":/text.jpg");          // <- vlož svou texturu do resource pod tímto aliasem
+    QImage image(":/assets/textures/floor.jpg");
     if (image.isNull()) {
         qWarning("Failed to load :/crate.png texture. Using 64x64 checker fallback.");
         image = QImage(64, 64, QImage::Format_RGBA8888);
@@ -274,39 +262,6 @@ void HelloWindow::customInit()
                                       QRhiSampler::ClampToEdge, QRhiSampler::ClampToEdge));
     m_sampler->create();
 
-    // Shader resource bindings: binding 0 = UBO, binding 1 = texture+sampler
-  //  m_colorTriSrb.reset(m_rhi->newShaderResourceBindings());
-  //  m_colorTriSrb->setBindings({
-      //  QRhiShaderResourceBinding::uniformBuffer(0,
-   //                                              QRhiShaderResourceBinding::VertexStage, m_ubuf.get()),
-      //  QRhiShaderResourceBinding::sampledTexture(1,
-   //                                               QRhiShaderResourceBinding::FragmentStage, m_texture.get(), m_sampler.get())
-  //  });
-   // m_colorTriSrb->create();
-
-    // Grafická pipeline pro texturovanou krychli
-   // m_colorPipeline.reset(m_rhi->newGraphicsPipeline());
-   // m_colorPipeline->setDepthTest(true);
-  //  m_colorPipeline->setDepthWrite(true);
-
-  //  m_colorPipeline->setShaderStages({
-  //      { QRhiShaderStage::Vertex,   getShader(QLatin1String(":/texture.vert.qsb")) },
-  //      { QRhiShaderStage::Fragment, getShader(QLatin1String(":/texture.frag.qsb")) }
- //   });
-
-    // QRhiVertexInputLayout inputLayout;
-    // inputLayout.setBindings({
-    //     { 5 * sizeof(float) } // pos(3) + uv(2)
-    // });
-    // inputLayout.setAttributes({
-    //     { 0, 0, QRhiVertexInputAttribute::Float3, 0 },
-    //     { 0, 1, QRhiVertexInputAttribute::Float2, 3 * sizeof(float) }
-    // });
-    // m_colorPipeline->setVertexInputLayout(inputLayout);
-    // m_colorPipeline->setShaderResourceBindings(m_colorTriSrb.get());
-    // m_colorPipeline->setRenderPassDescriptor(m_rp.get());
-    // m_colorPipeline->create();
-
     QShader vs = getShader(":/texture.vert.qsb");
     QShader fs = getShader(":/texture.frag.qsb");
 
@@ -321,8 +276,6 @@ void HelloWindow::customInit()
 
 void HelloWindow::customRender()
 {
-
-
     m_dt = m_timer.restart() / 1000.0f;
     updateCamera(m_dt);
 
@@ -334,9 +287,8 @@ void HelloWindow::customRender()
         m_initialUpdates = nullptr;
     }
 
-    m_rotation += 30.0f * m_dt; // Rotace závislá na čase
+    m_rotation += 30.0f * m_dt;
 
-    // Získat View matici z kamery
     QMatrix4x4 view = m_camera.GetViewMatrix();
 
     // Použít m_projection (dříve m_viewProjection) a novou view matici
@@ -348,13 +300,13 @@ void HelloWindow::customRender()
     QMatrix4x4 model1;
     model1.translate(-1.5f, 0, 0);
     model1.rotate(m_rotation, 0, 1, 0);
-    QMatrix4x4 mvp1 = viewProjection * model1; // Nový výpočet MVP
+    QMatrix4x4 mvp1 = viewProjection * model1;
     m_cube1.setModelMatrix(mvp1, resourceUpdates);
 
     QMatrix4x4 model2;
     model2.translate(1.5f, 0, 0);
     model2.rotate(-m_rotation, 0, 1, 0);
-    QMatrix4x4 mvp2 = viewProjection * model2; // Nový výpočet MVP
+    QMatrix4x4 mvp2 = viewProjection * model2;
     m_cube2.setModelMatrix(mvp2, resourceUpdates);
 
     const QColor clearColor = QColor::fromRgbF(0.4f, 0.7f, 0.0f, 1.0f);
