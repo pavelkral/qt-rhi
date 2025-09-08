@@ -4,6 +4,7 @@
 #ifndef WINDOW_H
 #define WINDOW_H
 
+#include "camera.h"
 #include "cube.h"
 
 #include <QWindow>
@@ -31,13 +32,13 @@ protected:
 
     bool m_hasSwapChain = false;
     QMatrix4x4 m_viewProjection;
+    QMatrix4x4 m_projection;
     Cube m_cube1;
     Cube m_cube2;
 private:
     void init();
     void resizeSwapChain();
     void render();
-
     void exposeEvent(QExposeEvent *) override;
     bool event(QEvent *) override;
 
@@ -47,6 +48,8 @@ private:
     bool m_newlyExposed = false;
 };
 
+//================================================================================================
+
 class HelloWindow : public RhiWindow
 {
 public:
@@ -54,9 +57,19 @@ public:
 
     void customInit() override;
     void customRender() override;
-
+protected:
+    void keyPressEvent(QKeyEvent *e) override;
+    void keyReleaseEvent(QKeyEvent *e) override;
+    void mouseMoveEvent(QMouseEvent *e) override;
 private:
     void loadTexture(const QSize &pixelSize, QRhiResourceUpdateBatch *u);
+    void updateCamera(float dt); // Funkce pro aktualizaci kamery každý frame
+
+    Camera m_camera;
+    QSet<int> m_pressedKeys;
+    QPointF m_lastMousePos;
+    QElapsedTimer m_timer;
+    float m_dt = 0;
 
     std::unique_ptr<QRhiTexture> m_texture;
     std::unique_ptr<QRhiSampler> m_sampler;

@@ -29,8 +29,8 @@ private:
     QSize m_pixelSize;
 
     std::unique_ptr<QRhiRenderPassDescriptor> m_rp;
-    QScopedPointer<QRhiTexture> m_texture;
-    QScopedPointer<QRhiSampler> m_sampler;
+    std::unique_ptr<QRhiTexture> m_texture;
+    std::unique_ptr<QRhiSampler> m_sampler;
     QRhiResourceUpdateBatch *m_initialUpdates = nullptr;
 
 

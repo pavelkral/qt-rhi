@@ -89,8 +89,8 @@ protected:
 
 
 
-       // cb->beginPass(this->renderTarget(), QColor(30,30,30), {1.0f, 0});
-      //  cb->setGraphicsPipeline(m_ps.get());
+        cb->beginPass(this->renderTarget(), QColor(30,30,30), {1.0f, 0});
+        cb->setGraphicsPipeline(m_ps.get());
 
         // UBO data
         UBufData u;
@@ -109,7 +109,7 @@ protected:
 
         m_model->draw(cb,u);
 
-       // cb->endPass();
+        cb->endPass();
     }
 
 private:

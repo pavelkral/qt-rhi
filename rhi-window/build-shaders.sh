@@ -2,20 +2,14 @@
 
 QT_PATH="C:/Qt/6.9.0/msvc2022_64"
 
-# Kontrola, zda byla cesta k Qt nastavena
-#if [ "$QT_PATH" == "/path/to/your/Qt/6.9.0/your_kit" ]; then
-    #echo "CHYBA: Prosím, upravte proměnnou 'QT_PATH' ve skriptu tak, aby ukazovala na vaši Qt 6.9+ instalaci."
-    #exit 1
-#fi
-
-echo "  -> Kompiluji shadery pomocí qsb..."
+echo "  -> compile qsb..."
 QSB_CMD="$QT_PATH/bin/qsb"
 if [ ! -x "$QSB_CMD" ]; then
-    echo "CHYBA: Nástroj 'qsb' nebyl nalezen v '$QSB_CMD'. Zkontrolujte cestu QT_PATH."
+    echo "err:  'qsb' not found '$QSB_CMD'. check QT_PATH."
     exit 1
 fi
-"$QSB_CMD" shaders/texture.vert -o shaders/prebuilt/texture.vert.qsb --glsl 450 --hlsl 50
-"$QSB_CMD" shaders/texture.frag -o shaders/prebuilt/texture.frag.qsb --glsl 450 --hlsl 50
+"$QSB_CMD" shaders/texture.vert -o shaders/prebuild/texture.vert.qsb --glsl 450 --hlsl 50
+"$QSB_CMD" shaders/texture.frag -o shaders/prebuild/texture.frag.qsb --glsl 450 --hlsl 50
 #"$QSB_CMD" --fragment -o frag.qsb shader.frag
 
 if [ ! -f "vert.qsb" ] || [ ! -f "frag.qsb" ]; then

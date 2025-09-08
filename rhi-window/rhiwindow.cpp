@@ -163,9 +163,15 @@ void RhiWindow::resizeSwapChain()
     m_hasSwapChain = m_sc->createOrResize(); // also handles m_ds
 
     const QSize outputSize = m_sc->currentPixelSize();
-    m_viewProjection = m_rhi->clipSpaceCorrMatrix();
-    m_viewProjection.perspective(45.0f, outputSize.width() / (float) outputSize.height(), 0.01f, 1000.0f);
-    m_viewProjection.translate(0, 0, -4);
+  //  m_viewProjection = m_rhi->clipSpaceCorrMatrix();
+  //  m_viewProjection.perspective(45.0f, outputSize.width() / (float) outputSize.height(), 0.01f, 1000.0f);
+  //  m_viewProjection.translate(0, 0, -4);
+
+    //const QSize outputSize = m_sc->currentPixelSize();
+    // Přejmenujeme m_viewProjection na m_projection
+    m_projection = m_rhi->clipSpaceCorrMatrix();
+    m_projection.perspective(45.0f, outputSize.width() / (float) outputSize.height(), 0.1f, 100.0f);
+    // Odstraníme .translate(0, 0, -4); protože pozici řeší kamera
 }
 //! [swapchain-resize]
 void RhiWindow::releaseSwapChain()
@@ -223,8 +229,12 @@ static QShader getShader(const QString &name)
 //================================== HelloWindow =================================
 
 HelloWindow::HelloWindow(QRhi::Implementation graphicsApi)
-    : RhiWindow(graphicsApi)
+    : RhiWindow(graphicsApi),
+    m_camera(QVector3D(0.0f, 0.0f, 5.0f))
 {
+    //setFocusPolicy(Qt::StrongFocus);
+    // Skryje kurzor a zachytí ho v okně
+   // setCursor(Qt::BlankCursor);
 }
 
 void HelloWindow::loadTexture(const QSize &, QRhiResourceUpdateBatch *u)
@@ -232,7 +242,7 @@ void HelloWindow::loadTexture(const QSize &, QRhiResourceUpdateBatch *u)
     if (m_texture)
         return;
 
-    QImage image(":/txt.jpg");          // <- vlož svou texturu do resource pod tímto aliasem
+    QImage image(":/text.jpg");          // <- vlož svou texturu do resource pod tímto aliasem
     if (image.isNull()) {
         qWarning("Failed to load :/crate.png texture. Using 64x64 checker fallback.");
         image = QImage(64, 64, QImage::Format_RGBA8888);
@@ -260,7 +270,6 @@ void HelloWindow::customInit()
 
     loadTexture(QSize(), m_initialUpdates);
 
-    // Sampler
     m_sampler.reset(m_rhi->newSampler(QRhiSampler::Linear, QRhiSampler::Linear, QRhiSampler::None,
                                       QRhiSampler::ClampToEdge, QRhiSampler::ClampToEdge));
     m_sampler->create();
@@ -301,17 +310,22 @@ void HelloWindow::customInit()
     QShader vs = getShader(":/texture.vert.qsb");
     QShader fs = getShader(":/texture.frag.qsb");
 
-    QShader vs1 = getShader(":/color.vert.qsb");
-    QShader fs1 = getShader(":/color.frag.qsb");
+    QShader vs1 = getShader(":/mcolor.vert.qsb");
+    QShader fs1 = getShader(":/mcolor.frag.qsb");
 
     m_cube1.init(m_rhi.get(), m_texture.get(), m_sampler.get(), m_rp.get(), vs, fs, m_initialUpdates);
-    m_cube2.init(m_rhi.get(), m_texture.get(), m_sampler.get(), m_rp.get(), vs1, fs1, m_initialUpdates);
-
+    m_cube2.init(m_rhi.get(), m_texture.get(), m_sampler.get(), m_rp.get(), vs, fs, m_initialUpdates);
+    m_timer.start();
 }
 
 
 void HelloWindow::customRender()
 {
+
+
+    m_dt = m_timer.restart() / 1000.0f;
+    updateCamera(m_dt);
+
     QRhiResourceUpdateBatch *resourceUpdates = m_rhi->nextResourceUpdateBatch();
 
     if (m_initialUpdates) {
@@ -320,27 +334,29 @@ void HelloWindow::customRender()
         m_initialUpdates = nullptr;
     }
 
-    m_rotation += 1.0f;
-    QMatrix4x4 modelViewProjection = m_viewProjection;
-    modelViewProjection.rotate(m_rotation, 0, 1, 0);
+    m_rotation += 30.0f * m_dt; // Rotace závislá na čase
+
+    // Získat View matici z kamery
+    QMatrix4x4 view = m_camera.GetViewMatrix();
+
+    // Použít m_projection (dříve m_viewProjection) a novou view matici
+    QMatrix4x4 viewProjection = m_projection * view;
 
     QRhiCommandBuffer *cb = m_sc->currentFrameCommandBuffer();
     const QSize outputSizeInPixels = m_sc->currentPixelSize();
-  //  cb->beginPass(m_sc->currentFrameRenderTarget(), Qt::black, { 1.0f, 0 }, resourceUpdates);
-  //  cb->setGraphicsPipeline(m_colorPipeline.get());
-  //  cb->setViewport({ 0, 0, float(outputSizeInPixels.width()), float(outputSizeInPixels.height()) });
-    // cb->setShaderResources();
 
-    QMatrix4x4 mvp1 = m_viewProjection;
-    mvp1.translate(-1.5f, 0, 0);
-    mvp1.rotate(m_rotation, 0, 1, 0);
+    QMatrix4x4 model1;
+    model1.translate(-1.5f, 0, 0);
+    model1.rotate(m_rotation, 0, 1, 0);
+    QMatrix4x4 mvp1 = viewProjection * model1; // Nový výpočet MVP
     m_cube1.setModelMatrix(mvp1, resourceUpdates);
 
-    QMatrix4x4 mvp2 = m_viewProjection;
-    mvp2.translate(1.5f, 0, 0);
-    mvp2.rotate(-m_rotation, 0, 1, 0);
-
+    QMatrix4x4 model2;
+    model2.translate(1.5f, 0, 0);
+    model2.rotate(-m_rotation, 0, 1, 0);
+    QMatrix4x4 mvp2 = viewProjection * model2; // Nový výpočet MVP
     m_cube2.setModelMatrix(mvp2, resourceUpdates);
+
     const QColor clearColor = QColor::fromRgbF(0.4f, 0.7f, 0.0f, 1.0f);
 
     cb->beginPass(m_sc->currentFrameRenderTarget(), clearColor, { 1.0f, 0 }, resourceUpdates);
@@ -351,4 +367,45 @@ void HelloWindow::customRender()
 
     cb->endPass();
 
+}
+void HelloWindow::keyPressEvent(QKeyEvent *e)
+{
+    m_pressedKeys.insert(e->key());
+}
+
+void HelloWindow::keyReleaseEvent(QKeyEvent *e)
+{
+    m_pressedKeys.remove(e->key());
+}
+
+void HelloWindow::mouseMoveEvent(QMouseEvent *e)
+{
+    // Pokud je to první pohyb myši, jen nastavíme počáteční pozici
+    if (m_lastMousePos.isNull()) {
+        m_lastMousePos = e->position();
+        return;
+    }
+
+    float xoffset = e->position().x() - m_lastMousePos.x();
+    float yoffset = m_lastMousePos.y() - e->position().y(); // Obráceně, protože Y souřadnice rostou dolů
+
+    m_lastMousePos = e->position();
+    m_camera.ProcessMouseMovement(xoffset, yoffset);
+
+    // Volitelně: Vracení kurzoru do středu okna pro neomezený pohyb
+    // QPoint center = mapToGlobal(rect().center());
+    // QCursor::setPos(center);
+    // m_lastMousePos = mapFromGlobal(center);
+}
+
+void HelloWindow::updateCamera(float dt)
+{
+    if (m_pressedKeys.contains(Qt::Key_W))
+        m_camera.ProcessKeyboard(FORWARD, dt);
+    if (m_pressedKeys.contains(Qt::Key_S))
+        m_camera.ProcessKeyboard(BACKWARD, dt);
+    if (m_pressedKeys.contains(Qt::Key_A))
+        m_camera.ProcessKeyboard(LEFT, dt);
+    if (m_pressedKeys.contains(Qt::Key_D))
+        m_camera.ProcessKeyboard(RIGHT, dt);
 }

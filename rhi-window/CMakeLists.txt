@@ -10,6 +10,7 @@ qt_add_executable(single-cube
     rhiwindow.cpp rhiwindow.h
     cube.h
     cube.h cube.cpp
+    camera.h camera.cpp
 )
 
 set_target_properties(single-cube PROPERTIES
@@ -23,37 +24,46 @@ target_link_libraries(single-cube PRIVATE
     Qt6::GuiPrivate
 )
 
-set_source_files_properties("shaders/prebuilt/color.vert.qsb"
+set_source_files_properties("shaders/prebuild/color.vert.qsb"
     PROPERTIES QT_RESOURCE_ALIAS "color.vert.qsb"
 )
-set_source_files_properties("shaders/prebuilt/color.frag.qsb"
+set_source_files_properties("shaders/prebuild/color.frag.qsb"
     PROPERTIES QT_RESOURCE_ALIAS "color.frag.qsb"
 )
-set_source_files_properties("shaders/prebuilt/quad.vert.qsb"
+set_source_files_properties("shaders/prebuild/quad.vert.qsb"
     PROPERTIES QT_RESOURCE_ALIAS "quad.vert.qsb"
 )
-set_source_files_properties("shaders/prebuilt/quad.frag.qsb"
+set_source_files_properties("shaders/prebuild/quad.frag.qsb"
     PROPERTIES QT_RESOURCE_ALIAS "quad.frag.qsb"
 )
-set_source_files_properties("shaders/prebuilt/texture.vert.qsb"
+set_source_files_properties("shaders/prebuild/texture.vert.qsb"
     PROPERTIES QT_RESOURCE_ALIAS "texture.vert.qsb"
 )
-set_source_files_properties("shaders/prebuilt/texture.frag.qsb"
+set_source_files_properties("shaders/prebuild/texture.frag.qsb"
     PROPERTIES QT_RESOURCE_ALIAS "texture.frag.qsb"
 )
-
+set_source_files_properties("shaders/prebuild/mcolor.vert.qsb"
+    PROPERTIES QT_RESOURCE_ALIAS "mcolor.vert.qsb"
+)
+set_source_files_properties("shaders/prebuild/mcolor.frag.qsb"
+    PROPERTIES QT_RESOURCE_ALIAS "mcolor.frag.qsb"
+)
 qt_add_resources(single-cube "single-cube"
     PREFIX
         "/"
     FILES
-        "shaders/prebuilt/color.vert.qsb"
-        "shaders/prebuilt/color.frag.qsb"
-        "shaders/prebuilt/quad.vert.qsb"
-        "shaders/prebuilt/quad.frag.qsb"
-        "shaders/prebuilt/texture.vert.qsb"
-        "shaders/prebuilt/texture.frag.qsb"
+        "shaders/prebuild/color.vert.qsb"
+        "shaders/prebuild/color.frag.qsb"
+        "shaders/prebuild/mcolor.vert.qsb"
+        "shaders/prebuild/mcolor.frag.qsb"
+        "shaders/prebuild/quad.vert.qsb"
+        "shaders/prebuild/quad.frag.qsb"
+        "shaders/prebuild/texture.vert.qsb"
+        "shaders/prebuild/texture.frag.qsb"
         "shaders/color.vert"
         "shaders/color.frag"
+        "shaders/mcolor.vert"
+        "shaders/mcolor.frag"
         "shaders/quad.vert"
         "shaders/quad.frag"
         "shaders/texture.frag"

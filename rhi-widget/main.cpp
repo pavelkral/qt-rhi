@@ -17,6 +17,8 @@ int main(int argc, char **argv) {
     QWidget w;
     w.setLayout(layout);
     w.resize(1280, 720);
+    w.setFixedHeight(720);
+    w.setFixedWidth(1280);
     w.show();
 
     return app.exec();
