@@ -1,11 +1,11 @@
 cmake_minimum_required(VERSION 3.16)
-project(single-cube LANGUAGES CXX)
+project(rhi-window LANGUAGES CXX)
 
 find_package(Qt6 REQUIRED COMPONENTS Core GuiPrivate)
 
 qt_standard_project_setup()
 
-qt_add_executable(single-cube
+qt_add_executable(rhi-window
     main.cpp
     rhiwindow.cpp rhiwindow.h
     cube.h
@@ -13,12 +13,12 @@ qt_add_executable(single-cube
     camera.h camera.cpp
 )
 
-set_target_properties(single-cube PROPERTIES
+set_target_properties(rhi-window PROPERTIES
     WIN32_EXECUTABLE TRUE
     MACOSX_BUNDLE TRUE
 )
 
-target_link_libraries(single-cube PRIVATE
+target_link_libraries(rhi-window PRIVATE
     Qt6::Core
     Qt6::Gui
     Qt6::GuiPrivate
@@ -48,7 +48,7 @@ set_source_files_properties("shaders/prebuild/mcolor.vert.qsb"
 set_source_files_properties("shaders/prebuild/mcolor.frag.qsb"
     PROPERTIES QT_RESOURCE_ALIAS "mcolor.frag.qsb"
 )
-qt_add_resources(single-cube "single-cube"
+qt_add_resources(rhi-window "rhi-window"
     PREFIX
         "/"
     FILES
@@ -71,14 +71,14 @@ qt_add_resources(single-cube "single-cube"
         "text.jpg"
 )
 
-install(TARGETS single-cube
+install(TARGETS rhi-window
     BUNDLE  DESTINATION .
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
 )
 
 qt_generate_deploy_app_script(
-    TARGET single-cube
+    TARGET rhi-window
     OUTPUT_SCRIPT deploy_script
     NO_UNSUPPORTED_PLATFORM_ERROR
 )

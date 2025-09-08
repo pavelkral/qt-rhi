@@ -9,7 +9,6 @@ set(CMAKE_AUTOUIC ON)
 find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets)
 
 add_subdirectory(samples)
-add_subdirectory(rhi-cube-window)
 add_subdirectory(rhi-widget)
 add_subdirectory(rhi-box)
 add_subdirectory(rhi-window)

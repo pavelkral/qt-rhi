@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.21)
-project(cube-widget LANGUAGES CXX)
+project(rhi-widget LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -7,7 +7,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 find_package(Qt6 REQUIRED COMPONENTS Widgets Gui GuiPrivate ShaderTools)
 set(CMAKE_AUTOMOC ON)
 
-qt_add_executable(cube-widget
+qt_add_executable(rhi-widget
     main.cpp
     cuberhiwidget.cpp
     cuberhiwidget.h
@@ -15,7 +15,7 @@ qt_add_executable(cube-widget
     cube.h
 
 )
-qt_add_resources(cube-widget "cube-widget"
+qt_add_resources(rhi-widget "rhi-widget"
     PREFIX
         "/"
     FILES
@@ -25,6 +25,6 @@ qt_add_resources(cube-widget "cube-widget"
         "shaders/cube.vert"
         "text.jpg"
 )
-target_link_libraries(cube-widget
+target_link_libraries(rhi-widget
     PRIVATE Qt6::Widgets Qt6::Gui Qt6::GuiPrivate Qt6::ShaderTools
 )
