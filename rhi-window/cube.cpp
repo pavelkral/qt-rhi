@@ -6,23 +6,31 @@ void Cube::init(QRhi *rhi,QRhiTexture *texture,QRhiSampler *sampler,QRhiRenderPa
                 QRhiResourceUpdateBatch *u)
 {
     // Vertex buffer
-    m_vbuf.reset(rhi->newBuffer(QRhiBuffer::Immutable,QRhiBuffer::VertexBuffer,sizeof(m_vertices)));
-    m_vbuf->create();
-    u->uploadStaticBuffer(m_vbuf.get(), m_vertices);
+ //   m_vbuf.reset(rhi->newBuffer(QRhiBuffer::Immutable,QRhiBuffer::VertexBuffer,sizeof(m_vertices)));
+  //  m_vbuf->create();
+ //   u->uploadStaticBuffer(m_vbuf.get(), m_vertices);
 
     // Index buffer
-    m_ibuf.reset(rhi->newBuffer(QRhiBuffer::Immutable,QRhiBuffer::IndexBuffer,sizeof(m_indices)));
+  //  m_ibuf.reset(rhi->newBuffer(QRhiBuffer::Immutable,QRhiBuffer::IndexBuffer,sizeof(m_indices)));
+ //   m_ibuf->create();
+  //  u->uploadStaticBuffer(m_ibuf.get(), m_indices);
+
+ //   m_indexCount = sizeof(m_indices) / sizeof(m_indices[0]);
+
+
+    m_vbuf.reset(rhi->newBuffer(QRhiBuffer::Immutable, QRhiBuffer::VertexBuffer, m_vert.size() * sizeof(float)));
+    m_vbuf->create();
+    u->uploadStaticBuffer(m_vbuf.get(), m_vert.constData());
+
+    // Index buffer
+    m_ibuf.reset(rhi->newBuffer(QRhiBuffer::Immutable, QRhiBuffer::IndexBuffer, m_ind.size() * sizeof(quint16)));
     m_ibuf->create();
-    u->uploadStaticBuffer(m_ibuf.get(), m_indices);
+    u->uploadStaticBuffer(m_ibuf.get(), m_ind.constData());
 
-    m_indexCount = sizeof(m_indices) / sizeof(m_indices[0]);
+    m_indexCount = m_ind.size();
 
-    // Uniform buffer (⚡ musí být 256b  D3D12 CBV alignment)
-   // const quint32 UBUF_SIZE = 256;
-  //  m_ubuf.reset(rhi->newBuffer(QRhiBuffer::Dynamic,QRhiBuffer::UniformBuffer, UBUF_SIZE));
-   // m_ubuf->create();
-    const quint32 UBUF_SIZE = 256; // sizeof(Ubo) je ~288 bytů, takže potřebujeme 512
-    const quint32 UBUF_ALIGNED_SIZE = (sizeof(Ubo) + 255) & ~255; // Zarovnání na 256
+
+    const quint32 UBUF_SIZE = 256;
     m_ubuf.reset(rhi->newBuffer(QRhiBuffer::Dynamic, QRhiBuffer::UniformBuffer,UBUF_SIZE ));
     m_ubuf->create();
     // Shader resource bindings

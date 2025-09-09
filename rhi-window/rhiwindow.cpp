@@ -7,6 +7,7 @@
 #include <QImage>
 #include <QFont>
 #include <rhi/qshader.h>
+#include "geometry.h"
 
 //================================== RhiWindow ==================================
 
@@ -273,10 +274,18 @@ void HelloWindow::customInit()
     QShader vs1 = getShader(":/light.vert.qsb");
     QShader fs1 = getShader(":/light.frag.qsb");
 
+
+    m_cube1.addVertAndInd(cubeVertices, cubeIndices);
+     m_cube2.addVertAndInd(planeVertices, planeIndices);
+
+
     m_cube1.init(m_rhi.get(), m_texture.get(), m_sampler.get(), m_rp.get(), vs, fs, m_initialUpdates);
     m_cube2.init(m_rhi.get(), m_texture.get(), m_sampler.get(), m_rp.get(), vs, fs, m_initialUpdates);
+
     m_cube1.transform.position = QVector3D(-1.5f, 0, 0);
-    m_cube2.getTransform().position = QVector3D(1.5f, 0, 0);
+    m_cube2.transform.position = QVector3D(1.5f, 0, 0);
+
+
     m_timer.start();
 }
 
@@ -301,17 +310,18 @@ void HelloWindow::customRender()
     QRhiCommandBuffer *cb = m_sc->currentFrameCommandBuffer();
     const QSize outputSizeInPixels = m_sc->currentPixelSize();
 
-    m_cube1.getTransform().rotation.setY( m_cube1.getTransform().rotation.y() + 0.5f);
-   m_cube1.updateUniforms(viewProjection, resourceUpdates);
-    m_cube2.getTransform().rotation.setY(m_cube2.getTransform().rotation.y() + 0.5f);
+    m_cube1.transform.rotation.setY( m_cube1.transform.rotation.y() + 0.5f);
+    m_cube1.updateUniforms(viewProjection, resourceUpdates);
 
-    QMatrix4x4 model2;
-    model2.translate(1.5f, 0, 0);
-    model2.rotate(-m_rotation, 0, 1, 0);
-    QMatrix4x4 mvp2 = viewProjection * model2;
+    m_cube2.transform.rotation.setY(m_cube2.transform.rotation.y() + 0.5f); m_cube2.updateUniforms(viewProjection, resourceUpdates);
+
+
+  //  QMatrix4x4 model2;
+  //  model2.translate(1.5f, 0, 0);
+  //  model2.rotate(-m_rotation, 0, 1, 0);
+  //  QMatrix4x4 mvp2 = viewProjection * model2;
   //  m_cube2.setModelMatrix(mvp2, resourceUpdates);
-    m_cube2.updateUniforms(viewProjection, resourceUpdates);
-  //  m_cube2.updateUniforms(viewProjection, resourceUpdates);
+
 
     QMatrix4x4 lightSpaceMatrix; // Získaná ze světla (pro stíny)
     // ... výpočet lightSpaceMatrix ...

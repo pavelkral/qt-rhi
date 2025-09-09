@@ -1,32 +1,43 @@
 #version 450
 
 layout(location = 0) in vec2 in_uv;
+layout(location = 1) in vec3 in_normal;
+layout(location = 2) in vec3 in_fragpos;
 
 layout(location = 0) out vec4 out_color;
 
-// Přístup ke stejnému uniformnímu bloku jako ve vertex shaderu
 layout(std140, binding = 0) uniform Ubo {
     mat4 model;
     mat4 view;
     mat4 projection;
-    mat4 lightSpace;
+    vec4 lightPos;
     vec4 color;
     float opacity;
+    vec3 pad;
 } ubo;
 
-// Sampler pro texturu
 layout(binding = 1) uniform sampler2D sampler_tex;
 
 void main() {
-    // Načtení barvy z textury
+    vec3 norm = normalize(in_normal);
+    vec3 lightDir = normalize(ubo.lightPos.xyz - in_fragpos);
+
+    // Ambient
+    vec3 ambient = 0.2 * ubo.color.rgb;
+
+    // Diffuse
+    float diff = max(dot(norm, lightDir), 0.0);
+    vec3 diffuse = diff * ubo.color.rgb;
+
+    // Specular
+    vec3 viewDir = normalize(-in_fragpos); // kamera v (0,0,0)
+    vec3 reflectDir = reflect(-lightDir, norm);
+    float spec = pow(max(dot(viewDir, reflectDir), 0.0), 32.0);
+    vec3 specular = 0.3 * spec * vec3(1.0);
+
     vec4 texColor = texture(sampler_tex, in_uv);
+    vec3 lighting = (ambient + diffuse + specular) * texColor.rgb;
+    float alpha = texColor.a * ubo.opacity;
 
-    // Výsledná barva je kombinací barvy z textury a barvy z UBO
-    // Můžete je libovolně kombinovat, zde je příklad násobení
-    vec3 final_rgb = texColor.rgb * ubo.color.rgb;
-
-    // Výsledná alfa je kombinací alfy z textury a průhlednosti z UBO
-    float final_alpha = texColor.a * ubo.opacity;
-
-    out_color = vec4(final_rgb, final_alpha);
+    out_color = vec4(lighting, alpha);
 }
