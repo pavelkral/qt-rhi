@@ -18,14 +18,18 @@ void Cube::init(QRhi *rhi,QRhiTexture *texture,QRhiSampler *sampler,QRhiRenderPa
     m_indexCount = sizeof(m_indices) / sizeof(m_indices[0]);
 
     // Uniform buffer (⚡ musí být 256b  D3D12 CBV alignment)
-    const quint32 UBUF_SIZE = 256;
-    m_ubuf.reset(rhi->newBuffer(QRhiBuffer::Dynamic,QRhiBuffer::UniformBuffer, UBUF_SIZE));
+   // const quint32 UBUF_SIZE = 256;
+  //  m_ubuf.reset(rhi->newBuffer(QRhiBuffer::Dynamic,QRhiBuffer::UniformBuffer, UBUF_SIZE));
+   // m_ubuf->create();
+    const quint32 UBUF_SIZE = 256; // sizeof(Ubo) je ~288 bytů, takže potřebujeme 512
+    const quint32 UBUF_ALIGNED_SIZE = (sizeof(Ubo) + 255) & ~255; // Zarovnání na 256
+    m_ubuf.reset(rhi->newBuffer(QRhiBuffer::Dynamic, QRhiBuffer::UniformBuffer,UBUF_SIZE ));
     m_ubuf->create();
-
     // Shader resource bindings
     m_srb.reset(rhi->newShaderResourceBindings());
     m_srb->setBindings({
-        QRhiShaderResourceBinding::uniformBuffer(0,QRhiShaderResourceBinding::VertexStage, m_ubuf.get()),
+       // QRhiShaderResourceBinding::uniformBuffer(0,QRhiShaderResourceBinding::FragmentStage, m_ubuf.get()),
+        QRhiShaderResourceBinding::uniformBuffer(0,QRhiShaderResourceBinding::VertexStage | QRhiShaderResourceBinding::FragmentStage , m_ubuf.get()),
         QRhiShaderResourceBinding::sampledTexture(1,QRhiShaderResourceBinding::FragmentStage, texture, sampler)
     });
     m_srb->create();
@@ -57,8 +61,32 @@ void Cube::init(QRhi *rhi,QRhiTexture *texture,QRhiSampler *sampler,QRhiRenderPa
     m_pipeline->setRenderPassDescriptor(rp);
     m_pipeline->create();
 }
+void Cube::updateUniforms(const QMatrix4x4 &viewProjection, QRhiResourceUpdateBatch *u)
+{
 
+    QMatrix4x4 modelMatrix = transform.getModelMatrix();
+    QMatrix4x4 mvp = viewProjection * modelMatrix;
 
+    u->updateDynamicBuffer(m_ubuf.get(), 0, 64, mvp.constData());
+}
+// void Cube::updateUniforms(const QMatrix4x4 &view,
+//                           const QMatrix4x4 &projection,
+//                           const QMatrix4x4 &lightSpace,
+//                           const QVector3D &color,
+//                           float opacity,
+//                           QRhiResourceUpdateBatch *u)
+// {
+//     Ubo ubo;
+//     ubo.model = transform.getModelMatrix();
+//     ubo.view = view;
+//     ubo.projection = projection;
+//     ubo.lightSpace = lightSpace;
+//     ubo.color = QVector4D(color, 1.0f); // Konverze z QVector3D na QVector4D
+//     ubo.opacity = opacity;
+
+//     // Nahrajeme celou strukturu do uniformního bufferu
+//     u->updateDynamicBuffer(m_ubuf.get(), 0, sizeof(Ubo), &ubo);
+// }
 void Cube::setModelMatrix(const QMatrix4x4 &mvp, QRhiResourceUpdateBatch *u)
 {
     u->updateDynamicBuffer(m_ubuf.get(), 0, 64, mvp.constData());

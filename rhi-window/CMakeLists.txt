@@ -11,6 +11,10 @@ qt_add_executable(rhi-window
     cube.h
     cube.h cube.cpp
     camera.h camera.cpp
+    geometry.h
+    transform.h transform.cpp
+    shaders/light.vert
+    shaders/light.frag
 )
 
 set_target_properties(rhi-window PROPERTIES
@@ -48,6 +52,12 @@ set_source_files_properties("shaders/prebuild/mcolor.vert.qsb"
 set_source_files_properties("shaders/prebuild/mcolor.frag.qsb"
     PROPERTIES QT_RESOURCE_ALIAS "mcolor.frag.qsb"
 )
+set_source_files_properties("shaders/prebuild/light.vert.qsb"
+    PROPERTIES QT_RESOURCE_ALIAS "light.vert.qsb"
+)
+set_source_files_properties("shaders/prebuild/light.frag.qsb"
+    PROPERTIES QT_RESOURCE_ALIAS "light.frag.qsb"
+)
 qt_add_resources(rhi-window "rhi-window"
     PREFIX
         "/"
@@ -60,6 +70,8 @@ qt_add_resources(rhi-window "rhi-window"
         "shaders/prebuild/quad.frag.qsb"
         "shaders/prebuild/texture.vert.qsb"
         "shaders/prebuild/texture.frag.qsb"
+        "shaders/prebuild/light.vert.qsb"
+        "shaders/prebuild/light.frag.qsb"
         "shaders/color.vert"
         "shaders/color.frag"
         "shaders/mcolor.vert"
@@ -68,8 +80,11 @@ qt_add_resources(rhi-window "rhi-window"
         "shaders/quad.frag"
         "shaders/texture.frag"
         "shaders/texture.vert"
+        "shaders/light.frag"
+        "shaders/light.vert"
         "text.jpg"
         "../assets/textures/floor.jpg"
+        "../assets/textures/floor.png"
 )
 
 install(TARGETS rhi-window

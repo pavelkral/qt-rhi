@@ -118,9 +118,14 @@ void RhiWindow::init()
 
 #ifdef Q_OS_WIN
     if (m_graphicsApi == QRhi::D3D11) {
-        QRhiD3D11InitParams params;
-        params.enableDebugLayer = true;
-        m_rhi.reset(QRhi::create(QRhi::D3D11, &params));
+     QRhiD3D11InitParams params;
+       params.enableDebugLayer = true;
+       m_rhi.reset(QRhi::create(QRhi::D3D11, &params));
+     //   QRhiVulkanInitParams params;
+    //    params.inst = vulkanInstance();
+     //   params.window = this;
+     //   m_rhi.reset(QRhi::create(QRhi::Vulkan, &params));
+
     } else if (m_graphicsApi == QRhi::D3D12) {
         QRhiD3D12InitParams params;
         params.enableDebugLayer = true;
@@ -230,7 +235,7 @@ void HelloWindow::loadTexture(const QSize &, QRhiResourceUpdateBatch *u)
     if (m_texture)
         return;
 
-    QImage image(":/assets/textures/floor.jpg");
+    QImage image(":/assets/textures/floor.png");
     if (image.isNull()) {
         qWarning("Failed to load :/crate.png texture. Using 64x64 checker fallback.");
         image = QImage(64, 64, QImage::Format_RGBA8888);
@@ -265,11 +270,13 @@ void HelloWindow::customInit()
     QShader vs = getShader(":/texture.vert.qsb");
     QShader fs = getShader(":/texture.frag.qsb");
 
-    QShader vs1 = getShader(":/mcolor.vert.qsb");
-    QShader fs1 = getShader(":/mcolor.frag.qsb");
+    QShader vs1 = getShader(":/light.vert.qsb");
+    QShader fs1 = getShader(":/light.frag.qsb");
 
     m_cube1.init(m_rhi.get(), m_texture.get(), m_sampler.get(), m_rp.get(), vs, fs, m_initialUpdates);
     m_cube2.init(m_rhi.get(), m_texture.get(), m_sampler.get(), m_rp.get(), vs, fs, m_initialUpdates);
+    m_cube1.transform.position = QVector3D(-1.5f, 0, 0);
+    m_cube2.getTransform().position = QVector3D(1.5f, 0, 0);
     m_timer.start();
 }
 
@@ -290,27 +297,44 @@ void HelloWindow::customRender()
     m_rotation += 30.0f * m_dt;
 
     QMatrix4x4 view = m_camera.GetViewMatrix();
-
-    // Použít m_projection (dříve m_viewProjection) a novou view matici
     QMatrix4x4 viewProjection = m_projection * view;
-
     QRhiCommandBuffer *cb = m_sc->currentFrameCommandBuffer();
     const QSize outputSizeInPixels = m_sc->currentPixelSize();
 
-    QMatrix4x4 model1;
-    model1.translate(-1.5f, 0, 0);
-    model1.rotate(m_rotation, 0, 1, 0);
-    QMatrix4x4 mvp1 = viewProjection * model1;
-    m_cube1.setModelMatrix(mvp1, resourceUpdates);
+    m_cube1.getTransform().rotation.setY( m_cube1.getTransform().rotation.y() + 0.5f);
+   m_cube1.updateUniforms(viewProjection, resourceUpdates);
+    m_cube2.getTransform().rotation.setY(m_cube2.getTransform().rotation.y() + 0.5f);
 
     QMatrix4x4 model2;
     model2.translate(1.5f, 0, 0);
     model2.rotate(-m_rotation, 0, 1, 0);
     QMatrix4x4 mvp2 = viewProjection * model2;
-    m_cube2.setModelMatrix(mvp2, resourceUpdates);
+  //  m_cube2.setModelMatrix(mvp2, resourceUpdates);
+    m_cube2.updateUniforms(viewProjection, resourceUpdates);
+  //  m_cube2.updateUniforms(viewProjection, resourceUpdates);
+
+    QMatrix4x4 lightSpaceMatrix; // Získaná ze světla (pro stíny)
+    // ... výpočet lightSpaceMatrix ...
+    QVector3D objectColor(1.0f, 0.8f, 0.5f); // Oranžový nádech
+    float objectOpacity = 1.0f;
+
+    // 3. Zavoláte novou metodu se všemi parametry
+    // m_cube2.updateUniforms(view,
+    //                       viewProjection,
+    //                       lightSpaceMatrix,
+    //                       objectColor,
+    //                       objectOpacity,
+    //                       resourceUpdates);
+
+
+    // m_cube1.updateUniforms(view,
+    //                        viewProjection,
+    //                        lightSpaceMatrix,
+    //                        objectColor,
+    //                        objectOpacity,
+    //                        resourceUpdates);
 
     const QColor clearColor = QColor::fromRgbF(0.4f, 0.7f, 0.0f, 1.0f);
-
     cb->beginPass(m_sc->currentFrameRenderTarget(), clearColor, { 1.0f, 0 }, resourceUpdates);
     cb->setViewport({ 0, 0, float(outputSizeInPixels.width()), float(outputSizeInPixels.height()) });
 
