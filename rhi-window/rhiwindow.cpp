@@ -275,8 +275,8 @@ void HelloWindow::customInit()
     QShader fs1 = getShader(":/light.frag.qsb");
 
 
-    m_cube1.addVertAndInd(cubeVertices, cubeIndices);
-     m_cube2.addVertAndInd(planeVertices, planeIndices);
+    m_cube1.addVertAndInd(cubeVertices1, cubeIndices1);
+     m_cube2.addVertAndInd(planeVertices1, planeIndices1);
 
 
     m_cube1.init(m_rhi.get(), m_texture.get(), m_sampler.get(), m_rp.get(), vs, fs, m_initialUpdates);

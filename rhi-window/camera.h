@@ -5,7 +5,6 @@
 #include <QMatrix4x4>
 #include <QtMath>
 
-// Definuje možné směry pohybu kamery
 enum Camera_Movement {
     FORWARD,
     BACKWARD,
@@ -13,7 +12,6 @@ enum Camera_Movement {
     RIGHT
 };
 
-// Výchozí hodnoty kamery
 const float YAW         = -90.0f;
 const float PITCH       =  0.0f;
 const float SPEED       =  2.5f;
@@ -28,13 +26,12 @@ public:
     QVector3D Up;
     QVector3D Right;
     QVector3D WorldUp;
-    // Eulerov
+    // Euler
     float Yaw;
     float Pitch;
     float MovementSpeed;
     float MouseSensitivity;
 
-    // Konstruktor
     Camera(QVector3D position = QVector3D(0.0f, 0.0f, 0.0f), QVector3D up = QVector3D(0.0f, 1.0f, 0.0f), float yaw = YAW, float pitch = PITCH)
         : Front(QVector3D(0.0f, 0.0f, -1.0f)), MovementSpeed(SPEED), MouseSensitivity(SENSITIVITY)
     {
@@ -45,7 +42,6 @@ public:
         updateCameraVectors();
     }
 
-    // Vrací view matici vypočítanou pomocí Eulerových úhlů a LookAt matice
     QMatrix4x4 GetViewMatrix()
     {
         QMatrix4x4 view;
@@ -53,7 +49,6 @@ public:
         return view;
     }
 
-    // Zpracuje vstup z klávesnice
     void ProcessKeyboard(Camera_Movement direction, float deltaTime)
     {
         float velocity = MovementSpeed * deltaTime;
@@ -67,7 +62,6 @@ public:
             Position += Right * velocity;
     }
 
-    // Zpracuje pohyb myši
     void ProcessMouseMovement(float xoffset, float yoffset, bool constrainPitch = true)
     {
         xoffset *= MouseSensitivity;
@@ -76,7 +70,7 @@ public:
         Yaw   += xoffset;
         Pitch += yoffset;
 
-        // Omezení úhlu Pitch, aby se kamera nepřetočila
+        // prevent camera revert
         if (constrainPitch)
         {
             if (Pitch > 89.0f)
@@ -84,22 +78,20 @@ public:
             if (Pitch < -89.0f)
                 Pitch = -89.0f;
         }
-
-        // Aktualizace vektorů Front, Right a Up
         updateCameraVectors();
     }
 
 private:
-    // Přepočítá vektory kamery z aktualizovaných Eulerových úhlů
+    // vectors from euler
     void updateCameraVectors()
     {
-        // Vypočítá nový vektor Front
+        // vektor Front
         QVector3D front;
         front.setX(cos(qDegreesToRadians(Yaw)) * cos(qDegreesToRadians(Pitch)));
         front.setY(sin(qDegreesToRadians(Pitch)));
         front.setZ(sin(qDegreesToRadians(Yaw)) * cos(qDegreesToRadians(Pitch)));
         Front = front.normalized();
-        // Přepočítá vektor Right a Up
+        //  vektor Right a Up
         Right = QVector3D::crossProduct(Front, WorldUp).normalized();
         Up    = QVector3D::crossProduct(Right, Front).normalized();
     }

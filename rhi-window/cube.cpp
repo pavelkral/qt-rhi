@@ -56,14 +56,21 @@ void Cube::init(QRhi *rhi,QRhiTexture *texture,QRhiSampler *sampler,QRhiRenderPa
     });
 
     QRhiVertexInputLayout inputLayout;
+    // inputLayout.setBindings({
+    //     { 5 * sizeof(float) } // stride: pos(3) + uv(2)
+    // });
+    // inputLayout.setAttributes({
+    //     { 0, 0, QRhiVertexInputAttribute::Float3, 0 },
+    //     { 0, 1, QRhiVertexInputAttribute::Float2, 3 * sizeof(float) }
+    // });
     inputLayout.setBindings({
-        { 5 * sizeof(float) } // stride: pos(3) + uv(2)
+        { 8 * sizeof(float) } // stride: pos(3) + normal(3) + uv(2)
     });
     inputLayout.setAttributes({
-        { 0, 0, QRhiVertexInputAttribute::Float3, 0 },
-        { 0, 1, QRhiVertexInputAttribute::Float2, 3 * sizeof(float) }
+        { 0, 0, QRhiVertexInputAttribute::Float3, 0 },        // pos
+        { 0, 1, QRhiVertexInputAttribute::Float3, 3 * sizeof(float) },  // normal
+        { 0, 2, QRhiVertexInputAttribute::Float2, 6 * sizeof(float) }   // uv
     });
-
     m_pipeline->setVertexInputLayout(inputLayout);
     m_pipeline->setShaderResourceBindings(m_srb.get());
     m_pipeline->setRenderPassDescriptor(rp);
