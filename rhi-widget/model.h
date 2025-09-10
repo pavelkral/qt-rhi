@@ -1,5 +1,5 @@
-#ifndef CUBE_H
-#define CUBE_H
+#ifndef MODEL_H
+#define MODEL_H
 #pragma once
 #include <rhi/qrhi.h>
 #include <memory>

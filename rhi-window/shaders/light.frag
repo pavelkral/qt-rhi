@@ -13,7 +13,6 @@ layout(std140, binding = 0) uniform Ubo {
     vec4 lightPos;
     vec4 color;
     float opacity;
-    vec3 pad;
 } ubo;
 
 layout(binding = 1) uniform sampler2D sampler_tex;

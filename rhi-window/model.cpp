@@ -1,6 +1,6 @@
-#include "cube.h"
+#include "model.h"
 
-void Cube::init(QRhi *rhi,QRhiTexture *texture,QRhiSampler *sampler,QRhiRenderPassDescriptor *rp,
+void Model::init(QRhi *rhi,QRhiTexture *texture,QRhiSampler *sampler,QRhiRenderPassDescriptor *rp,
                 const QShader &vs,
                 const QShader &fs,
                 QRhiResourceUpdateBatch *u)
@@ -50,13 +50,24 @@ void Cube::init(QRhi *rhi,QRhiTexture *texture,QRhiSampler *sampler,QRhiRenderPa
         { 0, 1, QRhiVertexInputAttribute::Float3, 3 * sizeof(float) },  // normal
         { 0, 2, QRhiVertexInputAttribute::Float2, 6 * sizeof(float) }   // uv
     });
+   // m_pipeline->setCullMode(QRhiGraphicsPipeline::Back);
+    m_pipeline->setDepthTest(true);
+    m_pipeline->setDepthWrite(true);
+ //   m_pipeline->setDepthOp(QRhiGraphicsPipeline::LessOrEqual);
     m_pipeline->setVertexInputLayout(inputLayout);
     m_pipeline->setShaderResourceBindings(m_srb.get());
     m_pipeline->setRenderPassDescriptor(rp);
     m_pipeline->create();
 }
-void Cube::updateUniforms(const QMatrix4x4 &viewProjection, QRhiResourceUpdateBatch *u)
+void Model::updateUniforms(const QMatrix4x4 &viewProjection, QRhiResourceUpdateBatch *u)
 {
+
+    m_opacity += m_opacityDir * 0.005f;
+    if (m_opacity < 0.0f || m_opacity > 1.0f) {
+        m_opacityDir *= -1;
+        m_opacity = qBound(0.0f, m_opacity, 1.0f);
+    }
+    u->updateDynamicBuffer(m_ubuf.get(), 64, 4, &m_opacity);
 
     QMatrix4x4 modelMatrix = transform.getModelMatrix();
     QMatrix4x4 mvp = viewProjection * modelMatrix;
@@ -81,11 +92,11 @@ void Cube::updateUniforms(const QMatrix4x4 &viewProjection, QRhiResourceUpdateBa
 //     // Nahrajeme celou strukturu do uniformního bufferu
 //     u->updateDynamicBuffer(m_ubuf.get(), 0, sizeof(Ubo), &ubo);
 // }
-void Cube::setModelMatrix(const QMatrix4x4 &mvp, QRhiResourceUpdateBatch *u)
+void Model::setModelMatrix(const QMatrix4x4 &mvp, QRhiResourceUpdateBatch *u)
 {
     u->updateDynamicBuffer(m_ubuf.get(), 0, 64, mvp.constData());
 }
-void Cube::draw(QRhiCommandBuffer *cb)
+void Model::draw(QRhiCommandBuffer *cb)
 {
     cb->setGraphicsPipeline(m_pipeline.get());
     cb->setShaderResources(m_srb.get());

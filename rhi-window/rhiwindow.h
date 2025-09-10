@@ -5,7 +5,7 @@
 #define WINDOW_H
 
 #include "camera.h"
-#include "cube.h"
+#include "model.h"
 
 #include <QWindow>
 #include <QOffscreenSurface>
@@ -33,8 +33,8 @@ protected:
     bool m_hasSwapChain = false;
     QMatrix4x4 m_viewProjection;
     QMatrix4x4 m_projection;
-    Cube m_cube1;
-    Cube m_cube2;
+
+
 private:
     void init();
     void resizeSwapChain();
@@ -64,7 +64,9 @@ protected:
 private:
     void loadTexture(const QSize &pixelSize, QRhiResourceUpdateBatch *u);
     void updateCamera(float dt); // Funkce pro aktualizaci kamery každý frame
-
+    Model m_cube1;
+    Model m_cube2;
+    Model floor;
     Camera m_camera;
     QSet<int> m_pressedKeys;
     QPointF m_lastMousePos;

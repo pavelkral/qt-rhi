@@ -11,8 +11,8 @@ qt_add_executable(rhi-widget
     main.cpp
     cuberhiwidget.cpp
     cuberhiwidget.h
-    cube.cpp
-    cube.h
+    model.cpp
+    model.h
 
 )
 qt_add_resources(rhi-widget "rhi-widget"

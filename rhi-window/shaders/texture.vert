@@ -7,6 +7,7 @@ layout(location = 2) in vec2 inUV;
 
 layout(std140, binding = 0) uniform buf {
     mat4 mvp;
+    float opacity;
 };
 
 layout(location = 0) out vec2 vUV;

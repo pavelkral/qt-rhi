@@ -1,4 +1,4 @@
-#include "cube.h"
+#include "model.h"
 
 void Cube::init(QRhi *rhi,QRhiTexture *texture,QRhiSampler *sampler,QRhiRenderPassDescriptor *rp,
                 const QShader &vs,

@@ -8,8 +8,8 @@ qt_standard_project_setup()
 qt_add_executable(rhi-window
     main.cpp
     rhiwindow.cpp rhiwindow.h
-    cube.h
-    cube.h cube.cpp
+    model.h
+    model.h model.cpp
     camera.h camera.cpp
     geometry.h
     transform.h transform.cpp

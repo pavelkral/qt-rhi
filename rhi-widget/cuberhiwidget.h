@@ -8,7 +8,7 @@
 #include <QScopedPointer>
 #include <QImage>
 #include <rhi/qrhi.h>
-#include "cube.h"
+#include "model.h"
 
 class CubeRhiWidget : public QRhiWidget {
     Q_OBJECT

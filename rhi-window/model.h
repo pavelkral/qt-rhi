@@ -1,5 +1,5 @@
-#ifndef CUBE_H
-#define CUBE_H
+#ifndef MODEL_H
+#define MODEL_H
 
 #include "transform.h"
 #include <rhi/qrhi.h>
@@ -18,7 +18,7 @@ struct Ubo {
     float opacity;
 };
 
-class Cube {
+class Model {
 
 public:
 
@@ -56,10 +56,11 @@ private:
     std::unique_ptr<QRhiBuffer> m_ubuf;
     std::unique_ptr<QRhiShaderResourceBindings> m_srb;
     std::unique_ptr<QRhiGraphicsPipeline> m_pipeline;
-
+    float m_opacity = 1;
+    int m_opacityDir = -1;
     int m_indexCount = 0;
     QVector<float> m_vert;
     QVector<quint16> m_ind;
 };
 
-#endif // CUBE_H
+#endif // MODEL_H

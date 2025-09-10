@@ -145,8 +145,7 @@ void RhiWindow::init()
         qFatal("Failed to create RHI backend");
 
     m_sc.reset(m_rhi->newSwapChain());
-    m_ds.reset(m_rhi->newRenderBuffer(QRhiRenderBuffer::DepthStencil,QSize(),1,
-                                      QRhiRenderBuffer::UsedWithSwapChainOnly));
+    m_ds.reset(m_rhi->newRenderBuffer(QRhiRenderBuffer::DepthStencil,QSize(),1,QRhiRenderBuffer::UsedWithSwapChainOnly));
     m_sc->setWindow(this);
     m_sc->setDepthStencil(m_ds.get());
     m_rp.reset(m_sc->newCompatibleRenderPassDescriptor());
@@ -270,17 +269,22 @@ void HelloWindow::customInit()
     QShader vs1 = getShader(":/light.vert.qsb");
     QShader fs1 = getShader(":/light.frag.qsb");
 
+    QShader vs2 = getShader(":/mcolor.vert.qsb");
+    QShader fs2 = getShader(":/mcolor.frag.qsb");
 
     m_cube1.addVertAndInd(cubeVertices1, cubeIndices1);
-     m_cube2.addVertAndInd(planeVertices1, planeIndices1);
-
+    m_cube2.addVertAndInd(cubeVertices1, cubeIndices1);
+    floor.addVertAndInd(indexedPlaneVertices ,indexedPlaneIndices );
 
     m_cube1.init(m_rhi.get(), m_texture.get(), m_sampler.get(), m_rp.get(), vs, fs, m_initialUpdates);
-    m_cube2.init(m_rhi.get(), m_texture.get(), m_sampler.get(), m_rp.get(), vs, fs, m_initialUpdates);
-
+    m_cube2.init(m_rhi.get(), m_texture.get(), m_sampler.get(), m_rp.get(), vs2, fs2, m_initialUpdates);
+    floor.init(m_rhi.get(), m_texture.get(), m_sampler.get(), m_rp.get(), vs, fs, m_initialUpdates);
+    floor.transform.position = QVector3D(0, -1.5f, 0);
+    floor.transform.scale = QVector3D(10, 10, 10);
+    floor.transform.rotation.setX( 90.0f);
     m_cube1.transform.position = QVector3D(-1.5f, 0, 0);
     m_cube2.transform.position = QVector3D(1.5f, 0, 0);
-
+    m_cube2.transform.scale = QVector3D(0.5f,0.5f, 0.5f);
 
     m_timer.start();
 }
@@ -305,23 +309,17 @@ void HelloWindow::customRender()
     QMatrix4x4 viewProjection = m_projection * view;
     QRhiCommandBuffer *cb = m_sc->currentFrameCommandBuffer();
     const QSize outputSizeInPixels = m_sc->currentPixelSize();
-
-    m_cube1.transform.rotation.setY( m_cube1.transform.rotation.y() + 0.5f);
-    m_cube1.updateUniforms(viewProjection, resourceUpdates);
-
-    m_cube2.transform.rotation.setY(m_cube2.transform.rotation.y() + 0.5f); m_cube2.updateUniforms(viewProjection, resourceUpdates);
-
-  //  QMatrix4x4 model2;
-  //  model2.translate(1.5f, 0, 0);
-  //  model2.rotate(-m_rotation, 0, 1, 0);
-  //  QMatrix4x4 mvp2 = viewProjection * model2;
-  //  m_cube2.setModelMatrix(mvp2, resourceUpdates);
-
     QMatrix4x4 lightSpaceMatrix;
     QVector3D objectColor(1.0f, 0.8f, 0.5f);
     float objectOpacity = 1.0f;
 
-    // 3. Zavoláte novou metodu se všemi parametry
+    m_cube1.transform.rotation.setY( m_cube1.transform.rotation.y() + 0.5f);
+    m_cube2.transform.rotation.setY(m_cube2.transform.rotation.y() + 0.5f);
+
+    m_cube1.updateUniforms(viewProjection, resourceUpdates);
+    m_cube2.updateUniforms(viewProjection, resourceUpdates);
+    floor.updateUniforms(viewProjection, resourceUpdates);
+
     // m_cube2.updateUniforms(view,
     //                       viewProjection,
     //                       lightSpaceMatrix,
@@ -330,17 +328,11 @@ void HelloWindow::customRender()
     //                       resourceUpdates);
 
 
-    // m_cube1.updateUniforms(view,
-    //                        viewProjection,
-    //                        lightSpaceMatrix,
-    //                        objectColor,
-    //                        objectOpacity,
-    //                        resourceUpdates);
-
     const QColor clearColor = QColor::fromRgbF(0.4f, 0.7f, 0.0f, 1.0f);
     cb->beginPass(m_sc->currentFrameRenderTarget(), clearColor, { 1.0f, 0 }, resourceUpdates);
     cb->setViewport({ 0, 0, float(outputSizeInPixels.width()), float(outputSizeInPixels.height()) });
 
+    floor.draw(cb);
     m_cube1.draw(cb);
     m_cube2.draw(cb);
 
@@ -371,7 +363,7 @@ void HelloWindow::mouseMoveEvent(QMouseEvent *e)
     m_lastMousePos = e->position();
     m_camera.ProcessMouseMovement(xoffset, yoffset);
 
-    // Volitelně: Vracení kurzoru do středu okna pro neomezený pohyb
+    // center cursor
     // QPoint center = mapToGlobal(rect().center());
     // QCursor::setPos(center);
     // m_lastMousePos = mapFromGlobal(center);
