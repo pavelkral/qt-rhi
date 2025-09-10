@@ -21,7 +21,6 @@ layout(std140, binding = 0) uniform Ubo {
 void main() {
     vec4 worldPos = ubo.model * vec4(in_pos, 1.0);
     gl_Position = ubo.projection * ubo.view * worldPos;
-
     out_uv = in_uv;
     out_fragpos = worldPos.xyz;
     out_normal = mat3(transpose(inverse(ubo.model))) * in_normal;

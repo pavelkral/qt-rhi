@@ -11,7 +11,6 @@
 
 //================================== RhiWindow ==================================
 
-
 RhiWindow::RhiWindow(QRhi::Implementation graphicsApi)
     : m_graphicsApi(graphicsApi)
 {
@@ -259,8 +258,9 @@ void HelloWindow::customInit()
 
     loadTexture(QSize(), m_initialUpdates);
 
+
     m_sampler.reset(m_rhi->newSampler(QRhiSampler::Linear, QRhiSampler::Linear, QRhiSampler::None,
-                                      QRhiSampler::ClampToEdge, QRhiSampler::ClampToEdge));
+                                      QRhiSampler::Repeat, QRhiSampler::Repeat));
     m_sampler->create();
 
     QShader vs = getShader(":/texture.vert.qsb");

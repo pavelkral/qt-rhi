@@ -22,7 +22,6 @@ void Model::init(QRhi *rhi,QRhiTexture *texture,QRhiSampler *sampler,QRhiRenderP
 
     m_srb.reset(rhi->newShaderResourceBindings());
     m_srb->setBindings({
-       // QRhiShaderResourceBinding::uniformBuffer(0,QRhiShaderResourceBinding::FragmentStage, m_ubuf.get()),
         QRhiShaderResourceBinding::uniformBuffer(0,QRhiShaderResourceBinding::VertexStage | QRhiShaderResourceBinding::FragmentStage , m_ubuf.get()),
         QRhiShaderResourceBinding::sampledTexture(1,QRhiShaderResourceBinding::FragmentStage, texture, sampler)
     });

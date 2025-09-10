@@ -13,8 +13,6 @@ qt_add_executable(rhi-window
     camera.h camera.cpp
     geometry.h
     transform.h transform.cpp
-    shaders/light.vert
-    shaders/light.frag
 )
 
 set_target_properties(rhi-window PROPERTIES
@@ -82,7 +80,6 @@ qt_add_resources(rhi-window "rhi-window"
         "shaders/texture.vert"
         "shaders/light.frag"
         "shaders/light.vert"
-        "text.jpg"
         "../assets/textures/floor.jpg"
         "../assets/textures/floor.png"
 )

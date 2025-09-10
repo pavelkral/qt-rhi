@@ -17,7 +17,6 @@ void Cube::init(QRhi *rhi,QRhiTexture *texture,QRhiSampler *sampler,QRhiRenderPa
 
     m_indexCount = sizeof(m_indices) / sizeof(m_indices[0]);
 
-    // Uniform buffer (⚡ musí být 256 bajtů kvůli D3D12 CBV alignment)
     const quint32 UBUF_SIZE = 256;
     m_ubuf.reset(rhi->newBuffer(QRhiBuffer::Dynamic,QRhiBuffer::UniformBuffer, UBUF_SIZE));
     m_ubuf->create();
@@ -30,12 +29,11 @@ void Cube::init(QRhi *rhi,QRhiTexture *texture,QRhiSampler *sampler,QRhiRenderPa
     });
     m_srb->create();
 
-    // Graphics pipeline
+
     m_pipeline.reset(rhi->newGraphicsPipeline());
     m_pipeline->setDepthTest(true);
     m_pipeline->setDepthWrite(true);
 
-    // ⚡ DŮLEŽITÉ pro D3D12
     m_pipeline->setTopology(QRhiGraphicsPipeline::Triangles);
 
     m_pipeline->setShaderStages({
