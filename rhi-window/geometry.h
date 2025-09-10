@@ -4,8 +4,6 @@
 #include <QVector>
 #include <qtypes.h>
 
-
-
  QVector<float> cubeVertices1 = {
      // pos                 // normal       // uv
      // Front (+Z)

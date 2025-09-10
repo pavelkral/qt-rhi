@@ -5,35 +5,21 @@ void Cube::init(QRhi *rhi,QRhiTexture *texture,QRhiSampler *sampler,QRhiRenderPa
                 const QShader &fs,
                 QRhiResourceUpdateBatch *u)
 {
-    // Vertex buffer
- //   m_vbuf.reset(rhi->newBuffer(QRhiBuffer::Immutable,QRhiBuffer::VertexBuffer,sizeof(m_vertices)));
-  //  m_vbuf->create();
- //   u->uploadStaticBuffer(m_vbuf.get(), m_vertices);
-
-    // Index buffer
-  //  m_ibuf.reset(rhi->newBuffer(QRhiBuffer::Immutable,QRhiBuffer::IndexBuffer,sizeof(m_indices)));
- //   m_ibuf->create();
-  //  u->uploadStaticBuffer(m_ibuf.get(), m_indices);
-
- //   m_indexCount = sizeof(m_indices) / sizeof(m_indices[0]);
-
 
     m_vbuf.reset(rhi->newBuffer(QRhiBuffer::Immutable, QRhiBuffer::VertexBuffer, m_vert.size() * sizeof(float)));
     m_vbuf->create();
     u->uploadStaticBuffer(m_vbuf.get(), m_vert.constData());
 
-    // Index buffer
     m_ibuf.reset(rhi->newBuffer(QRhiBuffer::Immutable, QRhiBuffer::IndexBuffer, m_ind.size() * sizeof(quint16)));
     m_ibuf->create();
     u->uploadStaticBuffer(m_ibuf.get(), m_ind.constData());
 
     m_indexCount = m_ind.size();
 
-
     const quint32 UBUF_SIZE = 256;
     m_ubuf.reset(rhi->newBuffer(QRhiBuffer::Dynamic, QRhiBuffer::UniformBuffer,UBUF_SIZE ));
     m_ubuf->create();
-    // Shader resource bindings
+
     m_srb.reset(rhi->newShaderResourceBindings());
     m_srb->setBindings({
        // QRhiShaderResourceBinding::uniformBuffer(0,QRhiShaderResourceBinding::FragmentStage, m_ubuf.get()),
@@ -42,12 +28,11 @@ void Cube::init(QRhi *rhi,QRhiTexture *texture,QRhiSampler *sampler,QRhiRenderPa
     });
     m_srb->create();
 
-    // Graphics pipeline
     m_pipeline.reset(rhi->newGraphicsPipeline());
     m_pipeline->setDepthTest(true);
     m_pipeline->setDepthWrite(true);
 
-    // ⚡  D3D12
+    // D3D12
     m_pipeline->setTopology(QRhiGraphicsPipeline::Triangles);
 
     m_pipeline->setShaderStages({
@@ -56,13 +41,7 @@ void Cube::init(QRhi *rhi,QRhiTexture *texture,QRhiSampler *sampler,QRhiRenderPa
     });
 
     QRhiVertexInputLayout inputLayout;
-    // inputLayout.setBindings({
-    //     { 5 * sizeof(float) } // stride: pos(3) + uv(2)
-    // });
-    // inputLayout.setAttributes({
-    //     { 0, 0, QRhiVertexInputAttribute::Float3, 0 },
-    //     { 0, 1, QRhiVertexInputAttribute::Float2, 3 * sizeof(float) }
-    // });
+
     inputLayout.setBindings({
         { 8 * sizeof(float) } // stride: pos(3) + normal(3) + uv(2)
     });

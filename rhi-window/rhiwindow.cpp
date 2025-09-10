@@ -164,9 +164,7 @@ void RhiWindow::resizeSwapChain()
   //  m_viewProjection.perspective(45.0f, outputSize.width() / (float) outputSize.height(), 0.01f, 1000.0f);
   //  m_viewProjection.translate(0, 0, -4);
     //const QSize outputSize = m_sc->currentPixelSize();
-    // Přejmenujeme m_viewProjection na m_projection
-    m_projection = m_rhi->clipSpaceCorrMatrix();
-    m_projection.perspective(45.0f, outputSize.width() / (float) outputSize.height(), 0.1f, 100.0f);
+    m_projection.perspective(45.0f, outputSize.width() / (float) outputSize.height(), 0.1f, 1000.0f);
     // Odstraníme .translate(0, 0, -4); protože pozici řeší kamera
 }
 
@@ -182,16 +180,14 @@ void RhiWindow::render()
 {
     if (!m_hasSwapChain || m_notExposed)
         return;
-    //! [render-precheck]
-    //! [render-resize]
+
     if (m_sc->currentPixelSize() != m_sc->surfacePixelSize() || m_newlyExposed) {
         resizeSwapChain();
         if (!m_hasSwapChain)
             return;
         m_newlyExposed = false;
     }
-    //! [render-resize]
-    //! [beginframe]
+
     QRhi::FrameOpResult result = m_rhi->beginFrame(m_sc.get());
     if (result == QRhi::FrameOpSwapChainOutOfDate) {
         resizeSwapChain();
@@ -250,7 +246,7 @@ void HelloWindow::loadTexture(const QSize &, QRhiResourceUpdateBatch *u)
     }
 
     if (m_rhi->isYUpInNDC())
-        image = image.mirrored(); // aby UV nebylo vzhůru nohama na některých backendech
+        image = image.mirrored(); // UV invert
    // .flipped(Qt::Horizontal | Qt::Vertical);
     m_texture.reset(m_rhi->newTexture(QRhiTexture::RGBA8, image.size()));
     m_texture->create();
@@ -315,17 +311,14 @@ void HelloWindow::customRender()
 
     m_cube2.transform.rotation.setY(m_cube2.transform.rotation.y() + 0.5f); m_cube2.updateUniforms(viewProjection, resourceUpdates);
 
-
   //  QMatrix4x4 model2;
   //  model2.translate(1.5f, 0, 0);
   //  model2.rotate(-m_rotation, 0, 1, 0);
   //  QMatrix4x4 mvp2 = viewProjection * model2;
   //  m_cube2.setModelMatrix(mvp2, resourceUpdates);
 
-
-    QMatrix4x4 lightSpaceMatrix; // Získaná ze světla (pro stíny)
-    // ... výpočet lightSpaceMatrix ...
-    QVector3D objectColor(1.0f, 0.8f, 0.5f); // Oranžový nádech
+    QMatrix4x4 lightSpaceMatrix;
+    QVector3D objectColor(1.0f, 0.8f, 0.5f);
     float objectOpacity = 1.0f;
 
     // 3. Zavoláte novou metodu se všemi parametry
