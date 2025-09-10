@@ -272,12 +272,18 @@ void HelloWindow::customInit()
     QShader vs2 = getShader(":/mcolor.vert.qsb");
     QShader fs2 = getShader(":/mcolor.frag.qsb");
 
+    QVector<float> sphereVertices;
+    QVector<quint16> sphereIndices;
+
+    generateSphere(0.5f, 32, 64, sphereVertices, sphereIndices);
+
+
     m_cube1.addVertAndInd(cubeVertices1, cubeIndices1);
-    m_cube2.addVertAndInd(cubeVertices1, cubeIndices1);
+    m_cube2.addVertAndInd(sphereVertices, sphereIndices);
     floor.addVertAndInd(indexedPlaneVertices ,indexedPlaneIndices );
 
     m_cube1.init(m_rhi.get(), m_texture.get(), m_sampler.get(), m_rp.get(), vs, fs, m_initialUpdates);
-    m_cube2.init(m_rhi.get(), m_texture.get(), m_sampler.get(), m_rp.get(), vs2, fs2, m_initialUpdates);
+    m_cube2.init(m_rhi.get(), m_texture.get(), m_sampler.get(), m_rp.get(), vs, fs, m_initialUpdates);
     floor.init(m_rhi.get(), m_texture.get(), m_sampler.get(), m_rp.get(), vs, fs, m_initialUpdates);
     floor.transform.position = QVector3D(0, -1.5f, 0);
     floor.transform.scale = QVector3D(10, 10, 10);
