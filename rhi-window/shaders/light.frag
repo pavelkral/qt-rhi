@@ -8,7 +8,7 @@ layout(location = 0) out vec4 out_color;
 
 layout(std140, binding = 0) uniform Ubo {
     mat4 mvp;
-   vec4 opacity;
+    vec4 opacity;
     mat4 model;
     mat4 view;
     mat4 projection;
@@ -24,7 +24,7 @@ void main() {
     vec3 lightDir = normalize(ubo.lightPos.xyz - in_fragpos);
 
     // Ambient
-    vec3 ambient = 0.2 * ubo.color.rgb;
+    vec3 ambient = 0.3 * ubo.color.rgb;
 
     // Diffuse
     float diff = max(dot(norm, lightDir), 0.0);

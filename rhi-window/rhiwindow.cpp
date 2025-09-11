@@ -279,7 +279,7 @@ void HelloWindow::customInit()
     m_cube2.addVertAndInd(sphereVertices, sphereIndices);
     floor.addVertAndInd(indexedPlaneVertices ,indexedPlaneIndices );
 
-    m_cube1.init(m_rhi.get(), m_texture.get(), m_sampler.get(), m_rp.get(), vs1, fs1, m_initialUpdates);
+    m_cube1.init(m_rhi.get(), m_texture.get(), m_sampler.get(), m_rp.get(), vs, fs, m_initialUpdates);
     m_cube2.init(m_rhi.get(), m_texture.get(), m_sampler.get(), m_rp.get(), vs1, fs1, m_initialUpdates);
     floor.init(m_rhi.get(), m_texture.get(), m_sampler.get(), m_rp.get(), vs1, fs1, m_initialUpdates);
 
@@ -313,22 +313,20 @@ void HelloWindow::customRender()
     }
     m_rotation += 30.0f * m_dt;
 
-    QMatrix4x4 view = m_camera.GetViewMatrix();
-    QMatrix4x4 viewProjection = m_projection * view;
     QRhiCommandBuffer *cb = m_sc->currentFrameCommandBuffer();
-    const QSize outputSizeInPixels = m_sc->currentPixelSize();
+
+    QMatrix4x4 view = m_camera.GetViewMatrix();
     QMatrix4x4 lightSpaceMatrix;
     QVector3D lightColor(1.0f, 0.8f, 0.5f);
     float objectOpacity = 1.0f;
 
     m_cube1.transform.rotation.setY( m_cube1.transform.rotation.y() + 0.5f);
     m_cube2.transform.rotation.setY(m_cube2.transform.rotation.y() + 0.5f);
-
-     m_cube1.updateUbo(view,m_projection,lightSpaceMatrix,lightColor,m_opacity,resourceUpdates);
+    m_cube1.updateUbo(view,m_projection,lightSpaceMatrix,lightColor,m_opacity,resourceUpdates);
     floor.updateUbo(view,m_projection,lightSpaceMatrix,lightColor,m_opacity,resourceUpdates);
-     m_cube2.updateUbo(view,m_projection,lightSpaceMatrix,lightColor,m_opacity,resourceUpdates);
+    m_cube2.updateUbo(view,m_projection,lightSpaceMatrix,lightColor,m_opacity,resourceUpdates);
 
-
+    const QSize outputSizeInPixels = m_sc->currentPixelSize();
     const QColor clearColor = QColor::fromRgbF(0.4f, 0.7f, 0.0f, 1.0f);
     cb->beginPass(m_sc->currentFrameRenderTarget(), clearColor, { 1.0f, 0 }, resourceUpdates);
     cb->setViewport({ 0, 0, float(outputSizeInPixels.width()), float(outputSizeInPixels.height()) });
