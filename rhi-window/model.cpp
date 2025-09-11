@@ -92,31 +92,25 @@ void Model::updateUbo(const QMatrix4x4 &view,
 
    //  qDebug() << "--- UBO Debug Information ---";
    //  qDebug() << "Size of UBO struct:" << sizeof(Ubo) << "bytes";
-
    //  qDebug() << "\n## Data Member: mvp (Model-View-Projection Matrix)";
    //  qDebug() << "Type: QMatrix4x4, Size:" << sizeof(QMatrix4x4) << "bytes";
    //  qDebug() << "Type const: QMatrix4x4, Size:" << sizeof(ubo.mvp.constData()) << "bytes";
-
    //  qDebug() << "\n## Data Member: opacity";
    //  qDebug() << "Type: float, Size:" << sizeof(float) << "bytes";
    //  qDebug() << "Type const: float, Size:" << sizeof(ubo.opacity) << "bytes";
-
    //  qDebug() << "\n## Data Member: lightPos (Light Position)";
    //  qDebug() << "Type: QVector4D, Size:" << sizeof(QVector4D) << "bytes";
    //  qDebug() << "Type const: QVector4D, Size:" << sizeof(ubo.lightPos) << "bytes";
-
-   // // qDebug() << "Value:" << ubo.color;
    //  qDebug() << "--- End of UBO Debug ---";
 
-    u->updateDynamicBuffer(m_ubuf.get(), 0, sizeof(Ubo), &ubo);
-     u->updateDynamicBuffer(m_ubuf.get(), 0,   64, ubo.mvp.constData());                        // mvp
-     u->updateDynamicBuffer(m_ubuf.get(), 64,  16, reinterpret_cast<const float*>(&ubo.opacity)); // opacity
-     u->updateDynamicBuffer(m_ubuf.get(), 80,  64, ubo.model.constData());                      // model
-     u->updateDynamicBuffer(m_ubuf.get(), 144, 64, ubo.view.constData());                       // view
-     u->updateDynamicBuffer(m_ubuf.get(), 208, 64, ubo.projection.constData());                 // projection
-     u->updateDynamicBuffer(m_ubuf.get(), 272, 64, ubo.lightSpace.constData());                 // lightSpace
-     u->updateDynamicBuffer(m_ubuf.get(), 336, 16, reinterpret_cast<const float*>(&ubo.lightPos)); // lightPos
-     u->updateDynamicBuffer(m_ubuf.get(), 352, 16, reinterpret_cast<const float*>(&ubo.color));    // color
+     u->updateDynamicBuffer(m_ubuf.get(), 0,   64, ubo.mvp.constData());
+     u->updateDynamicBuffer(m_ubuf.get(), 64,  16, reinterpret_cast<const float*>(&ubo.opacity));
+     u->updateDynamicBuffer(m_ubuf.get(), 80,  64, ubo.model.constData());
+     u->updateDynamicBuffer(m_ubuf.get(), 144, 64, ubo.view.constData());
+     u->updateDynamicBuffer(m_ubuf.get(), 208, 64, ubo.projection.constData());
+     u->updateDynamicBuffer(m_ubuf.get(), 272, 64, ubo.lightSpace.constData());
+     u->updateDynamicBuffer(m_ubuf.get(), 336, 16, reinterpret_cast<const float*>(&ubo.lightPos));
+     u->updateDynamicBuffer(m_ubuf.get(), 352, 16, reinterpret_cast<const float*>(&ubo.color));
 
 }
 void Model::setModelMatrix(const QMatrix4x4 &mvp, QRhiResourceUpdateBatch *u)

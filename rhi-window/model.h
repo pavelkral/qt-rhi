@@ -11,7 +11,7 @@
 
 struct Ubo {
     QMatrix4x4 mvp;         // 0–63
-    QVector4D opacity;      // 64–79  (x = skutečná opacity)
+    QVector4D opacity;      // 64–79
     QMatrix4x4 model;       // 80–143
     QMatrix4x4 view;        // 144–207
     QMatrix4x4 projection;  // 208–271
@@ -31,6 +31,7 @@ public:
               const QShader &vs,
               const QShader &fs,
               QRhiResourceUpdateBatch *u);
+
     void addVertAndInd(const QVector<float> &vertices, const QVector<quint16> &indices) {
         m_vert = vertices;
         m_ind = indices;

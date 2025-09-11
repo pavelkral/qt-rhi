@@ -159,11 +159,8 @@ void RhiWindow::resizeSwapChain()
 
     const QSize outputSize = m_sc->currentPixelSize();
   //  m_viewProjection = m_rhi->clipSpaceCorrMatrix();
-  //  m_viewProjection.perspective(45.0f, outputSize.width() / (float) outputSize.height(), 0.01f, 1000.0f);
-  //  m_viewProjection.translate(0, 0, -4);
-    //const QSize outputSize = m_sc->currentPixelSize();
     m_projection.perspective(45.0f, outputSize.width() / (float) outputSize.height(), 0.1f, 1000.0f);
-    // Odstraníme .translate(0, 0, -4); protože pozici řeší kamera
+
 }
 
 void RhiWindow::releaseSwapChain()
@@ -285,6 +282,7 @@ void HelloWindow::customInit()
     m_cube1.init(m_rhi.get(), m_texture.get(), m_sampler.get(), m_rp.get(), vs1, fs1, m_initialUpdates);
     m_cube2.init(m_rhi.get(), m_texture.get(), m_sampler.get(), m_rp.get(), vs1, fs1, m_initialUpdates);
     floor.init(m_rhi.get(), m_texture.get(), m_sampler.get(), m_rp.get(), vs1, fs1, m_initialUpdates);
+
     floor.transform.position = QVector3D(0, -1.5f, 0);
     floor.transform.scale = QVector3D(10, 10, 10);
     floor.transform.rotation.setX( 90.0f);
