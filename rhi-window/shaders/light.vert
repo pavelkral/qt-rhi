@@ -8,14 +8,16 @@ layout(location = 0) out vec2 out_uv;
 layout(location = 1) out vec3 out_normal;
 layout(location = 2) out vec3 out_fragpos;
 
-// Uniformní blok musí odpovídat C++ struktuře Cube::Ubo
+
 layout(std140, binding = 0) uniform Ubo {
+    mat4 mvp;
+    vec4 opacity;
     mat4 model;
     mat4 view;
     mat4 projection;
+    mat4 lightSpace;
     vec4 lightPos;
     vec4 color;
-    float opacity;
 } ubo;
 
 void main() {

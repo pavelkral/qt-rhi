@@ -5,7 +5,7 @@ layout(location = 0) out vec4 fragColor;
 
 layout(std140, binding = 0) uniform buf {
     mat4 mvp;
-    float opacity;
+    vec4 opacity;
 };
 
 vec3 mcolor = vec3(1.0, 0.0, 0.0);
@@ -13,5 +13,5 @@ vec3 mcolor = vec3(1.0, 0.0, 0.0);
 void main()
 {
 
-    fragColor = vec4(mcolor * opacity, opacity);
+    fragColor = vec4(mcolor * opacity.x, opacity.x);
 }

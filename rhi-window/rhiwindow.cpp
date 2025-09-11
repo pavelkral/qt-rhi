@@ -282,9 +282,9 @@ void HelloWindow::customInit()
     m_cube2.addVertAndInd(sphereVertices, sphereIndices);
     floor.addVertAndInd(indexedPlaneVertices ,indexedPlaneIndices );
 
-    m_cube1.init(m_rhi.get(), m_texture.get(), m_sampler.get(), m_rp.get(), vs, fs, m_initialUpdates);
-    m_cube2.init(m_rhi.get(), m_texture.get(), m_sampler.get(), m_rp.get(), vs, fs, m_initialUpdates);
-    floor.init(m_rhi.get(), m_texture.get(), m_sampler.get(), m_rp.get(), vs, fs, m_initialUpdates);
+    m_cube1.init(m_rhi.get(), m_texture.get(), m_sampler.get(), m_rp.get(), vs1, fs1, m_initialUpdates);
+    m_cube2.init(m_rhi.get(), m_texture.get(), m_sampler.get(), m_rp.get(), vs1, fs1, m_initialUpdates);
+    floor.init(m_rhi.get(), m_texture.get(), m_sampler.get(), m_rp.get(), vs1, fs1, m_initialUpdates);
     floor.transform.position = QVector3D(0, -1.5f, 0);
     floor.transform.scale = QVector3D(10, 10, 10);
     floor.transform.rotation.setX( 90.0f);
@@ -308,7 +308,11 @@ void HelloWindow::customRender()
         m_initialUpdates->release();
         m_initialUpdates = nullptr;
     }
-
+    m_opacity += m_opacityDir * 0.005f;
+    if (m_opacity < 0.0f || m_opacity > 1.0f) {
+        m_opacityDir *= -1;
+        m_opacity = qBound(0.0f, m_opacity, 1.0f);
+    }
     m_rotation += 30.0f * m_dt;
 
     QMatrix4x4 view = m_camera.GetViewMatrix();
@@ -316,22 +320,15 @@ void HelloWindow::customRender()
     QRhiCommandBuffer *cb = m_sc->currentFrameCommandBuffer();
     const QSize outputSizeInPixels = m_sc->currentPixelSize();
     QMatrix4x4 lightSpaceMatrix;
-    QVector3D objectColor(1.0f, 0.8f, 0.5f);
+    QVector3D lightColor(1.0f, 0.8f, 0.5f);
     float objectOpacity = 1.0f;
 
     m_cube1.transform.rotation.setY( m_cube1.transform.rotation.y() + 0.5f);
     m_cube2.transform.rotation.setY(m_cube2.transform.rotation.y() + 0.5f);
 
-    m_cube1.updateUniforms(viewProjection, resourceUpdates);
-    m_cube2.updateUniforms(viewProjection, resourceUpdates);
-    floor.updateUniforms(viewProjection, resourceUpdates);
-
-    // m_cube2.updateUniforms(view,
-    //                       viewProjection,
-    //                       lightSpaceMatrix,
-    //                       objectColor,
-    //                       objectOpacity,
-    //                       resourceUpdates);
+     m_cube1.updateUbo(view,m_projection,lightSpaceMatrix,lightColor,m_opacity,resourceUpdates);
+    floor.updateUbo(view,m_projection,lightSpaceMatrix,lightColor,m_opacity,resourceUpdates);
+     m_cube2.updateUbo(view,m_projection,lightSpaceMatrix,lightColor,m_opacity,resourceUpdates);
 
 
     const QColor clearColor = QColor::fromRgbF(0.4f, 0.7f, 0.0f, 1.0f);

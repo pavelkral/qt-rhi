@@ -10,12 +10,14 @@
 
 
 struct Ubo {
-    QMatrix4x4 model;
-    QMatrix4x4 view;
-    QMatrix4x4 projection;
-    QMatrix4x4 lightSpace;
-    QVector4D color;
-    float opacity;
+    QMatrix4x4 mvp;         // 0–63
+    QVector4D opacity;      // 64–79  (x = skutečná opacity)
+    QMatrix4x4 model;       // 80–143
+    QMatrix4x4 view;        // 144–207
+    QMatrix4x4 projection;  // 208–271
+    QMatrix4x4 lightSpace;  // 272–335
+    QVector4D lightPos;     // 336–351
+    QVector4D color;        // 352–367
 };
 
 class Model {
@@ -37,14 +39,14 @@ public:
     void setModelMatrix(const QMatrix4x4 &mvp, QRhiResourceUpdateBatch *u);
     void draw(QRhiCommandBuffer *cb);
     Transform transform;
-    void updateUniforms(const QMatrix4x4 &viewProjection, QRhiResourceUpdateBatch *u);
+    void updateUniforms(const QMatrix4x4 &viewProjection,float opacity, QRhiResourceUpdateBatch *u);
 
-    // void updateUniforms(const QMatrix4x4 &view,
-    //                     const QMatrix4x4 &projection,
-    //                     const QMatrix4x4 &lightSpace,
-    //                     const QVector3D &color,
-    //                     float opacity,
-    //                     QRhiResourceUpdateBatch *u);
+    void updateUbo(const QMatrix4x4 &view,
+                        const QMatrix4x4 &projection,
+                        const QMatrix4x4 &lightSpace,
+                        const QVector3D &color,
+                        float opacity,
+                        QRhiResourceUpdateBatch *u);
 
     Transform &getTransform() { return transform; }
 
@@ -56,6 +58,7 @@ private:
     std::unique_ptr<QRhiBuffer> m_ubuf;
     std::unique_ptr<QRhiShaderResourceBindings> m_srb;
     std::unique_ptr<QRhiGraphicsPipeline> m_pipeline;
+
     float m_opacity = 1;
     int m_opacityDir = -1;
     int m_indexCount = 0;

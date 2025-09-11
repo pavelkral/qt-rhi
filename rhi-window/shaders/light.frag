@@ -7,12 +7,14 @@ layout(location = 2) in vec3 in_fragpos;
 layout(location = 0) out vec4 out_color;
 
 layout(std140, binding = 0) uniform Ubo {
+    mat4 mvp;
+   vec4 opacity;
     mat4 model;
     mat4 view;
     mat4 projection;
+    mat4 lightSpace;
     vec4 lightPos;
     vec4 color;
-    float opacity;
 } ubo;
 
 layout(binding = 1) uniform sampler2D sampler_tex;
@@ -36,7 +38,7 @@ void main() {
 
     vec4 texColor = texture(sampler_tex, in_uv);
     vec3 lighting = (ambient + diffuse + specular) * texColor.rgb;
-    float alpha = texColor.a * ubo.opacity;
+    float alpha = texColor.a * ubo.opacity.x;
 
     out_color = vec4(lighting, alpha);
 }
