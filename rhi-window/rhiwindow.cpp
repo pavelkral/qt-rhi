@@ -279,7 +279,7 @@ void HelloWindow::customInit()
     m_cube2.addVertAndInd(sphereVertices, sphereIndices);
     floor.addVertAndInd(indexedPlaneVertices ,indexedPlaneIndices );
 
-    m_cube1.init(m_rhi.get(), m_texture.get(), m_sampler.get(), m_rp.get(), vs, fs, m_initialUpdates);
+    m_cube1.init(m_rhi.get(), m_texture.get(), m_sampler.get(), m_rp.get(), vs1, fs1, m_initialUpdates);
     m_cube2.init(m_rhi.get(), m_texture.get(), m_sampler.get(), m_rp.get(), vs1, fs1, m_initialUpdates);
     floor.init(m_rhi.get(), m_texture.get(), m_sampler.get(), m_rp.get(), vs1, fs1, m_initialUpdates);
 
@@ -317,7 +317,7 @@ void HelloWindow::customRender()
 
     QMatrix4x4 view = m_camera.GetViewMatrix();
     QMatrix4x4 lightSpaceMatrix;
-    QVector3D lightColor(1.0f, 0.8f, 0.5f);
+    QVector3D lightColor(1.0f, 1.0f, 1.0f);
     float objectOpacity = 1.0f;
 
     m_cube1.transform.rotation.setY( m_cube1.transform.rotation.y() + 0.5f);

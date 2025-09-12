@@ -85,7 +85,7 @@ void Model::updateUbo(const QMatrix4x4 &view,
     ubo.view        = view;
     ubo.projection  = projection;
     ubo.lightSpace  = lightSpace;
-    ubo.lightPos    = QVector4D(0.0f, 10.0f, 0.0f, 1.0f);
+    ubo.lightPos    = QVector4D(0.0f, 5.0f, 0.0f, 1.0f);
     ubo.color       = QVector4D(color, 1.0f);
 
    // u->updateDynamicBuffer(m_ubuf.get(), 0, sizeof(Ubo), &ubo);
