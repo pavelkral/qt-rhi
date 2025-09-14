@@ -29,11 +29,10 @@ protected:
     std::unique_ptr<QRhiSwapChain> m_sc;
     std::unique_ptr<QRhiRenderBuffer> m_ds;
     std::unique_ptr<QRhiRenderPassDescriptor> m_rp;
-
+    QMatrix4x4 m_projection;
+    QMatrix4x4 createProjection(QRhi *rhi, float fovDeg, float aspect, float nearPlane, float farPlane);
     bool m_hasSwapChain = false;
     QMatrix4x4 m_viewProjection;
-    QMatrix4x4 m_projection;
-
 
 private:
     void init();
@@ -62,7 +61,6 @@ protected:
     void keyReleaseEvent(QKeyEvent *e) override;
     void mouseMoveEvent(QMouseEvent *e) override;
 private:
-    void loadTexture(const QSize &pixelSize, QRhiResourceUpdateBatch *u);
     void updateCamera(float dt); // Funkce pro aktualizaci kamery každý frame
     Model m_cube1;
     Model m_cube2;
@@ -72,10 +70,6 @@ private:
     QPointF m_lastMousePos;
     QElapsedTimer m_timer;
     float m_dt = 0;
-
-    std::unique_ptr<QRhiTexture> m_texture;
-    std::unique_ptr<QRhiSampler> m_sampler;
-
     QRhiResourceUpdateBatch *m_initialUpdates = nullptr;
 
     float m_rotation = 0;

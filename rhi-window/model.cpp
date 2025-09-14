@@ -1,9 +1,9 @@
 #include "model.h"
 
-void Model::init(QRhi *rhi,QRhiTexture *texture,QRhiSampler *sampler,QRhiRenderPassDescriptor *rp,
+void Model::init(QRhi *rhi,QRhiRenderPassDescriptor *rp,
                 const QShader &vs,
                 const QShader &fs,
-                QRhiResourceUpdateBatch *u)
+                QRhiResourceUpdateBatch *u,QString tex_name)
 {
 
     m_vbuf.reset(rhi->newBuffer(QRhiBuffer::Immutable, QRhiBuffer::VertexBuffer, m_vert.size() * sizeof(float)));
@@ -20,10 +20,21 @@ void Model::init(QRhi *rhi,QRhiTexture *texture,QRhiSampler *sampler,QRhiRenderP
     m_ubuf.reset(rhi->newBuffer(QRhiBuffer::Dynamic, QRhiBuffer::UniformBuffer,UBUF_SIZE ));
     m_ubuf->create();
 
+
+    loadTexture(rhi,QSize(), u,tex_name);
+
+
+    m_sampler.reset(rhi->newSampler(QRhiSampler::Linear, QRhiSampler::Linear, QRhiSampler::None,
+                                      QRhiSampler::Repeat, QRhiSampler::Repeat));
+    m_sampler->create();
+
+
+
+
     m_srb.reset(rhi->newShaderResourceBindings());
     m_srb->setBindings({
         QRhiShaderResourceBinding::uniformBuffer(0,QRhiShaderResourceBinding::VertexStage | QRhiShaderResourceBinding::FragmentStage , m_ubuf.get()),
-        QRhiShaderResourceBinding::sampledTexture(1,QRhiShaderResourceBinding::FragmentStage, texture, sampler)
+        QRhiShaderResourceBinding::sampledTexture(1,QRhiShaderResourceBinding::FragmentStage, m_texture.get(), m_sampler.get())
     });
     m_srb->create();
 
@@ -86,6 +97,7 @@ void Model::updateUbo(const QMatrix4x4 &view,
     ubo.projection  = projection;
     ubo.lightSpace  = lightSpace;
     ubo.lightPos    = QVector4D(0.0f, 5.0f, 0.0f, 1.0f);
+    ubo.camPos    = QVector4D(0.0f, 5.0f, 0.0f, 1.0f);
     ubo.color       = QVector4D(color, 1.0f);
 
    // u->updateDynamicBuffer(m_ubuf.get(), 0, sizeof(Ubo), &ubo);
@@ -109,9 +121,9 @@ void Model::updateUbo(const QMatrix4x4 &view,
      u->updateDynamicBuffer(m_ubuf.get(), 144, 64, ubo.view.constData());
      u->updateDynamicBuffer(m_ubuf.get(), 208, 64, ubo.projection.constData());
      u->updateDynamicBuffer(m_ubuf.get(), 272, 64, ubo.lightSpace.constData());
-     u->updateDynamicBuffer(m_ubuf.get(), 336, 16, reinterpret_cast<const float*>(&ubo.lightPos));
-     u->updateDynamicBuffer(m_ubuf.get(), 352, 16, reinterpret_cast<const float*>(&ubo.color));
-
+     u->updateDynamicBuffer(m_ubuf.get(), 336, 16, reinterpret_cast<const float*>(&ubo.lightPos));     
+     u->updateDynamicBuffer(m_ubuf.get(), 352, 16, reinterpret_cast<const float*>(&ubo.camPos));
+    u->updateDynamicBuffer(m_ubuf.get(), 368, 16, reinterpret_cast<const float*>(&ubo.color));
 }
 void Model::setModelMatrix(const QMatrix4x4 &mvp, QRhiResourceUpdateBatch *u)
 {
@@ -124,4 +136,30 @@ void Model::draw(QRhiCommandBuffer *cb)
     const QRhiCommandBuffer::VertexInput vbufBinding(m_vbuf.get(), 0);
     cb->setVertexInput(0, 1, &vbufBinding, m_ibuf.get(), 0, QRhiCommandBuffer::IndexUInt16);
     cb->drawIndexed(m_indexCount);
+}
+void Model::loadTexture(QRhi *m_rhi,const QSize &, QRhiResourceUpdateBatch *u,QString tex_name)
+{
+    if (m_texture)
+        return;
+
+    QImage image(tex_name);
+    if (image.isNull()) {
+        qWarning("Failed to texture. Using 64x64 checker fallback.");
+        image = QImage(64, 64, QImage::Format_RGBA8888);
+        image.fill(Qt::white);
+        for (int y = 0; y < 64; ++y)
+            for (int x = 0; x < 64; ++x)
+                if (((x / 8) + (y / 8)) & 1)
+                    image.setPixelColor(x, y, QColor(50, 50, 50));
+    } else {
+        image = image.convertToFormat(QImage::Format_RGBA8888);
+    }
+
+    if (m_rhi->isYUpInNDC())
+        image = image.mirrored(); // UV invert
+    // .flipped(Qt::Horizontal | Qt::Vertical);
+    m_texture.reset(m_rhi->newTexture(QRhiTexture::RGBA8, image.size()));
+    m_texture->create();
+
+    u->uploadTexture(m_texture.get(), image);
 }

@@ -159,10 +159,22 @@ void RhiWindow::resizeSwapChain()
 
     const QSize outputSize = m_sc->currentPixelSize();
   //  m_viewProjection = m_rhi->clipSpaceCorrMatrix();
-    m_projection.perspective(45.0f, outputSize.width() / (float) outputSize.height(), 0.1f, 1000.0f);
+   // m_projection.perspective(45.0f, outputSize.width() / (float) outputSize.height(), 0.1f, 1000.0f);
+     m_projection = createProjection(m_rhi.get(), 45.0f, outputSize.width() / (float)outputSize.height(), 0.1f, 1000.0f);
 
 }
+QMatrix4x4 RhiWindow::createProjection(QRhi *rhi, float fovDeg, float aspect, float nearPlane, float farPlane)
+{
+    QMatrix4x4 proj;
+    proj.perspective(fovDeg, aspect, nearPlane, farPlane);
 
+    // Flip Y pro Vulkan
+    if (rhi->backend() == QRhi::Vulkan) {
+        proj(1,1) *= -1.0f;
+    }
+
+    return proj;
+}
 void RhiWindow::releaseSwapChain()
 {
     if (m_hasSwapChain) {
@@ -212,6 +224,8 @@ static QShader getShader(const QString &name)
 }
 
 //================================== HelloWindow =================================
+//==================================              =================================
+
 
 HelloWindow::HelloWindow(QRhi::Implementation graphicsApi)
     : RhiWindow(graphicsApi),
@@ -221,44 +235,9 @@ HelloWindow::HelloWindow(QRhi::Implementation graphicsApi)
     // Skryje kurzor a zachytí ho v okně
    // setCursor(Qt::BlankCursor);
 }
-
-void HelloWindow::loadTexture(const QSize &, QRhiResourceUpdateBatch *u)
-{
-    if (m_texture)
-        return;
-
-    QImage image(":/assets/textures/floor.png");
-    if (image.isNull()) {
-        qWarning("Failed to load :/crate.png texture. Using 64x64 checker fallback.");
-        image = QImage(64, 64, QImage::Format_RGBA8888);
-        image.fill(Qt::white);
-        for (int y = 0; y < 64; ++y)
-            for (int x = 0; x < 64; ++x)
-                if (((x / 8) + (y / 8)) & 1)
-                    image.setPixelColor(x, y, QColor(50, 50, 50));
-    } else {
-        image = image.convertToFormat(QImage::Format_RGBA8888);
-    }
-
-    if (m_rhi->isYUpInNDC())
-        image = image.mirrored(); // UV invert
-   // .flipped(Qt::Horizontal | Qt::Vertical);
-    m_texture.reset(m_rhi->newTexture(QRhiTexture::RGBA8, image.size()));
-    m_texture->create();
-
-    u->uploadTexture(m_texture.get(), image);
-}
-
 void HelloWindow::customInit()
 {
     m_initialUpdates = m_rhi->nextResourceUpdateBatch();
-
-    loadTexture(QSize(), m_initialUpdates);
-
-
-    m_sampler.reset(m_rhi->newSampler(QRhiSampler::Linear, QRhiSampler::Linear, QRhiSampler::None,
-                                      QRhiSampler::Repeat, QRhiSampler::Repeat));
-    m_sampler->create();
 
     QShader vs = getShader(":/texture.vert.qsb");
     QShader fs = getShader(":/texture.frag.qsb");
@@ -279,9 +258,9 @@ void HelloWindow::customInit()
     m_cube2.addVertAndInd(sphereVertices, sphereIndices);
     floor.addVertAndInd(indexedPlaneVertices ,indexedPlaneIndices );
 
-    m_cube1.init(m_rhi.get(), m_texture.get(), m_sampler.get(), m_rp.get(), vs1, fs1, m_initialUpdates);
-    m_cube2.init(m_rhi.get(), m_texture.get(), m_sampler.get(), m_rp.get(), vs1, fs1, m_initialUpdates);
-    floor.init(m_rhi.get(), m_texture.get(), m_sampler.get(), m_rp.get(), vs1, fs1, m_initialUpdates);
+    m_cube1.init(m_rhi.get(), m_rp.get(), vs1, fs1, m_initialUpdates,":/assets/textures/floor.png");
+    m_cube2.init(m_rhi.get(),m_rp.get(), vs1, fs1, m_initialUpdates,":/assets/textures/floor.png");
+    floor.init(m_rhi.get(), m_rp.get(), vs1, fs1, m_initialUpdates,":/assets/textures/floor.jpg");
 
     floor.transform.position = QVector3D(0, -1.5f, 0);
     floor.transform.scale = QVector3D(10, 10, 10);

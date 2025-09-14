@@ -11,6 +11,7 @@ layout(std140, binding = 0) uniform buf {
     mat4 projection;
     mat4 lightSpace;
     vec4 lightPos;
+    vec4 camPos;
     vec4 color;
 };
 
