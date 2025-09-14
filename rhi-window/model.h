@@ -20,7 +20,13 @@ struct Ubo {
     QVector4D camPos;    // 336–351
     QVector4D color;        // 352–367
 };
-
+struct Vertex {
+    QVector3D pos;
+    QVector3D normal;
+    QVector2D uv;
+    QVector3D tangent;
+    QVector3D bitangent;
+};
 class Model {
 
 public:
@@ -40,6 +46,7 @@ public:
     void draw(QRhiCommandBuffer *cb);
     Transform transform;
     void updateUniforms(const QMatrix4x4 &viewProjection,float opacity, QRhiResourceUpdateBatch *u);
+    QVector<float> computeTangents(const QVector<float>& vertices, const QVector<quint16>& indices);
 
     void updateUbo(const QMatrix4x4 &view,
                         const QMatrix4x4 &projection,

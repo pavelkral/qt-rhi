@@ -6,9 +6,11 @@ void Model::init(QRhi *rhi,QRhiRenderPassDescriptor *rp,
                 QRhiResourceUpdateBatch *u,QString tex_name)
 {
 
-    m_vbuf.reset(rhi->newBuffer(QRhiBuffer::Immutable, QRhiBuffer::VertexBuffer, m_vert.size() * sizeof(float)));
+    QVector<float>  m_vert1= computeTangents( m_vert,m_ind);
+
+    m_vbuf.reset(rhi->newBuffer(QRhiBuffer::Immutable, QRhiBuffer::VertexBuffer, m_vert1.size() * sizeof(float)));
     m_vbuf->create();
-    u->uploadStaticBuffer(m_vbuf.get(), m_vert.constData());
+    u->uploadStaticBuffer(m_vbuf.get(), m_vert1.constData());
 
     m_ibuf.reset(rhi->newBuffer(QRhiBuffer::Immutable, QRhiBuffer::IndexBuffer, m_ind.size() * sizeof(quint16)));
     m_ibuf->create();
@@ -27,7 +29,7 @@ void Model::init(QRhi *rhi,QRhiRenderPassDescriptor *rp,
     m_sampler.reset(rhi->newSampler(QRhiSampler::Linear, QRhiSampler::Linear, QRhiSampler::None,
                                       QRhiSampler::Repeat, QRhiSampler::Repeat));
     m_sampler->create();
-
+  //  computeTangents(, m_ind);
 
 
 
@@ -52,13 +54,24 @@ void Model::init(QRhi *rhi,QRhiRenderPassDescriptor *rp,
 
     QRhiVertexInputLayout inputLayout;
 
+    // inputLayout.setBindings({
+    //     { 8 * sizeof(float) } // stride: pos(3) + normal(3) + uv(2)
+    // });
+    // inputLayout.setAttributes({
+    //     { 0, 0, QRhiVertexInputAttribute::Float3, 0 },        // pos
+    //     { 0, 1, QRhiVertexInputAttribute::Float3, 3 * sizeof(float) },  // normal
+    //     { 0, 2, QRhiVertexInputAttribute::Float2, 6 * sizeof(float) }   // uv
+    // });
     inputLayout.setBindings({
-        { 8 * sizeof(float) } // stride: pos(3) + normal(3) + uv(2)
+        { 14 * sizeof(float) }
     });
+
     inputLayout.setAttributes({
-        { 0, 0, QRhiVertexInputAttribute::Float3, 0 },        // pos
-        { 0, 1, QRhiVertexInputAttribute::Float3, 3 * sizeof(float) },  // normal
-        { 0, 2, QRhiVertexInputAttribute::Float2, 6 * sizeof(float) }   // uv
+        { 0, 0, QRhiVertexInputAttribute::Float3, 0 },                    // pos
+        { 0, 1, QRhiVertexInputAttribute::Float3, 3 * sizeof(float) },    // normal
+        { 0, 2, QRhiVertexInputAttribute::Float2, 6 * sizeof(float) },    // uv
+        { 0, 3, QRhiVertexInputAttribute::Float3, 8 * sizeof(float) },    // tangent
+        { 0, 4, QRhiVertexInputAttribute::Float3, 11 * sizeof(float) }    // bitangent
     });
    // m_pipeline->setCullMode(QRhiGraphicsPipeline::Back);
     m_pipeline->setDepthTest(true);
@@ -162,4 +175,100 @@ void Model::loadTexture(QRhi *m_rhi,const QSize &, QRhiResourceUpdateBatch *u,QS
     m_texture->create();
 
     u->uploadTexture(m_texture.get(), image);
+}
+QVector<float> Model::computeTangents(const QVector<float>& vertices, const QVector<quint16>& indices)
+{
+    const int strideIn = 8;   // pos(3) + normal(3) + uv(2)
+    const int strideOut = 14; // pos(3) + normal(3) + uv(2) + tangent(3) + bitangent(3)
+    const int vertexCount = vertices.size() / strideIn;
+
+    struct TempVert {
+        QVector3D pos;
+        QVector3D normal;
+        QVector2D uv;
+        QVector3D tangent;
+        QVector3D bitangent;
+    };
+
+    QVector<TempVert> temp(vertexCount);
+
+    // naplnit základní data
+    for (int i = 0; i < vertexCount; i++) {
+        temp[i].pos = QVector3D(vertices[i*strideIn+0],
+                                vertices[i*strideIn+1],
+                                vertices[i*strideIn+2]);
+        temp[i].normal = QVector3D(vertices[i*strideIn+3],
+                                   vertices[i*strideIn+4],
+                                   vertices[i*strideIn+5]);
+        temp[i].uv = QVector2D(vertices[i*strideIn+6],
+                               vertices[i*strideIn+7]);
+        temp[i].tangent = QVector3D(0,0,0);
+        temp[i].bitangent = QVector3D(0,0,0);
+    }
+
+    // výpočet tangentu/bitangentu pro každý trojúhelník
+    for (int i = 0; i < indices.size(); i += 3) {
+        TempVert& v0 = temp[indices[i]];
+        TempVert& v1 = temp[indices[i+1]];
+        TempVert& v2 = temp[indices[i+2]];
+
+        QVector3D edge1 = v1.pos - v0.pos;
+        QVector3D edge2 = v2.pos - v0.pos;
+        QVector2D deltaUV1 = v1.uv - v0.uv;
+        QVector2D deltaUV2 = v2.uv - v0.uv;
+
+        float f = 1.0f;
+        float det = deltaUV1.x() * deltaUV2.y() - deltaUV2.x() * deltaUV1.y();
+        if (fabs(det) > 1e-6f) {
+            f = 1.0f / det;
+        }
+
+        QVector3D tangent(
+            f * (deltaUV2.y() * edge1.x() - deltaUV1.y() * edge2.x()),
+            f * (deltaUV2.y() * edge1.y() - deltaUV1.y() * edge2.y()),
+            f * (deltaUV2.y() * edge1.z() - deltaUV1.y() * edge2.z())
+            );
+
+        QVector3D bitangent(
+            f * (-deltaUV2.x() * edge1.x() + deltaUV1.x() * edge2.x()),
+            f * (-deltaUV2.x() * edge1.y() + deltaUV1.x() * edge2.y()),
+            f * (-deltaUV2.x() * edge1.z() + deltaUV1.x() * edge2.z())
+            );
+
+        v0.tangent += tangent; v1.tangent += tangent; v2.tangent += tangent;
+        v0.bitangent += bitangent; v1.bitangent += bitangent; v2.bitangent += bitangent;
+    }
+
+    // normalizace
+    for (int i = 0; i < vertexCount; i++) {
+        temp[i].tangent.normalize();
+        temp[i].bitangent.normalize();
+    }
+
+    // vytvoření výstupu
+    QVector<float> out;
+    out.resize(vertexCount * strideOut);
+
+    for (int i = 0; i < vertexCount; i++) {
+        out[i*strideOut + 0] = temp[i].pos.x();
+        out[i*strideOut + 1] = temp[i].pos.y();
+        out[i*strideOut + 2] = temp[i].pos.z();
+
+        out[i*strideOut + 3] = temp[i].normal.x();
+        out[i*strideOut + 4] = temp[i].normal.y();
+        out[i*strideOut + 5] = temp[i].normal.z();
+
+        out[i*strideOut + 6] = temp[i].uv.x();
+        out[i*strideOut + 7] = temp[i].uv.y();
+
+        out[i*strideOut + 8]  = temp[i].tangent.x();
+        out[i*strideOut + 9]  = temp[i].tangent.y();
+        out[i*strideOut + 10] = temp[i].tangent.z();
+
+        out[i*strideOut + 11] = temp[i].bitangent.x();
+        out[i*strideOut + 12] = temp[i].bitangent.y();
+        out[i*strideOut + 13] = temp[i].bitangent.z();
+    }
+
+    return out;
 }
