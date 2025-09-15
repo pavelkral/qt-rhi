@@ -320,6 +320,9 @@ void HelloWindow::customRender()
     cb->endPass();
 
 }
+
+//=========================================================================================================
+
 void HelloWindow::keyPressEvent(QKeyEvent *e)
 {
     m_pressedKeys.insert(e->key());

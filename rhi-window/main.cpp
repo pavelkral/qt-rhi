@@ -3,6 +3,9 @@
 
 #include <QGuiApplication>
 #include <QCommandLineParser>
+#include <QtWidgets/QHBoxLayout>
+#include <QtWidgets/qslider.h>
+#include <QtWidgets/qwidget.h>
 #include "rhiwindow.h"
 
 int main(int argc, char **argv)
@@ -94,6 +97,8 @@ int main(int argc, char **argv)
     window.resize(1280, 720);
     window.setTitle(QCoreApplication::applicationName() + QLatin1String(" - ") + window.graphicsApiName());
     window.show();
+
+
 
     int ret = app.exec();
 

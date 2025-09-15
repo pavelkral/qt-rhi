@@ -66,6 +66,12 @@ void Model::init(QRhi *rhi,QRhiRenderPassDescriptor *rp,
     m_pipeline->setRenderPassDescriptor(rp);
     m_pipeline->create();
 }
+
+void Model::addVertAndInd(const QVector<float> &vertices, const QVector<quint16> &indices) {
+    m_vert = vertices;
+    m_ind = indices;
+    m_indexCount = indices.size();
+}
 void Model::updateUniforms(const QMatrix4x4 &viewProjection,float opacity, QRhiResourceUpdateBatch *u)
 {
 
@@ -179,16 +185,7 @@ QVector<float> Model::computeTangents(const QVector<float>& vertices, const QVec
     const int strideOut = 14; // pos(3) + normal(3) + uv(2) + tangent(3) + bitangent(3)
     const int vertexCount = vertices.size() / strideIn;
 
-    struct TempVert {
-        QVector3D pos;
-        QVector3D normal;
-        QVector2D uv;
-        QVector3D tangent;
-        QVector3D bitangent;
-    };
-
     QVector<TempVert> temp(vertexCount);
-
     // fill data
     for (int i = 0; i < vertexCount; i++) {
         temp[i].pos = QVector3D(vertices[i*strideIn+0],
