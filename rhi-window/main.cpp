@@ -1,5 +1,3 @@
-// Copyright (C) 2023 The Qt Company Ltd.
-// SPDX-License-Identifier: LicenseRef-Qt-Commercial OR BSD-3-Clause
 
 #include <QGuiApplication>
 #include <QCommandLineParser>
@@ -11,9 +9,7 @@
 int main(int argc, char **argv)
 {
     QGuiApplication app(argc, argv);
-
     QRhi::Implementation graphicsApi;
-
     // Use platform-specific defaults when no command-line arguments given.
 #if defined(Q_OS_WIN)
     graphicsApi = QRhi::Vulkan;
@@ -54,7 +50,6 @@ int main(int argc, char **argv)
     if (cmdLineParser.isSet(mtlOption))
         graphicsApi = QRhi::Metal;
 
- //! [api-setup]
     // For OpenGL, to ensure there is a depth/stencil buffer for the window.
     // With other APIs this is under the application's control (QRhiRenderBuffer etc.)
     // and so no special setup is needed for those.
@@ -86,7 +81,6 @@ int main(int argc, char **argv)
         }
     }
 #endif
-//! [api-setup]
 
     HelloWindow window(graphicsApi);
 
@@ -97,9 +91,6 @@ int main(int argc, char **argv)
     window.resize(1280, 720);
     window.setTitle(QCoreApplication::applicationName() + QLatin1String(" - ") + window.graphicsApiName());
     window.show();
-
-
-
     int ret = app.exec();
 
     // RhiWindow::event() will not get invoked when the

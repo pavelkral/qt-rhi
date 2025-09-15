@@ -231,9 +231,9 @@ HelloWindow::HelloWindow(QRhi::Implementation graphicsApi)
     : RhiWindow(graphicsApi),
     m_camera(QVector3D(0.0f, 0.0f, 5.0f))
 {
-    //setFocusPolicy(Qt::StrongFocus);
+  //  setFocusPolicy(Qt::StrongFocus);
     // Skryje kurzor a zachytí ho v okně
-   // setCursor(Qt::BlankCursor);
+    setCursor(Qt::BlankCursor);
 }
 void HelloWindow::customInit()
 {
@@ -348,9 +348,9 @@ void HelloWindow::mouseMoveEvent(QMouseEvent *e)
     m_camera.ProcessMouseMovement(xoffset, yoffset);
 
     // center cursor
-    // QPoint center = mapToGlobal(rect().center());
-    // QCursor::setPos(center);
-    // m_lastMousePos = mapFromGlobal(center);
+     //QPoint center = mapToGlobal(geometry().center());
+     //QCursor::setPos(center);
+     //m_lastMousePos = mapFromGlobal(center);
 }
 
 void HelloWindow::updateCamera(float dt)
@@ -363,4 +363,6 @@ void HelloWindow::updateCamera(float dt)
         m_camera.ProcessKeyboard(LEFT, dt);
     if (m_pressedKeys.contains(Qt::Key_D))
         m_camera.ProcessKeyboard(RIGHT, dt);
+    if (m_pressedKeys.contains(Qt::Key_Escape))
+        qApp->quit();
 }
