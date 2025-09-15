@@ -13,6 +13,7 @@ qt_add_executable(rhi-window
     camera.h camera.cpp
     geometry.h
     transform.h transform.cpp
+
 )
 
 set_target_properties(rhi-window PROPERTIES
@@ -92,6 +93,12 @@ qt_add_resources(rhi-window "rhi-window"
         "shaders/pbr.vert"
         "../assets/textures/floor.jpg"
         "../assets/textures/floor.png"
+         "../assets/textures/brick/victorian-brick_albedo.png"
+         "../assets/textures/brick/victorian-brick_ao.png"
+         "../assets/textures/brick/victorian-brick_height.png"
+         "../assets/textures/brick/victorian-brick_metallic.png"
+         "../assets/textures/brick/victorian-brick_normal-ogl.png"
+         "../assets/textures/brick/victorian-brick_roughness.png"
 )
 
 install(TARGETS rhi-window

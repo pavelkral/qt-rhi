@@ -58,7 +58,8 @@ public:
                         QRhiResourceUpdateBatch *u);
 
     Transform &getTransform() { return transform; }
-    void loadTexture(QRhi *m_rhi,const QSize &, QRhiResourceUpdateBatch *u,QString tex_name);
+    void loadTexture(QRhi *m_rhi,const QSize &, QRhiResourceUpdateBatch *u,QString tex_name,std::unique_ptr<QRhiTexture> &texture,
+                     std::unique_ptr<QRhiSampler> &sampler);
 private:
     std::unique_ptr<QRhiTexture> m_texture;
     std::unique_ptr<QRhiSampler> m_sampler;

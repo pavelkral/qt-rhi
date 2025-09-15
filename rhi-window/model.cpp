@@ -23,7 +23,7 @@ void Model::init(QRhi *rhi,QRhiRenderPassDescriptor *rp,
     m_ubuf.reset(rhi->newBuffer(QRhiBuffer::Dynamic, QRhiBuffer::UniformBuffer,UBUF_SIZE ));
     m_ubuf->create();
 
-    loadTexture(rhi,QSize(), u,tex_name);
+    loadTexture(rhi,QSize(), u,tex_name,m_texture,m_sampler);
 
     m_srb.reset(rhi->newShaderResourceBindings());
     m_srb->setBindings({
@@ -135,7 +135,8 @@ void Model::draw(QRhiCommandBuffer *cb)
     cb->setVertexInput(0, 1, &vbufBinding, m_ibuf.get(), 0, QRhiCommandBuffer::IndexUInt16);
     cb->drawIndexed(m_indexCount);
 }
-void Model::loadTexture(QRhi *m_rhi,const QSize &, QRhiResourceUpdateBatch *u,QString tex_name)
+void Model::loadTexture(QRhi *m_rhi,const QSize &, QRhiResourceUpdateBatch *u,QString tex_name,std::unique_ptr<QRhiTexture> &texture,
+                        std::unique_ptr<QRhiSampler> &sampler)
 {
     if (m_texture)
         return;
@@ -159,17 +160,17 @@ void Model::loadTexture(QRhi *m_rhi,const QSize &, QRhiResourceUpdateBatch *u,QS
 
     int mipLevels = static_cast<int>(floor(log2(qMax(image.width(), image.height())))) + 1;
 
-    m_texture.reset(m_rhi->newTexture(QRhiTexture::RGBA8,
+    texture.reset(m_rhi->newTexture(QRhiTexture::RGBA8,
                                       image.size(),
                                       1,
                                       QRhiTexture::Flags(QRhiTexture::MipMapped | QRhiTexture::UsedWithGenerateMips)));
-    m_texture->create();
-    u->uploadTexture(m_texture.get(), image);
-    u->generateMips(m_texture.get());
+    texture->create();
+    u->uploadTexture(texture.get(), image);
+    u->generateMips(texture.get());
 
-    m_sampler.reset(m_rhi->newSampler(QRhiSampler::Linear, QRhiSampler::Linear, QRhiSampler::Linear,
+    sampler.reset(m_rhi->newSampler(QRhiSampler::Linear, QRhiSampler::Linear, QRhiSampler::Linear,
                                     QRhiSampler::Repeat, QRhiSampler::Repeat));
-    m_sampler->create();
+    sampler->create();
 }
 
 QVector<float> Model::computeTangents(const QVector<float>& vertices, const QVector<quint16>& indices)
