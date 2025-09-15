@@ -1,4 +1,5 @@
 #include "model.h"
+#include <cmath>
 
 void Model::init(QRhi *rhi,QRhiRenderPassDescriptor *rp,
                 const QShader &vs,
@@ -22,16 +23,7 @@ void Model::init(QRhi *rhi,QRhiRenderPassDescriptor *rp,
     m_ubuf.reset(rhi->newBuffer(QRhiBuffer::Dynamic, QRhiBuffer::UniformBuffer,UBUF_SIZE ));
     m_ubuf->create();
 
-
     loadTexture(rhi,QSize(), u,tex_name);
-
-
-    m_sampler.reset(rhi->newSampler(QRhiSampler::Linear, QRhiSampler::Linear, QRhiSampler::None,
-                                      QRhiSampler::Repeat, QRhiSampler::Repeat));
-    m_sampler->create();
-  //  computeTangents(, m_ind);
-
-
 
     m_srb.reset(rhi->newShaderResourceBindings());
     m_srb->setBindings({
@@ -54,14 +46,6 @@ void Model::init(QRhi *rhi,QRhiRenderPassDescriptor *rp,
 
     QRhiVertexInputLayout inputLayout;
 
-    // inputLayout.setBindings({
-    //     { 8 * sizeof(float) } // stride: pos(3) + normal(3) + uv(2)
-    // });
-    // inputLayout.setAttributes({
-    //     { 0, 0, QRhiVertexInputAttribute::Float3, 0 },        // pos
-    //     { 0, 1, QRhiVertexInputAttribute::Float3, 3 * sizeof(float) },  // normal
-    //     { 0, 2, QRhiVertexInputAttribute::Float2, 6 * sizeof(float) }   // uv
-    // });
     inputLayout.setBindings({
         { 14 * sizeof(float) }
     });
@@ -73,10 +57,10 @@ void Model::init(QRhi *rhi,QRhiRenderPassDescriptor *rp,
         { 0, 3, QRhiVertexInputAttribute::Float3, 8 * sizeof(float) },    // tangent
         { 0, 4, QRhiVertexInputAttribute::Float3, 11 * sizeof(float) }    // bitangent
     });
-   // m_pipeline->setCullMode(QRhiGraphicsPipeline::Back);
+    //m_pipeline->setCullMode(QRhiGraphicsPipeline::Back);
     m_pipeline->setDepthTest(true);
     m_pipeline->setDepthWrite(true);
- //   m_pipeline->setDepthOp(QRhiGraphicsPipeline::LessOrEqual);
+    //m_pipeline->setDepthOp(QRhiGraphicsPipeline::LessOrEqual);
     m_pipeline->setVertexInputLayout(inputLayout);
     m_pipeline->setShaderResourceBindings(m_srb.get());
     m_pipeline->setRenderPassDescriptor(rp);
@@ -94,13 +78,14 @@ void Model::updateUniforms(const QMatrix4x4 &viewProjection,float opacity, QRhiR
     u->updateDynamicBuffer(m_ubuf.get(), 0, 64, mvp.constData());
 }
 void Model::updateUbo(const QMatrix4x4 &view,
-                          const QMatrix4x4 &projection,
-                          const QMatrix4x4 &lightSpace,
-                          const QVector3D &color,
-                          float opacity,
-                          QRhiResourceUpdateBatch *u )
+                        const QMatrix4x4 &projection,
+                        const QMatrix4x4 &lightSpace,
+                        const QVector3D &color,
+                        const QVector3D &lightPos,
+                        const QVector3D &camPos,
+                        const float opacity,
+                        QRhiResourceUpdateBatch *u )
 {
-
 
     Ubo ubo;
     ubo.mvp         = projection * view * transform.getModelMatrix();
@@ -109,8 +94,8 @@ void Model::updateUbo(const QMatrix4x4 &view,
     ubo.view        = view;
     ubo.projection  = projection;
     ubo.lightSpace  = lightSpace;
-    ubo.lightPos    = QVector4D(0.0f, 5.0f, 0.0f, 1.0f);
-    ubo.camPos    = QVector4D(0.0f, 5.0f, 0.0f, 1.0f);
+    ubo.lightPos    = QVector4D(lightPos, 1.0f);
+    ubo.camPos      = QVector4D(camPos, 1.0f);
     ubo.color       = QVector4D(color, 1.0f);
 
    // u->updateDynamicBuffer(m_ubuf.get(), 0, sizeof(Ubo), &ubo);
@@ -169,13 +154,24 @@ void Model::loadTexture(QRhi *m_rhi,const QSize &, QRhiResourceUpdateBatch *u,QS
     }
 
     if (m_rhi->isYUpInNDC())
-        image = image.mirrored(); // UV invert
-    // .flipped(Qt::Horizontal | Qt::Vertical);
-    m_texture.reset(m_rhi->newTexture(QRhiTexture::RGBA8, image.size()));
-    m_texture->create();
+        image = image.flipped(Qt::Horizontal | Qt::Vertical); // UV invert
+    // .mirrored();
 
+    int mipLevels = static_cast<int>(floor(log2(qMax(image.width(), image.height())))) + 1;
+
+    m_texture.reset(m_rhi->newTexture(QRhiTexture::RGBA8,
+                                      image.size(),
+                                      1,
+                                      QRhiTexture::Flags(QRhiTexture::MipMapped | QRhiTexture::UsedWithGenerateMips)));
+    m_texture->create();
     u->uploadTexture(m_texture.get(), image);
+    u->generateMips(m_texture.get());
+
+    m_sampler.reset(m_rhi->newSampler(QRhiSampler::Linear, QRhiSampler::Linear, QRhiSampler::Linear,
+                                    QRhiSampler::Repeat, QRhiSampler::Repeat));
+    m_sampler->create();
 }
+
 QVector<float> Model::computeTangents(const QVector<float>& vertices, const QVector<quint16>& indices)
 {
     const int strideIn = 8;   // pos(3) + normal(3) + uv(2)
@@ -192,7 +188,7 @@ QVector<float> Model::computeTangents(const QVector<float>& vertices, const QVec
 
     QVector<TempVert> temp(vertexCount);
 
-    // naplnit základní data
+    // fill data
     for (int i = 0; i < vertexCount; i++) {
         temp[i].pos = QVector3D(vertices[i*strideIn+0],
                                 vertices[i*strideIn+1],
@@ -206,7 +202,7 @@ QVector<float> Model::computeTangents(const QVector<float>& vertices, const QVec
         temp[i].bitangent = QVector3D(0,0,0);
     }
 
-    // výpočet tangentu/bitangentu pro každý trojúhelník
+    // tangentu/bitangentu for triangles
     for (int i = 0; i < indices.size(); i += 3) {
         TempVert& v0 = temp[indices[i]];
         TempVert& v1 = temp[indices[i+1]];
@@ -239,13 +235,12 @@ QVector<float> Model::computeTangents(const QVector<float>& vertices, const QVec
         v0.bitangent += bitangent; v1.bitangent += bitangent; v2.bitangent += bitangent;
     }
 
-    // normalizace
+    // normalize
     for (int i = 0; i < vertexCount; i++) {
         temp[i].tangent.normalize();
         temp[i].bitangent.normalize();
     }
 
-    // vytvoření výstupu
     QVector<float> out;
     out.resize(vertexCount * strideOut);
 

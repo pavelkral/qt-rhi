@@ -52,7 +52,9 @@ public:
                         const QMatrix4x4 &projection,
                         const QMatrix4x4 &lightSpace,
                         const QVector3D &color,
-                        float opacity,
+                        const QVector3D &lightPos,
+                        const QVector3D &camPos,
+                        const float opacity,
                         QRhiResourceUpdateBatch *u);
 
     Transform &getTransform() { return transform; }
@@ -60,6 +62,18 @@ public:
 private:
     std::unique_ptr<QRhiTexture> m_texture;
     std::unique_ptr<QRhiSampler> m_sampler;
+
+    std::unique_ptr<QRhiTexture> m_tex_norm;
+    std::unique_ptr<QRhiSampler> m_sampler_norm;
+    std::unique_ptr<QRhiTexture> m_texture_met;
+    std::unique_ptr<QRhiSampler> m_sampler_met;
+    std::unique_ptr<QRhiTexture> m_texture_rough;
+    std::unique_ptr<QRhiSampler> m_sampler_rough;
+    std::unique_ptr<QRhiTexture> m_texture_ao;
+    std::unique_ptr<QRhiSampler> m_sampler_ao;
+    std::unique_ptr<QRhiTexture> m_texture_height;
+    std::unique_ptr<QRhiSampler> m_sampler_height;
+
     std::unique_ptr<QRhiBuffer> m_vbuf;
     std::unique_ptr<QRhiBuffer> m_ibuf;
     std::unique_ptr<QRhiBuffer> m_ubuf;

@@ -297,13 +297,16 @@ void HelloWindow::customRender()
     QMatrix4x4 view = m_camera.GetViewMatrix();
     QMatrix4x4 lightSpaceMatrix;
     QVector3D lightColor(1.0f, 1.0f, 1.0f);
+    QMatrix4x4 projection = m_projection;
+    QVector3D lightPos(0.0f, 5.0f, 0.0f);
+    QVector3D camPos = m_camera.Position;
     float objectOpacity = 1.0f;
 
     m_cube1.transform.rotation.setY( m_cube1.transform.rotation.y() + 0.5f);
     m_cube2.transform.rotation.setY(m_cube2.transform.rotation.y() + 0.5f);
-    m_cube1.updateUbo(view,m_projection,lightSpaceMatrix,lightColor,m_opacity,resourceUpdates);
-    floor.updateUbo(view,m_projection,lightSpaceMatrix,lightColor,m_opacity,resourceUpdates);
-    m_cube2.updateUbo(view,m_projection,lightSpaceMatrix,lightColor,m_opacity,resourceUpdates);
+    m_cube1.updateUbo(view,m_projection,lightSpaceMatrix,lightColor,lightPos,camPos,m_opacity,resourceUpdates);
+    floor.updateUbo(view,m_projection,lightSpaceMatrix,lightColor,lightPos,camPos,m_opacity,resourceUpdates);
+    m_cube2.updateUbo(view,m_projection,lightSpaceMatrix,lightColor,lightPos,camPos,m_opacity,resourceUpdates);
 
     const QSize outputSizeInPixels = m_sc->currentPixelSize();
     const QColor clearColor = QColor::fromRgbF(0.4f, 0.7f, 0.0f, 1.0f);
