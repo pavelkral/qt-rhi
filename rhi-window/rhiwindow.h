@@ -53,7 +53,7 @@ class HelloWindow : public RhiWindow
 {
 public:
     HelloWindow(QRhi::Implementation graphicsApi);
-
+ float lightTime = 0.0f;
     void customInit() override;
     void customRender() override;
 protected:

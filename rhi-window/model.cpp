@@ -1,6 +1,13 @@
 #include "model.h"
 #include <cmath>
 
+
+void Model::addVertAndInd(const QVector<float> &vertices, const QVector<quint16> &indices) {
+    m_vert = vertices;
+    m_ind = indices;
+    m_indexCount = indices.size();
+}
+
 void Model::init(QRhi *rhi,QRhiRenderPassDescriptor *rp,
                 const QShader &vs,
                 const QShader &fs,
@@ -23,12 +30,32 @@ void Model::init(QRhi *rhi,QRhiRenderPassDescriptor *rp,
     m_ubuf.reset(rhi->newBuffer(QRhiBuffer::Dynamic, QRhiBuffer::UniformBuffer,UBUF_SIZE ));
     m_ubuf->create();
 
-    loadTexture(rhi,QSize(), u,tex_name,m_texture,m_sampler);
+    TextureSet set;
+    set.albedo = ":/assets/textures/brick/victorian-brick_albedo.png";
+    set.normal = ":/assets/textures/brick/victorian-brick_normal-ogl.png";
+    set.metallic = ":/assets/textures/brick/victorian-brick_metallic.png";
+    set.rougness = ":/assets/textures/brick/victorian-brick_roughness.png";
+    set.height = ":/assets/textures/brick/victorian-brick_height.png";
+    set.ao = ":/assets/textures/brick/victorian-brick_ao.png";
+
+
+    loadTexture(rhi,QSize(), u,set.albedo,m_texture,m_sampler);
+
+    loadTexture(rhi,QSize(), u,set.normal,m_tex_norm,m_sampler_norm);
+    loadTexture(rhi,QSize(), u,set.metallic,m_texture_met,m_sampler_met);
+    loadTexture(rhi,QSize(), u,set.rougness,m_texture_rough,m_sampler_rough);
+    loadTexture(rhi,QSize(), u,set.height,m_texture_height,m_sampler_height);
+    loadTexture(rhi,QSize(), u,set.ao,m_texture_ao,m_sampler_ao);
 
     m_srb.reset(rhi->newShaderResourceBindings());
     m_srb->setBindings({
         QRhiShaderResourceBinding::uniformBuffer(0,QRhiShaderResourceBinding::VertexStage | QRhiShaderResourceBinding::FragmentStage , m_ubuf.get()),
-        QRhiShaderResourceBinding::sampledTexture(1,QRhiShaderResourceBinding::FragmentStage, m_texture.get(), m_sampler.get())
+        QRhiShaderResourceBinding::sampledTexture(1,QRhiShaderResourceBinding::FragmentStage, m_texture.get(), m_sampler.get()),
+        QRhiShaderResourceBinding::sampledTexture(2,QRhiShaderResourceBinding::FragmentStage, m_tex_norm.get(), m_sampler_norm.get()),
+        QRhiShaderResourceBinding::sampledTexture(3,QRhiShaderResourceBinding::FragmentStage, m_texture_met.get(), m_sampler_met.get()),
+        QRhiShaderResourceBinding::sampledTexture(4,QRhiShaderResourceBinding::FragmentStage, m_texture_rough.get(), m_sampler_rough.get()),
+        QRhiShaderResourceBinding::sampledTexture(5,QRhiShaderResourceBinding::FragmentStage, m_texture_ao.get(), m_sampler_ao.get()),
+        QRhiShaderResourceBinding::sampledTexture(6,QRhiShaderResourceBinding::FragmentStage, m_texture_height.get(), m_sampler_height.get())
     });
     m_srb->create();
 
@@ -67,21 +94,13 @@ void Model::init(QRhi *rhi,QRhiRenderPassDescriptor *rp,
     m_pipeline->create();
 }
 
-void Model::addVertAndInd(const QVector<float> &vertices, const QVector<quint16> &indices) {
-    m_vert = vertices;
-    m_ind = indices;
-    m_indexCount = indices.size();
-}
+
 void Model::updateUniforms(const QMatrix4x4 &viewProjection,float opacity, QRhiResourceUpdateBatch *u)
 {
-
-
-    u->updateDynamicBuffer(m_ubuf.get(), 64, 4, &opacity);
-
     QMatrix4x4 modelMatrix = transform.getModelMatrix();
     QMatrix4x4 mvp = viewProjection * modelMatrix;
-
     u->updateDynamicBuffer(m_ubuf.get(), 0, 64, mvp.constData());
+    u->updateDynamicBuffer(m_ubuf.get(), 64, 4, &opacity);
 }
 void Model::updateUbo(const QMatrix4x4 &view,
                         const QMatrix4x4 &projection,
@@ -92,17 +111,22 @@ void Model::updateUbo(const QMatrix4x4 &view,
                         const float opacity,
                         QRhiResourceUpdateBatch *u )
 {
+    float debug = 0.0F;
+    float lightIntensity = 5.0f;
 
-    Ubo ubo;
-    ubo.mvp         = projection * view * transform.getModelMatrix();
-    ubo.opacity     = QVector4D(opacity, 0.0f, 0.0f, 0.0f);  // vec4
+    Ubo ubo; 
     ubo.model       = transform.getModelMatrix();
     ubo.view        = view;
     ubo.projection  = projection;
     ubo.lightSpace  = lightSpace;
+
     ubo.lightPos    = QVector4D(lightPos, 1.0f);
+    ubo.lightColor  = QVector4D(color, 1.0f);
     ubo.camPos      = QVector4D(camPos, 1.0f);
-    ubo.color       = QVector4D(color, 1.0f);
+    ubo.opacity     = QVector4D(0.0f,0.0f,0.0f, opacity);
+    ubo.debugMode   = debug;
+    ubo.lightIntensity = lightIntensity;
+
 
    // u->updateDynamicBuffer(m_ubuf.get(), 0, sizeof(Ubo), &ubo);
 
@@ -119,15 +143,17 @@ void Model::updateUbo(const QMatrix4x4 &view,
    //  qDebug() << "Type const: QVector4D, Size:" << sizeof(ubo.lightPos) << "bytes";
    //  qDebug() << "--- End of UBO Debug ---";
 
-     u->updateDynamicBuffer(m_ubuf.get(), 0,   64, ubo.mvp.constData());
-     u->updateDynamicBuffer(m_ubuf.get(), 64,  16, reinterpret_cast<const float*>(&ubo.opacity));
-     u->updateDynamicBuffer(m_ubuf.get(), 80,  64, ubo.model.constData());
-     u->updateDynamicBuffer(m_ubuf.get(), 144, 64, ubo.view.constData());
-     u->updateDynamicBuffer(m_ubuf.get(), 208, 64, ubo.projection.constData());
-     u->updateDynamicBuffer(m_ubuf.get(), 272, 64, ubo.lightSpace.constData());
-     u->updateDynamicBuffer(m_ubuf.get(), 336, 16, reinterpret_cast<const float*>(&ubo.lightPos));     
-     u->updateDynamicBuffer(m_ubuf.get(), 352, 16, reinterpret_cast<const float*>(&ubo.camPos));
-    u->updateDynamicBuffer(m_ubuf.get(), 368, 16, reinterpret_cast<const float*>(&ubo.color));
+    u->updateDynamicBuffer(m_ubuf.get(), 0,   64, ubo.model.constData());
+    u->updateDynamicBuffer(m_ubuf.get(), 64, 64, ubo.view.constData());
+    u->updateDynamicBuffer(m_ubuf.get(), 128, 64, ubo.projection.constData());
+    u->updateDynamicBuffer(m_ubuf.get(), 192, 64, ubo.lightSpace.constData());
+    u->updateDynamicBuffer(m_ubuf.get(), 256, 16, reinterpret_cast<const float*>(&ubo.lightPos));
+    u->updateDynamicBuffer(m_ubuf.get(), 272, 16, reinterpret_cast<const float*>(&ubo.lightColor));
+    u->updateDynamicBuffer(m_ubuf.get(), 288, 16, reinterpret_cast<const float*>(&ubo.camPos));
+    u->updateDynamicBuffer(m_ubuf.get(), 304,  16, reinterpret_cast<const float*>(&ubo.opacity));
+    u->updateDynamicBuffer(m_ubuf.get(), 304,  4, reinterpret_cast<const float*>(&ubo.debugMode));
+    u->updateDynamicBuffer(m_ubuf.get(), 308,  4, reinterpret_cast<const float*>(&ubo.lightIntensity));
+
 }
 void Model::setModelMatrix(const QMatrix4x4 &mvp, QRhiResourceUpdateBatch *u)
 {
@@ -144,7 +170,7 @@ void Model::draw(QRhiCommandBuffer *cb)
 void Model::loadTexture(QRhi *m_rhi,const QSize &, QRhiResourceUpdateBatch *u,QString tex_name,std::unique_ptr<QRhiTexture> &texture,
                         std::unique_ptr<QRhiSampler> &sampler)
 {
-    if (m_texture)
+    if (texture)
         return;
 
     QImage image(tex_name);
@@ -185,7 +211,7 @@ QVector<float> Model::computeTangents(const QVector<float>& vertices, const QVec
     const int strideOut = 14; // pos(3) + normal(3) + uv(2) + tangent(3) + bitangent(3)
     const int vertexCount = vertices.size() / strideIn;
 
-    QVector<TempVert> temp(vertexCount);
+    QVector<Vertex> temp(vertexCount);
     // fill data
     for (int i = 0; i < vertexCount; i++) {
         temp[i].pos = QVector3D(vertices[i*strideIn+0],
@@ -202,9 +228,9 @@ QVector<float> Model::computeTangents(const QVector<float>& vertices, const QVec
 
     // tangentu/bitangentu for triangles
     for (int i = 0; i < indices.size(); i += 3) {
-        TempVert& v0 = temp[indices[i]];
-        TempVert& v1 = temp[indices[i+1]];
-        TempVert& v2 = temp[indices[i+2]];
+        Vertex& v0 = temp[indices[i]];
+        Vertex& v1 = temp[indices[i+1]];
+        Vertex& v2 = temp[indices[i+2]];
 
         QVector3D edge1 = v1.pos - v0.pos;
         QVector3D edge2 = v2.pos - v0.pos;

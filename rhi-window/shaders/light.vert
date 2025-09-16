@@ -10,15 +10,15 @@ layout(location = 2) out vec3 out_fragpos;
 
 
 layout(std140, binding = 0) uniform Ubo {
-    mat4 mvp;
-    vec4 opacity;
     mat4 model;
     mat4 view;
     mat4 projection;
     mat4 lightSpace;
     vec4 lightPos;
+    vec4 color; // barva světla
     vec4 camPos;
-    vec4 color;
+    float debugMode;       // uniformní debug mód
+    float lightIntensity;  // uniformní intenzita světla
 } ubo;
 
 void main() {

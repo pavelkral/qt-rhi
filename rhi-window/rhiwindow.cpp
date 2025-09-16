@@ -233,7 +233,7 @@ HelloWindow::HelloWindow(QRhi::Implementation graphicsApi)
 {
   //  setFocusPolicy(Qt::StrongFocus);
     // Skryje kurzor a zachytí ho v okně
-    setCursor(Qt::BlankCursor);
+    //setCursor(Qt::BlankCursor);
 }
 void HelloWindow::customInit()
 {
@@ -245,8 +245,8 @@ void HelloWindow::customInit()
     QShader vs1 = getShader(":/light.vert.qsb");
     QShader fs1 = getShader(":/light.frag.qsb");
 
-    QShader vs2 = getShader(":/mcolor.vert.qsb");
-    QShader fs2 = getShader(":/mcolor.frag.qsb");
+    QShader vs2 = getShader(":/pbr.vert.qsb");
+    QShader fs2 = getShader(":/pbr.frag.qsb");
 
     QVector<float> sphereVertices;
     QVector<quint16> sphereIndices;
@@ -258,9 +258,9 @@ void HelloWindow::customInit()
     m_cube2.addVertAndInd(sphereVertices, sphereIndices);
     floor.addVertAndInd(indexedPlaneVertices ,indexedPlaneIndices );
 
-    m_cube1.init(m_rhi.get(), m_rp.get(), vs1, fs1, m_initialUpdates,":/assets/textures/floor.png");
-    m_cube2.init(m_rhi.get(),m_rp.get(), vs1, fs1, m_initialUpdates,":/assets/textures/floor.png");
-    floor.init(m_rhi.get(), m_rp.get(), vs1, fs1, m_initialUpdates,":/assets/textures/floor.jpg");
+    m_cube1.init(m_rhi.get(), m_rp.get(), vs2, fs2, m_initialUpdates,":/assets/textures/floor.png");
+    m_cube2.init(m_rhi.get(),m_rp.get(), vs2, fs2, m_initialUpdates,":/assets/textures/floor.png");
+    floor.init(m_rhi.get(), m_rp.get(), vs2, fs2, m_initialUpdates,":/assets/textures/floor.jpg");
 
     floor.transform.position = QVector3D(0, -1.5f, 0);
     floor.transform.scale = QVector3D(10, 10, 10);
@@ -278,6 +278,7 @@ void HelloWindow::customRender()
     m_dt = m_timer.restart() / 1000.0f;
     updateCamera(m_dt);
 
+    lightTime += m_dt;
     QRhiResourceUpdateBatch *resourceUpdates = m_rhi->nextResourceUpdateBatch();
 
     if (m_initialUpdates) {
@@ -296,11 +297,24 @@ void HelloWindow::customRender()
 
     QMatrix4x4 view = m_camera.GetViewMatrix();
     QMatrix4x4 lightSpaceMatrix;
-    QVector3D lightColor(1.0f, 1.0f, 1.0f);
+   // QVector3D lightColor(1.0f, 1.0f, 1.0f);
     QMatrix4x4 projection = m_projection;
-    QVector3D lightPos(0.0f, 5.0f, 0.0f);
+    QVector3D lightPos(-5.0f, 20.0f, -15.0f);
     QVector3D camPos = m_camera.Position;
     float objectOpacity = 1.0f;
+    float radius = 15.0f;          // vzdálenost od středu scény
+    float height = 10.0f;          // výška světla
+    QVector3D center(0.0f, 0.0f, 0.0f); // střed kolem kterého obíhá
+
+
+    lightPos.setX(center.x() + radius * cos(lightTime));
+    lightPos.setZ(center.z() + radius * sin(lightTime));
+    lightPos.setY(height);
+    QVector3D lightColor(
+        0.5f + 0.5f * sin(lightTime * 2.0f),   // červená
+        0.5f + 0.5f * sin(lightTime * 0.7f + 2.0f), // zelená
+        0.5f + 0.5f * sin(lightTime * 1.3f + 4.0f)  // modrá
+        );
 
     m_cube1.transform.rotation.setY( m_cube1.transform.rotation.y() + 0.5f);
     m_cube2.transform.rotation.setY(m_cube2.transform.rotation.y() + 0.5f);

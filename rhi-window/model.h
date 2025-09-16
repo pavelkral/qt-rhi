@@ -10,15 +10,17 @@
 
 
 struct Ubo {
-    QMatrix4x4 mvp;
-    QVector4D opacity;
     QMatrix4x4 model;
     QMatrix4x4 view;
     QMatrix4x4 projection;
     QMatrix4x4 lightSpace;
     QVector4D lightPos;
+    QVector4D lightColor;
     QVector4D camPos;
-    QVector4D color;
+    QVector4D opacity;
+    float debugMode;
+    float lightIntensity;
+
 };
 
 struct Vertex {
@@ -29,12 +31,14 @@ struct Vertex {
     QVector3D bitangent;
 };
 
-struct TempVert {
-    QVector3D pos;
-    QVector3D normal;
-    QVector2D uv;
-    QVector3D tangent;
-    QVector3D bitangent;
+
+struct TextureSet {
+    QString albedo;
+    QString normal;
+    QString metallic;
+    QString rougness;
+    QString height;
+    QString ao;
 };
 
 class Model {
@@ -42,8 +46,8 @@ class Model {
 public:
     Transform transform;
 
-    void init(QRhi *rhi,QRhiRenderPassDescriptor *rp,const QShader &vs,const QShader &fs,QRhiResourceUpdateBatch *u,QString tex_name);
     void addVertAndInd(const QVector<float> &vertices, const QVector<quint16> &indices);
+    void init(QRhi *rhi,QRhiRenderPassDescriptor *rp,const QShader &vs,const QShader &fs,QRhiResourceUpdateBatch *u,QString tex_name); 
     void setModelMatrix(const QMatrix4x4 &mvp, QRhiResourceUpdateBatch *u);
     void draw(QRhiCommandBuffer *cb);   
     void updateUniforms(const QMatrix4x4 &viewProjection,float opacity, QRhiResourceUpdateBatch *u);
@@ -53,12 +57,12 @@ public:
                         const QVector3D &camPos,
                         const float opacity,
                         QRhiResourceUpdateBatch *u);
-
+    void loadTexture(QRhi *m_rhi,const QSize &, QRhiResourceUpdateBatch *u,QString tex_name,std::unique_ptr<QRhiTexture> &texture,
+                     std::unique_ptr<QRhiSampler> &sampler);
     Transform &getTransform() {
         return transform;
     }
-    void loadTexture(QRhi *m_rhi,const QSize &, QRhiResourceUpdateBatch *u,QString tex_name,std::unique_ptr<QRhiTexture> &texture,
-                     std::unique_ptr<QRhiSampler> &sampler);
+
 private:
 
     std::unique_ptr<QRhiTexture> m_texture;
