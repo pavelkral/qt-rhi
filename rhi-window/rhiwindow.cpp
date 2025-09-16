@@ -302,18 +302,21 @@ void HelloWindow::customRender()
     QVector3D lightPos(-5.0f, 20.0f, -15.0f);
     QVector3D camPos = m_camera.Position;
     float objectOpacity = 1.0f;
-    float radius = 15.0f;          // vzdálenost od středu scény
-    float height = 10.0f;          // výška světla
-    QVector3D center(0.0f, 0.0f, 0.0f); // střed kolem kterého obíhá
+
+
+    float radius = 15.0f;
+    float height = 10.0f;
+    QVector3D center(0.0f, 0.0f, 0.0f);
 
 
     lightPos.setX(center.x() + radius * cos(lightTime));
     lightPos.setZ(center.z() + radius * sin(lightTime));
     lightPos.setY(height);
+
     QVector3D lightColor(
-        0.5f + 0.5f * sin(lightTime * 2.0f),   // červená
-        0.5f + 0.5f * sin(lightTime * 0.7f + 2.0f), // zelená
-        0.5f + 0.5f * sin(lightTime * 1.3f + 4.0f)  // modrá
+        0.5f + 0.5f * sin(lightTime * 2.0f),
+        0.5f + 0.5f * sin(lightTime * 0.7f + 2.0f),
+        0.5f + 0.5f * sin(lightTime * 1.3f + 4.0f)
         );
 
     m_cube1.transform.rotation.setY( m_cube1.transform.rotation.y() + 0.5f);

@@ -89,7 +89,7 @@ void main() {
 
     vec3 color = ambient + Lo;
 
-    // --- gamma korekce až na výstupu ---
+    // --- gamma ---
     color = pow(color, vec3(1.0/2.0));
 
     out_color = vec4(color, 1.0);

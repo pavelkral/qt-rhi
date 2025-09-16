@@ -17,31 +17,31 @@ layout(std140, binding = 0) uniform Ubo {
     mat4 projection;
     mat4 lightSpace;
     vec4 lightPos;
-    vec4 color; // barva světla
+    vec4 color;
     vec4 camPos;
-    float debugMode;       // uniformní debug mód
-    float lightIntensity;  // uniformní intenzita světla
+    float debugMode;
+    float lightIntensity;
 } ubo;
 
 void main() {
     vec4 worldPos = ubo.model * vec4(in_pos, 1.0);
     frag_pos = worldPos.xyz;
 
-    // normal ve world-space
+    // normal in world-space
     vec3 N = normalize(mat3(ubo.model) * in_normal);
     frag_normal = N;
 
-    // tangent ve world-space (a handedness)
+    // tangent in world-space (a handedness)
     vec3 T = normalize(mat3(ubo.model) * in_tangent.xyz);
-    // ortogonalizuj tangent vůči normal
+    // ortogo tangent normal
     T = normalize(T - N * dot(N, T));
 
-    // bitangent s použitím handedness (w)
+    // bitangent handedness (w)
     vec3 B = cross(N, T) * in_tangent.w;
 
     frag_tangent = T;
     frag_bitangent = B;
 
     frag_uv = in_uv;
-    gl_Position = ubo.projection * ubo.view * worldPos; // nebo ubo.mvp pokud to tak nastavíš v C++
+    gl_Position = ubo.projection * ubo.view * worldPos;
 }
