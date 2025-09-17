@@ -151,7 +151,7 @@ void Model::draw(QRhiCommandBuffer *cb)
     cb->drawIndexed(m_indexCount);
 }
 
-void Model::DrawForShadowRHI(QRhiCommandBuffer *cb,
+void Model::DrawForShadow(QRhiCommandBuffer *cb,
                              QRhiGraphicsPipeline *shadowPipeline,
                              QRhiShaderResourceBindings *shadowSRB,
                              QRhiBuffer *shadowUbo,

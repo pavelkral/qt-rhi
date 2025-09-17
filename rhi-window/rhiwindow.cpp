@@ -272,10 +272,8 @@ void HelloWindow::customInit()
 
     QShader vs = getShader(":/texture.vert.qsb");
     QShader fs = getShader(":/texture.frag.qsb");
-
     QShader vs1 = getShader(":/light.vert.qsb");
     QShader fs1 = getShader(":/light.frag.qsb");
-
     QShader vs2 = getShader(":/pbr.vert.qsb");
     QShader fs2 = getShader(":/pbr.frag.qsb");
 
@@ -310,10 +308,13 @@ void HelloWindow::customRender()
     updateCamera(m_dt);
 
     lightTime += m_dt;
+
     QRhiResourceUpdateBatch *resourceUpdates = m_rhi->nextResourceUpdateBatch();
+    QRhiResourceUpdateBatch *shadowBatch = m_rhi->nextResourceUpdateBatch();
 
     if (m_initialUpdates) {
         resourceUpdates->merge(m_initialUpdates);
+        shadowBatch->merge(m_initialUpdates);
         m_initialUpdates->release();
         m_initialUpdates = nullptr;
     }
@@ -349,6 +350,7 @@ void HelloWindow::customRender()
         0.5f + 0.5f * sin(lightTime * 0.7f + 2.0f),
         0.5f + 0.5f * sin(lightTime * 1.3f + 4.0f)
         );
+
     QMatrix4x4 lightProjection;
     float nearPlane = 1.0f;
     float farPlane = 50.0f;
@@ -376,18 +378,16 @@ void HelloWindow::customRender()
     Q_ASSERT(m_shadowSRB);
     Q_ASSERT(m_shadowUbo);
 
-    QRhiResourceUpdateBatch *shadowBatch = m_rhi->nextResourceUpdateBatch();
-
     cb->beginPass(m_shadowMapRenderTarget, clearColorDepth, { 1.0f, 0 }, shadowBatch);
 
     cb->setGraphicsPipeline(m_shadowPipeline);
     cb->setViewport(QRhiViewport(0, 0, SHADOW_MAP_SIZE.width(), SHADOW_MAP_SIZE.height()));
-    m_cube1.DrawForShadowRHI(cb,m_shadowPipeline,m_shadowSRB,m_shadowUbo,lightSpaceMatrix,shadowBatch);
-    m_cube2.DrawForShadowRHI(cb,m_shadowPipeline,m_shadowSRB,m_shadowUbo,lightSpaceMatrix,shadowBatch);
-    floor.DrawForShadowRHI(cb,m_shadowPipeline,m_shadowSRB,m_shadowUbo,lightSpaceMatrix,shadowBatch);
+
+    m_cube1.DrawForShadow(cb,m_shadowPipeline,m_shadowSRB,m_shadowUbo,lightSpaceMatrix,shadowBatch);
+    m_cube2.DrawForShadow(cb,m_shadowPipeline,m_shadowSRB,m_shadowUbo,lightSpaceMatrix,shadowBatch);
+    floor.DrawForShadow(cb,m_shadowPipeline,m_shadowSRB,m_shadowUbo,lightSpaceMatrix,shadowBatch);
 
     cb->endPass();
-
 
     cb->beginPass(m_sc->currentFrameRenderTarget(), clearColor, { 1.0f, 0 }, resourceUpdates);
     cb->setViewport({ 0, 0, float(outputSizeInPixels.width()), float(outputSizeInPixels.height()) });

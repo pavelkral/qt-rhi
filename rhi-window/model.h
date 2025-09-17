@@ -61,7 +61,7 @@ public:
     Transform &getTransform() {
         return transform;
     }
-void DrawForShadowRHI(QRhiCommandBuffer *cb,
+void DrawForShadow(QRhiCommandBuffer *cb,
                  QRhiGraphicsPipeline *shadowPipeline,
                  QRhiShaderResourceBindings *shadowSRB,
                  QRhiBuffer *shadowUbo,
