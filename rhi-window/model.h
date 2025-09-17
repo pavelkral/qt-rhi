@@ -48,7 +48,6 @@ public:
 
     void addVertAndInd(const QVector<float> &vertices, const QVector<quint16> &indices);
     void init(QRhi *rhi,QRhiRenderPassDescriptor *rp,const QShader &vs,const QShader &fs,QRhiResourceUpdateBatch *u,QString tex_name); 
-    void setModelMatrix(const QMatrix4x4 &mvp, QRhiResourceUpdateBatch *u);
     void draw(QRhiCommandBuffer *cb);   
     void updateUniforms(const QMatrix4x4 &viewProjection,float opacity, QRhiResourceUpdateBatch *u);
     QVector<float> computeTangents(const QVector<float>& vertices, const QVector<quint16>& indices);
@@ -62,9 +61,13 @@ public:
     Transform &getTransform() {
         return transform;
     }
-
+void DrawForShadowRHI(QRhiCommandBuffer *cb,
+                 QRhiGraphicsPipeline *shadowPipeline,
+                 QRhiShaderResourceBindings *shadowSRB,
+                 QRhiBuffer *shadowUbo,
+                const QMatrix4x4& lightSpaceMatrix,QRhiResourceUpdateBatch *u) const ;
 private:
-
+    Ubo ubo;
     std::unique_ptr<QRhiTexture> m_texture;
     std::unique_ptr<QRhiSampler> m_sampler;
     std::unique_ptr<QRhiTexture> m_tex_norm;

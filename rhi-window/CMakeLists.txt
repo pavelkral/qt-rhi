@@ -13,6 +13,7 @@ qt_add_executable(rhi-window
     camera.h camera.cpp
     geometry.h
     transform.h transform.cpp
+    shaders/depth.frag shaders/depth.vert
 
 )
 
@@ -78,7 +79,9 @@ qt_add_resources(rhi-window "rhi-window"
         "shaders/prebuild/light.vert.qsb"
         "shaders/prebuild/light.frag.qsb"
         "shaders/prebuild/pbr.vert.qsb"
-        "shaders/prebuild/pbr.frag.qsb"
+        "shaders/prebuild/pbr.frag.qsb"      
+        "shaders/prebuild/depth.vert.qsb"
+        "shaders/prebuild/depth.frag.qsb"
         "shaders/color.vert.hlsl"
         "shaders/color.frag.hlsl"
         "shaders/mcolor.vert"
@@ -91,6 +94,8 @@ qt_add_resources(rhi-window "rhi-window"
         "shaders/light.vert"
         "shaders/pbr.frag"
         "shaders/pbr.vert"
+        "shaders/depth.frag"
+        "shaders/depth.vert"
         "../assets/textures/floor.jpg"
         "../assets/textures/floor.png"
          "../assets/textures/brick/victorian-brick_albedo.png"

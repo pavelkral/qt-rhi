@@ -114,7 +114,7 @@ void Model::updateUbo(const QMatrix4x4 &view,
     float debug = 0.0F;
     float lightIntensity = 5.0f;
 
-    Ubo ubo; 
+
     ubo.model       = transform.getModelMatrix();
     ubo.view        = view;
     ubo.projection  = projection;
@@ -155,10 +155,7 @@ void Model::updateUbo(const QMatrix4x4 &view,
     u->updateDynamicBuffer(m_ubuf.get(), 308,  4, reinterpret_cast<const float*>(&ubo.lightIntensity));
 
 }
-void Model::setModelMatrix(const QMatrix4x4 &mvp, QRhiResourceUpdateBatch *u)
-{
-    u->updateDynamicBuffer(m_ubuf.get(), 0, 64, mvp.constData());
-}
+
 void Model::draw(QRhiCommandBuffer *cb)
 {
     cb->setGraphicsPipeline(m_pipeline.get());
@@ -167,6 +164,38 @@ void Model::draw(QRhiCommandBuffer *cb)
     cb->setVertexInput(0, 1, &vbufBinding, m_ibuf.get(), 0, QRhiCommandBuffer::IndexUInt16);
     cb->drawIndexed(m_indexCount);
 }
+
+void Model::DrawForShadowRHI(QRhiCommandBuffer *cb,
+                             QRhiGraphicsPipeline *shadowPipeline,
+                             QRhiShaderResourceBindings *shadowSRB,
+                             QRhiBuffer *shadowUbo,
+                             const QMatrix4x4& lightSpaceMatrix,QRhiResourceUpdateBatch *u) const
+{
+    u->updateDynamicBuffer(shadowUbo, 0,   64, ubo.model.constData());
+    u->updateDynamicBuffer(shadowUbo, 64, 64, ubo.view.constData());
+    u->updateDynamicBuffer(shadowUbo, 128, 64, ubo.projection.constData());
+    u->updateDynamicBuffer(shadowUbo, 192, 64, ubo.lightSpace.constData());
+    u->updateDynamicBuffer(shadowUbo, 256, 16, reinterpret_cast<const float*>(&ubo.lightPos));
+    u->updateDynamicBuffer(shadowUbo, 272, 16, reinterpret_cast<const float*>(&ubo.lightColor));
+    u->updateDynamicBuffer(shadowUbo, 288, 16, reinterpret_cast<const float*>(&ubo.camPos));
+    u->updateDynamicBuffer(shadowUbo, 304,  16, reinterpret_cast<const float*>(&ubo.opacity));
+    u->updateDynamicBuffer(shadowUbo, 304,  4, reinterpret_cast<const float*>(&ubo.debugMode));
+    u->updateDynamicBuffer(shadowUbo, 308,  4, reinterpret_cast<const float*>(&ubo.lightIntensity));
+    // Získání "update batch", do kterého se zaznamenají změny v bufferech
+   // QRhiResourceUpdateBatch *resourceUpdates = cb->rhi()->nextResourceUpdateBatch();
+   // resourceUpdates->updateDynamicBuffer(shadowUbo, 0, sizeof(ShadowPassUBO), &uboData);
+    // Odeslání změn
+    //cb->resourceUpdate(resourceUpdates);
+    // --- 2. Nastavení grafického pipeline ---
+    // Ekvivalent glUseProgram
+    cb->setGraphicsPipeline(shadowPipeline);
+    // Ekvivalent navázání uniform bufferu (pomocí předpřipraveného SRB)
+    cb->setShaderResources(shadowSRB);
+    const QRhiCommandBuffer::VertexInput vbufBinding(m_vbuf.get(), 0);
+    cb->setVertexInput(0, 1, &vbufBinding, m_ibuf.get(), 0, QRhiCommandBuffer::IndexUInt16);
+    cb->drawIndexed(m_indexCount);
+}
+
 void Model::loadTexture(QRhi *m_rhi,const QSize &, QRhiResourceUpdateBatch *u,QString tex_name,std::unique_ptr<QRhiTexture> &texture,
                         std::unique_ptr<QRhiSampler> &sampler)
 {

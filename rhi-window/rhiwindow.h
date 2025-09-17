@@ -56,12 +56,15 @@ public:
  float lightTime = 0.0f;
     void customInit() override;
     void customRender() override;
+    void initShadowMapResources(QRhi *rhi);
+    void initDrawingResources(QRhi *rhi);
+    void releaseShadowMapResources();
 protected:
     void keyPressEvent(QKeyEvent *e) override;
     void keyReleaseEvent(QKeyEvent *e) override;
     void mouseMoveEvent(QMouseEvent *e) override;
 private:
-    void updateCamera(float dt); // Funkce pro aktualizaci kamery každý frame
+    void updateCamera(float dt);
     Model m_cube1;
     Model m_cube2;
     Model floor;
@@ -71,6 +74,24 @@ private:
     QElapsedTimer m_timer;
     float m_dt = 0;
     QRhiResourceUpdateBatch *m_initialUpdates = nullptr;
+
+
+    const QSize SHADOW_MAP_SIZE = QSize(2048, 2048);
+    QRhiTexture *m_shadowMapTexture = nullptr;
+    QRhiSampler *m_shadowMapSampler = nullptr;
+    QRhiTextureRenderTarget *m_shadowMapRenderTarget = nullptr;
+    QRhiRenderPassDescriptor * m_shadowMapRenderPassDesc = nullptr;
+
+    struct ShadowPassUBO {
+        QMatrix4x4 lightSpaceMatrix;
+        QMatrix4x4 modelMatrix;
+    };
+
+
+    std::unique_ptr<QRhiBuffer> m_shadowUbo = nullptr;
+    QRhiShaderResourceBindings *m_shadowSRB = nullptr;
+    QRhiGraphicsPipeline *m_shadowPipeline = nullptr;
+    ShadowPassUBO m_shadowUboData;
 
     float m_rotation = 0;
     float m_opacity = 1;
