@@ -55,7 +55,8 @@ public:
 
     float lightTime = 0.0f;
 
-    HelloWindow(QRhi::Implementation graphicsApi);   
+    HelloWindow(QRhi::Implementation graphicsApi);
+    ~HelloWindow();
     void customInit() override;
     void customRender() override;
     void initShadowMapResources(QRhi *rhi);
@@ -71,6 +72,7 @@ private:
     Model m_cube2;
     Model floor;
     Camera m_camera;
+
     QSet<int> m_pressedKeys;
     QPointF m_lastMousePos;
     QElapsedTimer m_timer;

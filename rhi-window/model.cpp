@@ -157,6 +157,7 @@ void Model::DrawForShadowRHI(QRhiCommandBuffer *cb,
                              QRhiBuffer *shadowUbo,
                              const QMatrix4x4& lightSpaceMatrix,QRhiResourceUpdateBatch *u) const
 {
+  //  QRhiResourceUpdateBatch *resourceUpdates = m_rhi->nextResourceUpdateBatch();
     u->updateDynamicBuffer(shadowUbo, 0,   64, ubo.model.constData());
     u->updateDynamicBuffer(shadowUbo, 64, 64, ubo.view.constData());
     u->updateDynamicBuffer(shadowUbo, 128, 64, ubo.projection.constData());

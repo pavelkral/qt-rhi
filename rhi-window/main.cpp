@@ -12,6 +12,7 @@ int main(int argc, char **argv)
     QRhi::Implementation graphicsApi;
     // Use platform-specific defaults when no command-line arguments given.
 #if defined(Q_OS_WIN)
+    //graphicsApi = QRhi::D3D11;
     graphicsApi = QRhi::Vulkan;
 #elif QT_CONFIG(metal)
     graphicsApi = QRhi::Metal;

@@ -232,6 +232,36 @@ HelloWindow::HelloWindow(QRhi::Implementation graphicsApi)
     // Skryje kurzor a zachytí ho v okně
     //setCursor(Qt::BlankCursor);
 }
+HelloWindow::~HelloWindow()
+{
+    if (m_shadowPipeline) {
+       // m_shadowPipeline->release();
+        delete m_shadowPipeline;
+        m_shadowPipeline = nullptr;
+    }
+
+    if (m_shadowSRB) {
+       // m_shadowSRB->release();
+        delete m_shadowSRB;
+        m_shadowSRB = nullptr;
+    }
+
+    if (m_shadowUbo) {
+    //    m_shadowUbo->release();
+        delete m_shadowUbo;
+        m_shadowUbo = nullptr;
+    }
+
+    delete m_shadowMapTexture;
+    delete m_shadowMapSampler;
+    delete m_shadowMapRenderTarget;
+    delete m_shadowMapRenderPassDesc;
+   // delete m_shadowUbo;
+  //  delete m_shadowSRB;
+  //  delete m_shadowPipeline;
+    // QRhi samotné uvolníš až nakonec
+
+}
 void HelloWindow::customInit()
 {
 
@@ -346,15 +376,18 @@ void HelloWindow::customRender()
     Q_ASSERT(m_shadowSRB);
     Q_ASSERT(m_shadowUbo);
 
-    // cb->beginPass(m_shadowMapRenderTarget, clearColorDepth, { 1.0f, 0 }, resourceUpdates);
+    QRhiResourceUpdateBatch *shadowBatch = m_rhi->nextResourceUpdateBatch();
 
-    // cb->setGraphicsPipeline(m_shadowPipeline);
-    // cb->setViewport(QRhiViewport(0, 0, SHADOW_MAP_SIZE.width(), SHADOW_MAP_SIZE.height()));
-    // m_cube1.DrawForShadowRHI(cb,m_shadowPipeline,m_shadowSRB,m_shadowUbo,lightSpaceMatrix,resourceUpdates);
-    // m_cube2.DrawForShadowRHI(cb,m_shadowPipeline,m_shadowSRB,m_shadowUbo,lightSpaceMatrix,resourceUpdates);
-    // floor.DrawForShadowRHI(cb,m_shadowPipeline,m_shadowSRB,m_shadowUbo,lightSpaceMatrix,resourceUpdates);
+    cb->beginPass(m_shadowMapRenderTarget, clearColorDepth, { 1.0f, 0 }, shadowBatch);
 
-    // cb->endPass();
+    cb->setGraphicsPipeline(m_shadowPipeline);
+    cb->setViewport(QRhiViewport(0, 0, SHADOW_MAP_SIZE.width(), SHADOW_MAP_SIZE.height()));
+    m_cube1.DrawForShadowRHI(cb,m_shadowPipeline,m_shadowSRB,m_shadowUbo,lightSpaceMatrix,shadowBatch);
+    m_cube2.DrawForShadowRHI(cb,m_shadowPipeline,m_shadowSRB,m_shadowUbo,lightSpaceMatrix,shadowBatch);
+    floor.DrawForShadowRHI(cb,m_shadowPipeline,m_shadowSRB,m_shadowUbo,lightSpaceMatrix,shadowBatch);
+
+    cb->endPass();
+
 
     cb->beginPass(m_sc->currentFrameRenderTarget(), clearColor, { 1.0f, 0 }, resourceUpdates);
     cb->setViewport({ 0, 0, float(outputSizeInPixels.width()), float(outputSizeInPixels.height()) });
@@ -452,7 +485,9 @@ void HelloWindow::initShadowMapResources(QRhi *rhi) {
         QRhiSampler::ClampToEdge,
         QRhiSampler::ClampToEdge
         );
+
     m_shadowMapSampler->create();
+
     m_shadowPipeline = rhi->newGraphicsPipeline();
 
     QRhiVertexInputLayout inputLayout;
@@ -475,8 +510,6 @@ void HelloWindow::initShadowMapResources(QRhi *rhi) {
 
     Q_ASSERT(m_shadowMapRenderPassDesc); // kontrola sanity
     m_shadowPipeline->setRenderPassDescriptor(m_shadowMapRenderPassDesc);
-
-    // 6️⃣ Pipeline nastavení
     m_shadowPipeline->setTopology(QRhiGraphicsPipeline::Triangles);
     m_shadowPipeline->setDepthTest(true);
     m_shadowPipeline->setDepthWrite(true);
