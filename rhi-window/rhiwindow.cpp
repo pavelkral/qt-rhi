@@ -156,10 +156,7 @@ void RhiWindow::init()
 void RhiWindow::resizeSwapChain()
 {
     m_hasSwapChain = m_sc->createOrResize(); // also handles m_ds
-
     const QSize outputSize = m_sc->currentPixelSize();
-  //  m_viewProjection = m_rhi->clipSpaceCorrMatrix();
-   // m_projection.perspective(45.0f, outputSize.width() / (float) outputSize.height(), 0.1f, 1000.0f);
      m_projection = createProjection(m_rhi.get(), 45.0f, outputSize.width() / (float)outputSize.height(), 0.1f, 1000.0f);
 
 }
@@ -237,10 +234,11 @@ HelloWindow::HelloWindow(QRhi::Implementation graphicsApi)
 }
 void HelloWindow::customInit()
 {
+
+
     m_initialUpdates = m_rhi->nextResourceUpdateBatch();
 
     initShadowMapResources(m_rhi.get());
-    initDrawingResources(m_rhi.get());
 
     QShader vs = getShader(":/texture.vert.qsb");
     QShader fs = getShader(":/texture.frag.qsb");
@@ -299,7 +297,7 @@ void HelloWindow::customRender()
     QRhiCommandBuffer *cb = m_sc->currentFrameCommandBuffer();
 
     QMatrix4x4 view = m_camera.GetViewMatrix();
-    QMatrix4x4 lightSpaceMatrix;
+
    // QVector3D lightColor(1.0f, 1.0f, 1.0f);
     QMatrix4x4 projection = m_projection;
     QVector3D lightPos(-5.0f, 20.0f, -15.0f);
@@ -321,6 +319,16 @@ void HelloWindow::customRender()
         0.5f + 0.5f * sin(lightTime * 0.7f + 2.0f),
         0.5f + 0.5f * sin(lightTime * 1.3f + 4.0f)
         );
+    QMatrix4x4 lightProjection;
+    float nearPlane = 1.0f;
+    float farPlane = 50.0f;
+    float orthoSize = 20.0f;
+    lightProjection.ortho(-orthoSize, orthoSize, -orthoSize, orthoSize, nearPlane, farPlane);
+
+    QMatrix4x4 lightView;
+    lightView.lookAt(lightPos, center, QVector3D(0,1,0));
+
+    QMatrix4x4 lightSpaceMatrix = lightProjection * lightView;
 
     m_cube1.transform.rotation.setY( m_cube1.transform.rotation.y() + 0.5f);
     m_cube2.transform.rotation.setY(m_cube2.transform.rotation.y() + 0.5f);
@@ -333,13 +341,18 @@ void HelloWindow::customRender()
     const QColor clearColor = QColor::fromRgbF(0.4f, 0.7f, 0.0f, 1.0f);
     const QColor clearColorDepth = QColor::fromRgbF(1.0f, 1,1,1);
 
+    Q_ASSERT(m_shadowMapRenderTarget);
+    Q_ASSERT(m_shadowPipeline);
+    Q_ASSERT(m_shadowSRB);
+    Q_ASSERT(m_shadowUbo);
+
     // cb->beginPass(m_shadowMapRenderTarget, clearColorDepth, { 1.0f, 0 }, resourceUpdates);
 
     // cb->setGraphicsPipeline(m_shadowPipeline);
     // cb->setViewport(QRhiViewport(0, 0, SHADOW_MAP_SIZE.width(), SHADOW_MAP_SIZE.height()));
-    // m_cube1.DrawForShadowRHI(cb,m_shadowPipeline,m_shadowSRB,m_shadowUbo.get(),lightSpaceMatrix,resourceUpdates);
-    // m_cube2.DrawForShadowRHI(cb,m_shadowPipeline,m_shadowSRB,m_shadowUbo.get(),lightSpaceMatrix,resourceUpdates);
-    // floor.DrawForShadowRHI(cb,m_shadowPipeline,m_shadowSRB,m_shadowUbo.get(),lightSpaceMatrix,resourceUpdates);
+    // m_cube1.DrawForShadowRHI(cb,m_shadowPipeline,m_shadowSRB,m_shadowUbo,lightSpaceMatrix,resourceUpdates);
+    // m_cube2.DrawForShadowRHI(cb,m_shadowPipeline,m_shadowSRB,m_shadowUbo,lightSpaceMatrix,resourceUpdates);
+    // floor.DrawForShadowRHI(cb,m_shadowPipeline,m_shadowSRB,m_shadowUbo,lightSpaceMatrix,resourceUpdates);
 
     // cb->endPass();
 
@@ -410,6 +423,16 @@ void HelloWindow::initShadowMapResources(QRhi *rhi) {
         );
     m_shadowMapTexture->create();
 
+    const quint32 UBUF_SIZE = 512;
+
+    m_shadowUbo = rhi->newBuffer(QRhiBuffer::Dynamic, QRhiBuffer::UniformBuffer, UBUF_SIZE);
+    m_shadowUbo->create();
+
+    m_shadowSRB = rhi->newShaderResourceBindings();
+    m_shadowSRB->setBindings({
+        QRhiShaderResourceBinding::uniformBuffer(0, QRhiShaderResourceBinding::VertexStage, m_shadowUbo)
+    });
+    m_shadowSRB->create();
     // 2. Render target description s depth attachmentem
     QRhiTextureRenderTargetDescription shadowRtDesc;
     shadowRtDesc.setDepthTexture(m_shadowMapTexture);
@@ -420,7 +443,7 @@ void HelloWindow::initShadowMapResources(QRhi *rhi) {
     m_shadowMapRenderTarget->setRenderPassDescriptor(m_shadowMapRenderPassDesc);
     m_shadowMapRenderTarget->create();
 
-    // 4. Sampler pro čtení shadow mapy v color shaderu
+
     m_shadowMapSampler = rhi->newSampler(
         QRhiSampler::Nearest,
         QRhiSampler::Nearest,
@@ -430,52 +453,34 @@ void HelloWindow::initShadowMapResources(QRhi *rhi) {
         QRhiSampler::ClampToEdge
         );
     m_shadowMapSampler->create();
-}
-void HelloWindow::initDrawingResources(QRhi *rhi) {
-
-
-    const quint32 UBUF_SIZE = 512;
-    m_shadowUbo.reset(rhi->newBuffer(QRhiBuffer::Dynamic, QRhiBuffer::UniformBuffer,UBUF_SIZE ));
-     m_shadowUbo->create();
-
-    m_shadowSRB = rhi->newShaderResourceBindings();
-    m_shadowSRB->setBindings({
-        QRhiShaderResourceBinding::uniformBuffer(0, QRhiShaderResourceBinding::VertexStage, m_shadowUbo.get())
-    });
-    m_shadowSRB->create();
-
     m_shadowPipeline = rhi->newGraphicsPipeline();
 
-
     QRhiVertexInputLayout inputLayout;
+    inputLayout.setBindings({ { 3 * sizeof(float) } }); // jen pozice
+    inputLayout.setAttributes({ { 0, 0, QRhiVertexInputAttribute::Float3, 0 } });
 
-    inputLayout.setBindings({
-        { 14 * sizeof(float) }
-    });
-
-    inputLayout.setAttributes({
-        { 0, 0, QRhiVertexInputAttribute::Float3, 0 },                    // pos
-        { 0, 1, QRhiVertexInputAttribute::Float3, 3 * sizeof(float) },    // normal
-        { 0, 2, QRhiVertexInputAttribute::Float2, 6 * sizeof(float) },    // uv
-        { 0, 3, QRhiVertexInputAttribute::Float3, 8 * sizeof(float) },    // tangent
-        { 0, 4, QRhiVertexInputAttribute::Float3, 11 * sizeof(float) }    // bitangent
-    });
     m_shadowPipeline->setVertexInputLayout(inputLayout);
 
+
     QShader vs = getShader(":/shaders/prebuild/depth.vert.qsb");
-    QShader fs = getShader(":/shaders/prebuild/depth.frag.qsb");
+    QShader fs = getShader(":/shaders/prebuild/depth.frag.qsb"); // depth-only shader
 
     m_shadowPipeline->setShaderStages({
         { QRhiShaderStage::Vertex, vs },
         { QRhiShaderStage::Fragment, fs }
     });
 
+
     m_shadowPipeline->setShaderResourceBindings(m_shadowSRB);
+
+    Q_ASSERT(m_shadowMapRenderPassDesc); // kontrola sanity
     m_shadowPipeline->setRenderPassDescriptor(m_shadowMapRenderPassDesc);
+
+    // 6️⃣ Pipeline nastavení
     m_shadowPipeline->setTopology(QRhiGraphicsPipeline::Triangles);
     m_shadowPipeline->setDepthTest(true);
     m_shadowPipeline->setDepthWrite(true);
     m_shadowPipeline->setDepthOp(QRhiGraphicsPipeline::LessOrEqual);
-    m_shadowPipeline->setCullMode(QRhiGraphicsPipeline::Back); // Důležité pro stíny!
+    m_shadowPipeline->setCullMode(QRhiGraphicsPipeline::Back);
     m_shadowPipeline->create();
 }

@@ -38,9 +38,7 @@ void Model::init(QRhi *rhi,QRhiRenderPassDescriptor *rp,
     set.height = ":/assets/textures/brick/victorian-brick_height.png";
     set.ao = ":/assets/textures/brick/victorian-brick_ao.png";
 
-
     loadTexture(rhi,QSize(), u,set.albedo,m_texture,m_sampler);
-
     loadTexture(rhi,QSize(), u,set.normal,m_tex_norm,m_sampler_norm);
     loadTexture(rhi,QSize(), u,set.metallic,m_texture_met,m_sampler_met);
     loadTexture(rhi,QSize(), u,set.rougness,m_texture_rough,m_sampler_rough);
@@ -130,18 +128,6 @@ void Model::updateUbo(const QMatrix4x4 &view,
 
    // u->updateDynamicBuffer(m_ubuf.get(), 0, sizeof(Ubo), &ubo);
 
-   //  qDebug() << "--- UBO Debug Information ---";
-   //  qDebug() << "Size of UBO struct:" << sizeof(Ubo) << "bytes";
-   //  qDebug() << "\n## Data Member: mvp (Model-View-Projection Matrix)";
-   //  qDebug() << "Type: QMatrix4x4, Size:" << sizeof(QMatrix4x4) << "bytes";
-   //  qDebug() << "Type const: QMatrix4x4, Size:" << sizeof(ubo.mvp.constData()) << "bytes";
-   //  qDebug() << "\n## Data Member: opacity";
-   //  qDebug() << "Type: float, Size:" << sizeof(float) << "bytes";
-   //  qDebug() << "Type const: float, Size:" << sizeof(ubo.opacity) << "bytes";
-   //  qDebug() << "\n## Data Member: lightPos (Light Position)";
-   //  qDebug() << "Type: QVector4D, Size:" << sizeof(QVector4D) << "bytes";
-   //  qDebug() << "Type const: QVector4D, Size:" << sizeof(ubo.lightPos) << "bytes";
-   //  qDebug() << "--- End of UBO Debug ---";
 
     u->updateDynamicBuffer(m_ubuf.get(), 0,   64, ubo.model.constData());
     u->updateDynamicBuffer(m_ubuf.get(), 64, 64, ubo.view.constData());
@@ -181,15 +167,8 @@ void Model::DrawForShadowRHI(QRhiCommandBuffer *cb,
     u->updateDynamicBuffer(shadowUbo, 304,  16, reinterpret_cast<const float*>(&ubo.opacity));
     u->updateDynamicBuffer(shadowUbo, 304,  4, reinterpret_cast<const float*>(&ubo.debugMode));
     u->updateDynamicBuffer(shadowUbo, 308,  4, reinterpret_cast<const float*>(&ubo.lightIntensity));
-    // Získání "update batch", do kterého se zaznamenají změny v bufferech
-   // QRhiResourceUpdateBatch *resourceUpdates = cb->rhi()->nextResourceUpdateBatch();
-   // resourceUpdates->updateDynamicBuffer(shadowUbo, 0, sizeof(ShadowPassUBO), &uboData);
-    // Odeslání změn
-    //cb->resourceUpdate(resourceUpdates);
-    // --- 2. Nastavení grafického pipeline ---
-    // Ekvivalent glUseProgram
+
     cb->setGraphicsPipeline(shadowPipeline);
-    // Ekvivalent navázání uniform bufferu (pomocí předpřipraveného SRB)
     cb->setShaderResources(shadowSRB);
     const QRhiCommandBuffer::VertexInput vbufBinding(m_vbuf.get(), 0);
     cb->setVertexInput(0, 1, &vbufBinding, m_ibuf.get(), 0, QRhiCommandBuffer::IndexUInt16);
