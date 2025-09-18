@@ -11,7 +11,7 @@ void Model::addVertAndInd(const QVector<float> &vertices, const QVector<quint16>
 void Model::init(QRhi *rhi,QRhiRenderPassDescriptor *rp,
                 const QShader &vs,
                 const QShader &fs,
-                QRhiResourceUpdateBatch *u,QString tex_name)
+                QRhiResourceUpdateBatch *u,QRhiTexture *shadowmap,QRhiSampler *shadowsampler)
 {
 
     QVector<float>  m_vert1= computeTangents( m_vert,m_ind);
@@ -44,7 +44,8 @@ void Model::init(QRhi *rhi,QRhiRenderPassDescriptor *rp,
     loadTexture(rhi,QSize(), u,set.rougness,m_texture_rough,m_sampler_rough);
     loadTexture(rhi,QSize(), u,set.height,m_texture_height,m_sampler_height);
     loadTexture(rhi,QSize(), u,set.ao,m_texture_ao,m_sampler_ao);
-
+    Q_ASSERT(shadowmap);
+    Q_ASSERT(shadowsampler);
     m_srb.reset(rhi->newShaderResourceBindings());
     m_srb->setBindings({
         QRhiShaderResourceBinding::uniformBuffer(0,QRhiShaderResourceBinding::VertexStage | QRhiShaderResourceBinding::FragmentStage , m_ubuf.get()),
@@ -53,7 +54,8 @@ void Model::init(QRhi *rhi,QRhiRenderPassDescriptor *rp,
         QRhiShaderResourceBinding::sampledTexture(3,QRhiShaderResourceBinding::FragmentStage, m_texture_met.get(), m_sampler_met.get()),
         QRhiShaderResourceBinding::sampledTexture(4,QRhiShaderResourceBinding::FragmentStage, m_texture_rough.get(), m_sampler_rough.get()),
         QRhiShaderResourceBinding::sampledTexture(5,QRhiShaderResourceBinding::FragmentStage, m_texture_ao.get(), m_sampler_ao.get()),
-        QRhiShaderResourceBinding::sampledTexture(6,QRhiShaderResourceBinding::FragmentStage, m_texture_height.get(), m_sampler_height.get())
+        QRhiShaderResourceBinding::sampledTexture(6,QRhiShaderResourceBinding::FragmentStage, m_texture_height.get(), m_sampler_height.get()),
+        QRhiShaderResourceBinding::sampledTexture(7,QRhiShaderResourceBinding::FragmentStage, shadowmap, shadowsampler)
     });
     m_srb->create();
 
@@ -100,6 +102,7 @@ void Model::updateUniforms(const QMatrix4x4 &viewProjection,float opacity, QRhiR
     u->updateDynamicBuffer(m_ubuf.get(), 0, 64, mvp.constData());
     u->updateDynamicBuffer(m_ubuf.get(), 64, 4, &opacity);
 }
+
 void Model::updateUbo(const QMatrix4x4 &view,
                         const QMatrix4x4 &projection,
                         const QMatrix4x4 &lightSpace,
@@ -107,29 +110,27 @@ void Model::updateUbo(const QMatrix4x4 &view,
                         const QVector3D &lightPos,
                         const QVector3D &camPos,
                         const float opacity,
+                        Ubo ubo,
                         QRhiResourceUpdateBatch *u )
 {
-    float debug = 0.0F;
-    float lightIntensity = 5.0f;
-
-
-    ubo.model       = transform.getModelMatrix();
-    ubo.view        = view;
-    ubo.projection  = projection;
-    ubo.lightSpace  = lightSpace;
-
-    ubo.lightPos    = QVector4D(lightPos, 1.0f);
-    ubo.lightColor  = QVector4D(color, 1.0f);
-    ubo.camPos      = QVector4D(camPos, 1.0f);
-    ubo.opacity     = QVector4D(0.0f,0.0f,0.0f, opacity);
-    ubo.debugMode   = debug;
-    ubo.lightIntensity = lightIntensity;
+    // float debug = 0.0F;
+    // float lightIntensity = 5.0f;
+    // ubo.model       = transform.getModelMatrix();
+    // ubo.view        = view;
+    // ubo.projection  = projection;
+    // ubo.lightSpace  = lightSpace;
+    // ubo.lightPos    = QVector4D(lightPos, 1.0f);
+    // ubo.lightColor  = QVector4D(color, 1.0f);
+    // ubo.camPos      = QVector4D(camPos, 1.0f);
+    // ubo.opacity     = QVector4D(0.0f,0.0f,0.0f, opacity);
+    // ubo.debugMode   = debug;
+    // ubo.lightIntensity = lightIntensity;
 
 
    // u->updateDynamicBuffer(m_ubuf.get(), 0, sizeof(Ubo), &ubo);
 
 
-    u->updateDynamicBuffer(m_ubuf.get(), 0,   64, ubo.model.constData());
+    u->updateDynamicBuffer(m_ubuf.get(), 0,   64, transform.getModelMatrix().constData());
     u->updateDynamicBuffer(m_ubuf.get(), 64, 64, ubo.view.constData());
     u->updateDynamicBuffer(m_ubuf.get(), 128, 64, ubo.projection.constData());
     u->updateDynamicBuffer(m_ubuf.get(), 192, 64, ubo.lightSpace.constData());
@@ -155,13 +156,14 @@ void Model::DrawForShadow(QRhiCommandBuffer *cb,
                              QRhiGraphicsPipeline *shadowPipeline,
                              QRhiShaderResourceBindings *shadowSRB,
                              QRhiBuffer *shadowUbo,
-                             const QMatrix4x4& lightSpaceMatrix,QRhiResourceUpdateBatch *u) const
+                             const QMatrix4x4& lightSpaceMatrix,
+                            Ubo ubo,
+                            QRhiResourceUpdateBatch *u) const
 {
-  //  QRhiResourceUpdateBatch *resourceUpdates = m_rhi->nextResourceUpdateBatch();
-    u->updateDynamicBuffer(shadowUbo, 0,   64, ubo.model.constData());
+    u->updateDynamicBuffer(shadowUbo, 0,   64, transform.getModelMatrix().constData());
     u->updateDynamicBuffer(shadowUbo, 64, 64, ubo.view.constData());
     u->updateDynamicBuffer(shadowUbo, 128, 64, ubo.projection.constData());
-    u->updateDynamicBuffer(shadowUbo, 192, 64, ubo.lightSpace.constData());
+    u->updateDynamicBuffer(shadowUbo, 192, 64,lightSpaceMatrix.constData());
     u->updateDynamicBuffer(shadowUbo, 256, 16, reinterpret_cast<const float*>(&ubo.lightPos));
     u->updateDynamicBuffer(shadowUbo, 272, 16, reinterpret_cast<const float*>(&ubo.lightColor));
     u->updateDynamicBuffer(shadowUbo, 288, 16, reinterpret_cast<const float*>(&ubo.camPos));

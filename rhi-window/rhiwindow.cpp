@@ -7,7 +7,7 @@
 #include <QImage>
 #include <QFont>
 #include <rhi/qshader.h>
-#include "geometry.h"
+#include "qtrhi3d/geometry.h"
 
 //================================== RhiWindow ==================================
 
@@ -287,17 +287,17 @@ void HelloWindow::customInit()
     m_cube2.addVertAndInd(sphereVertices, sphereIndices);
     floor.addVertAndInd(indexedPlaneVertices ,indexedPlaneIndices );
 
-    m_cube1.init(m_rhi.get(), m_rp.get(), vs2, fs2, m_initialUpdates,":/assets/textures/floor.png");
-    m_cube2.init(m_rhi.get(),m_rp.get(), vs2, fs2, m_initialUpdates,":/assets/textures/floor.png");
-    floor.init(m_rhi.get(), m_rp.get(), vs2, fs2, m_initialUpdates,":/assets/textures/floor.jpg");
+    m_cube1.init(m_rhi.get(), m_rp.get(), vs2, fs2, m_initialUpdates,m_shadowMapTexture,m_shadowMapSampler);
+    m_cube2.init(m_rhi.get(),m_rp.get(), vs2, fs2, m_initialUpdates,m_shadowMapTexture,m_shadowMapSampler);
+    floor.init(m_rhi.get(), m_rp.get(), vs2, fs2, m_initialUpdates,m_shadowMapTexture,m_shadowMapSampler);
 
-    floor.transform.position = QVector3D(0, -1.5f, 0);
+    floor.transform.position = QVector3D(0, -0.5f, 0);
     floor.transform.scale = QVector3D(10, 10, 10);
     floor.transform.rotation.setX( 90.0f);
     m_cube1.transform.position = QVector3D(-1.5f, 0, 0);
     m_cube2.transform.position = QVector3D(1.5f, 0, 0);
     m_cube2.transform.scale = QVector3D(0.5f,0.5f, 0.5f);
-
+    m_camera.Position = QVector3D(-0.5f,1.5f, 5.5f);
     m_timer.start();
 }
 
@@ -336,8 +336,8 @@ void HelloWindow::customRender()
     float objectOpacity = 1.0f;
 
 
-    float radius = 15.0f;
-    float height = 10.0f;
+    float radius = 10.0f;
+    float height = 20.0f;
     QVector3D center(0.0f, 0.0f, 0.0f);
 
 
@@ -359,15 +359,28 @@ void HelloWindow::customRender()
 
     QMatrix4x4 lightView;
     lightView.lookAt(lightPos, center, QVector3D(0,1,0));
-
     QMatrix4x4 lightSpaceMatrix = lightProjection * lightView;
+    float debug = 0.0F;
+    float lightIntensity = 5.0f;
+
+    Ubo ubo;
+    //ubo.model       = transform.getModelMatrix();
+    ubo.view        = view;
+    ubo.projection  = projection;
+    ubo.lightSpace  = lightSpaceMatrix;
+    ubo.lightPos    = QVector4D(lightPos, 1.0f);
+    ubo.lightColor  = QVector4D(lightColor, 1.0f);
+    ubo.camPos      = QVector4D(camPos, 1.0f);
+    ubo.opacity     = QVector4D(0.0f,0.0f,0.0f, m_opacity);
+    ubo.debugMode   = debug;
+    ubo.lightIntensity = lightIntensity;
 
     m_cube1.transform.rotation.setY( m_cube1.transform.rotation.y() + 0.5f);
     m_cube2.transform.rotation.setY(m_cube2.transform.rotation.y() + 0.5f);
 
-    m_cube1.updateUbo(view,m_projection,lightSpaceMatrix,lightColor,lightPos,camPos,m_opacity,resourceUpdates);
-    floor.updateUbo(view,m_projection,lightSpaceMatrix,lightColor,lightPos,camPos,m_opacity,resourceUpdates);
-    m_cube2.updateUbo(view,m_projection,lightSpaceMatrix,lightColor,lightPos,camPos,m_opacity,resourceUpdates);
+    m_cube1.updateUbo(view,m_projection,lightSpaceMatrix,lightColor,lightPos,camPos,m_opacity,ubo,resourceUpdates);
+    floor.updateUbo(view,m_projection,lightSpaceMatrix,lightColor,lightPos,camPos,m_opacity,ubo,resourceUpdates);
+    m_cube2.updateUbo(view,m_projection,lightSpaceMatrix,lightColor,lightPos,camPos,m_opacity,ubo,resourceUpdates);
 
     const QSize outputSizeInPixels = m_sc->currentPixelSize();
     const QColor clearColor = QColor::fromRgbF(0.4f, 0.7f, 0.0f, 1.0f);
@@ -383,9 +396,9 @@ void HelloWindow::customRender()
     cb->setGraphicsPipeline(m_shadowPipeline);
     cb->setViewport(QRhiViewport(0, 0, SHADOW_MAP_SIZE.width(), SHADOW_MAP_SIZE.height()));
 
-    m_cube1.DrawForShadow(cb,m_shadowPipeline,m_shadowSRB,m_shadowUbo,lightSpaceMatrix,shadowBatch);
-    m_cube2.DrawForShadow(cb,m_shadowPipeline,m_shadowSRB,m_shadowUbo,lightSpaceMatrix,shadowBatch);
-    floor.DrawForShadow(cb,m_shadowPipeline,m_shadowSRB,m_shadowUbo,lightSpaceMatrix,shadowBatch);
+    m_cube1.DrawForShadow(cb,m_shadowPipeline,m_shadowSRB,m_shadowUbo,lightSpaceMatrix,ubo,shadowBatch);
+    m_cube2.DrawForShadow(cb,m_shadowPipeline,m_shadowSRB,m_shadowUbo,lightSpaceMatrix,ubo,shadowBatch);
+    floor.DrawForShadow(cb,m_shadowPipeline,m_shadowSRB,m_shadowUbo,lightSpaceMatrix,ubo,shadowBatch);
 
     cb->endPass();
 
@@ -449,13 +462,23 @@ void HelloWindow::updateCamera(float dt)
 void HelloWindow::initShadowMapResources(QRhi *rhi) {
 
     m_shadowMapTexture = rhi->newTexture(
-        QRhiTexture::D16,                  // pouze depth
+        QRhiTexture::D32F,                  // pouze depth
         SHADOW_MAP_SIZE,
         1,
-        QRhiTexture::RenderTarget          // není potřeba UsedAsSampled v Qt 6.9.2
+        QRhiTexture::RenderTarget    // není potřeba UsedAsSampled v Qt 6.9.2
         );
     m_shadowMapTexture->create();
 
+    m_shadowMapSampler = rhi->newSampler(
+        QRhiSampler::Nearest,
+        QRhiSampler::Nearest,
+        QRhiSampler::None,
+        QRhiSampler::ClampToEdge,
+        QRhiSampler::ClampToEdge,
+        QRhiSampler::ClampToEdge
+        );
+
+    m_shadowMapSampler->create();
     const quint32 UBUF_SIZE = 512;
 
     m_shadowUbo = rhi->newBuffer(QRhiBuffer::Dynamic, QRhiBuffer::UniformBuffer, UBUF_SIZE);
@@ -469,7 +492,6 @@ void HelloWindow::initShadowMapResources(QRhi *rhi) {
     // 2. Render target description s depth attachmentem
     QRhiTextureRenderTargetDescription shadowRtDesc;
     shadowRtDesc.setDepthTexture(m_shadowMapTexture);
-
     // 3. Render target + render pass descriptor
     m_shadowMapRenderTarget = rhi->newTextureRenderTarget(shadowRtDesc);
     m_shadowMapRenderPassDesc = m_shadowMapRenderTarget->newCompatibleRenderPassDescriptor();
@@ -477,16 +499,7 @@ void HelloWindow::initShadowMapResources(QRhi *rhi) {
     m_shadowMapRenderTarget->create();
 
 
-    m_shadowMapSampler = rhi->newSampler(
-        QRhiSampler::Nearest,
-        QRhiSampler::Nearest,
-        QRhiSampler::None,
-        QRhiSampler::ClampToEdge,
-        QRhiSampler::ClampToEdge,
-        QRhiSampler::ClampToEdge
-        );
 
-    m_shadowMapSampler->create();
 
     m_shadowPipeline = rhi->newGraphicsPipeline();
 

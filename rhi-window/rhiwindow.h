@@ -4,8 +4,8 @@
 #ifndef WINDOW_H
 #define WINDOW_H
 
-#include "camera.h"
-#include "model.h"
+#include "qtrhi3d/camera.h"
+#include "qtrhi3d/model.h"
 
 #include <QWindow>
 #include <QOffscreenSurface>

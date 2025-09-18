@@ -155,9 +155,9 @@ void RhiWindow::init()
 
     if (!m_rhi)
         qFatal("Failed to create RHI backend");
-//! [rhi-init]
+    //! [rhi-init]
 
-//! [swapchain-init]
+    //! [swapchain-init]
     m_sc.reset(m_rhi->newSwapChain());
     m_ds.reset(m_rhi->newRenderBuffer(QRhiRenderBuffer::DepthStencil,
                                       QSize(), // no need to set the size here, due to UsedWithSwapChainOnly
@@ -167,7 +167,7 @@ void RhiWindow::init()
     m_sc->setDepthStencil(m_ds.get());
     m_rp.reset(m_sc->newCompatibleRenderPassDescriptor());
     m_sc->setRenderPassDescriptor(m_rp.get());
-//! [swapchain-init]
+    //! [swapchain-init]
 
     customInit();
 }
@@ -197,9 +197,9 @@ void RhiWindow::render()
 {
     if (!m_hasSwapChain || m_notExposed)
         return;
-//! [render-precheck]
+    //! [render-precheck]
 
-//! [render-resize]
+    //! [render-resize]
     // If the window got resized or newly exposed, resize the swapchain. (the
     // newly-exposed case is not actually required by some platforms, but is
     // here for robustness and portability)
@@ -215,9 +215,9 @@ void RhiWindow::render()
             return;
         m_newlyExposed = false;
     }
-//! [render-resize]
+    //! [render-resize]
 
-//! [beginframe]
+    //! [beginframe]
     QRhi::FrameOpResult result = m_rhi->beginFrame(m_sc.get());
     if (result == QRhi::FrameOpSwapChainOutOfDate) {
         resizeSwapChain();
@@ -232,9 +232,9 @@ void RhiWindow::render()
     }
 
     customRender();
-//! [beginframe]
+    //! [beginframe]
 
-//! [request-update]
+    //! [request-update]
     m_rhi->endFrame(m_sc.get());
 
     // Always request the next frame via requestUpdate(). On some platforms this is backed
@@ -246,9 +246,65 @@ void RhiWindow::render()
 
 static float vertexData[] = {
     // Y up (note clipSpaceCorrMatrix in m_viewProjection), CCW
-     0.0f,   0.5f,   1.0f, 0.0f, 0.0f,
+    0.0f,   0.5f,   1.0f, 0.0f, 0.0f,
     -0.5f,  -0.5f,   0.0f, 1.0f, 0.0f,
-     0.5f,  -0.5f,   0.0f, 0.0f, 1.0f,
+    0.5f,  -0.5f,   0.0f, 0.0f, 1.0f,
+};
+static float cubeVertexData[] = {
+    // pozice (x, y, z)      // barva (r, g, b)
+    // přední strana
+    -0.5f, -0.5f,  0.5f,     1.0f, 0.0f, 0.0f,
+    0.5f, -0.5f,  0.5f,     0.0f, 1.0f, 0.0f,
+    0.5f,  0.5f,  0.5f,     0.0f, 0.0f, 1.0f,
+
+    -0.5f, -0.5f,  0.5f,     1.0f, 0.0f, 0.0f,
+    0.5f,  0.5f,  0.5f,     0.0f, 0.0f, 1.0f,
+    -0.5f,  0.5f,  0.5f,     1.0f, 1.0f, 0.0f,
+
+    // zadní strana
+    -0.5f, -0.5f, -0.5f,     1.0f, 0.0f, 1.0f,
+    0.5f,  0.5f, -0.5f,     0.0f, 1.0f, 1.0f,
+    0.5f, -0.5f, -0.5f,     0.5f, 0.5f, 0.5f,
+
+    -0.5f, -0.5f, -0.5f,     1.0f, 0.0f, 1.0f,
+    -0.5f,  0.5f, -0.5f,     0.2f, 0.8f, 0.2f,
+    0.5f,  0.5f, -0.5f,     0.0f, 1.0f, 1.0f,
+
+    // levá strana
+    -0.5f, -0.5f, -0.5f,     1.0f, 0.5f, 0.0f,
+    -0.5f, -0.5f,  0.5f,     0.5f, 0.0f, 0.5f,
+    -0.5f,  0.5f,  0.5f,     0.0f, 0.5f, 0.5f,
+
+    -0.5f, -0.5f, -0.5f,     1.0f, 0.5f, 0.0f,
+    -0.5f,  0.5f,  0.5f,     0.0f, 0.5f, 0.5f,
+    -0.5f,  0.5f, -0.5f,     0.7f, 0.7f, 0.0f,
+
+    // pravá strana
+    0.5f, -0.5f, -0.5f,     0.3f, 0.3f, 0.9f,
+    0.5f,  0.5f,  0.5f,     0.1f, 0.6f, 0.8f,
+    0.5f, -0.5f,  0.5f,     0.6f, 0.1f, 0.9f,
+
+    0.5f, -0.5f, -0.5f,     0.3f, 0.3f, 0.9f,
+    0.5f,  0.5f, -0.5f,     0.9f, 0.1f, 0.1f,
+    0.5f,  0.5f,  0.5f,     0.1f, 0.6f, 0.8f,
+
+    // horní strana
+    -0.5f,  0.5f,  0.5f,     0.5f, 1.0f, 0.5f,
+    0.5f,  0.5f,  0.5f,     0.5f, 0.5f, 1.0f,
+    0.5f,  0.5f, -0.5f,     0.8f, 0.8f, 0.1f,
+
+    -0.5f,  0.5f,  0.5f,     0.5f, 1.0f, 0.5f,
+    0.5f,  0.5f, -0.5f,     0.8f, 0.8f, 0.1f,
+    -0.5f,  0.5f, -0.5f,     0.1f, 0.8f, 0.8f,
+
+    // spodní strana
+    -0.5f, -0.5f,  0.5f,     0.6f, 0.6f, 0.6f,
+    0.5f, -0.5f, -0.5f,     0.4f, 0.4f, 0.7f,
+    0.5f, -0.5f,  0.5f,     0.7f, 0.4f, 0.4f,
+
+    -0.5f, -0.5f,  0.5f,     0.6f, 0.6f, 0.6f,
+    -0.5f, -0.5f, -0.5f,     0.3f, 0.3f, 0.3f,
+    0.5f, -0.5f, -0.5f,     0.4f, 0.4f, 0.7f
 };
 
 //! [getshader]
@@ -261,6 +317,9 @@ static QShader getShader(const QString &name)
     return QShader();
 }
 //! [getshader]
+//!
+//!
+//============================================================================================================
 
 HelloWindow::HelloWindow(QRhi::Implementation graphicsApi)
     : RhiWindow(graphicsApi)
@@ -282,7 +341,7 @@ void HelloWindow::ensureFullscreenTexture(const QSize &pixelSize, QRhiResourceUp
 
     QImage image(pixelSize, QImage::Format_RGBA8888_Premultiplied);
     image.setDevicePixelRatio(devicePixelRatio());
-//! [ensure-texture]
+    //! [ensure-texture]
     QPainter painter(&image);
     painter.fillRect(QRectF(QPointF(0, 0), size()), QColor::fromRgbF(0.4f, 0.7f, 0.0f, 1.0f));
     painter.setPen(Qt::transparent);
@@ -294,15 +353,15 @@ void HelloWindow::ensureFullscreenTexture(const QSize &pixelSize, QRhiResourceUp
     painter.setFont(font);
     painter.drawText(QRectF(QPointF(60, 60), size() - QSize(120, 120)), 0,
                      QLatin1String("Rendering with QRhi to a resizable QWindow.\nThe 3D API is %1.\nUse the command-line options to choose a different API.")
-                     .arg(graphicsApiName()));
+                         .arg(graphicsApiName()));
     painter.end();
 
     if (m_rhi->isYUpInNDC())
         image.flip();
 
-//! [ensure-texture-2]
+    //! [ensure-texture-2]
     u->uploadTexture(m_texture.get(), image);
-//! [ensure-texture-2]
+    //! [ensure-texture-2]
 }
 
 //! [render-init-1]
@@ -310,14 +369,14 @@ void HelloWindow::customInit()
 {
     m_initialUpdates = m_rhi->nextResourceUpdateBatch();
 
-    m_vbuf.reset(m_rhi->newBuffer(QRhiBuffer::Immutable, QRhiBuffer::VertexBuffer, sizeof(vertexData)));
+    m_vbuf.reset(m_rhi->newBuffer(QRhiBuffer::Immutable, QRhiBuffer::VertexBuffer, sizeof(cubeVertexData)));
     m_vbuf->create();
-    m_initialUpdates->uploadStaticBuffer(m_vbuf.get(), vertexData);
+    m_initialUpdates->uploadStaticBuffer(m_vbuf.get(), cubeVertexData);
 
     static const quint32 UBUF_SIZE = 68;
     m_ubuf.reset(m_rhi->newBuffer(QRhiBuffer::Dynamic, QRhiBuffer::UniformBuffer, UBUF_SIZE));
     m_ubuf->create();
-//! [render-init-1]
+    //! [render-init-1]
 
     ensureFullscreenTexture(m_sc->surfacePixelSize(), m_initialUpdates);
 
@@ -325,12 +384,12 @@ void HelloWindow::customInit()
                                       QRhiSampler::ClampToEdge, QRhiSampler::ClampToEdge));
     m_sampler->create();
 
- //! [render-init-2]
+    //! [render-init-2]
     m_colorTriSrb.reset(m_rhi->newShaderResourceBindings());
     static const QRhiShaderResourceBinding::StageFlags visibility =
-            QRhiShaderResourceBinding::VertexStage | QRhiShaderResourceBinding::FragmentStage;
+        QRhiShaderResourceBinding::VertexStage | QRhiShaderResourceBinding::FragmentStage;
     m_colorTriSrb->setBindings({
-            QRhiShaderResourceBinding::uniformBuffer(0, visibility, m_ubuf.get())
+        QRhiShaderResourceBinding::uniformBuffer(0, visibility, m_ubuf.get())
     });
     m_colorTriSrb->create();
 
@@ -349,22 +408,22 @@ void HelloWindow::customInit()
     });
     QRhiVertexInputLayout inputLayout;
     inputLayout.setBindings({
-        { 5 * sizeof(float) }
+        { 6 * sizeof(float) } // 3 pozice + 3 barvy
     });
     inputLayout.setAttributes({
-        { 0, 0, QRhiVertexInputAttribute::Float2, 0 },
-        { 0, 1, QRhiVertexInputAttribute::Float3, 2 * sizeof(float) }
+        { 0, 0, QRhiVertexInputAttribute::Float3, 0 },
+        { 0, 1, QRhiVertexInputAttribute::Float3, 3 * sizeof(float) }
     });
     m_colorPipeline->setVertexInputLayout(inputLayout);
     m_colorPipeline->setShaderResourceBindings(m_colorTriSrb.get());
     m_colorPipeline->setRenderPassDescriptor(m_rp.get());
     m_colorPipeline->create();
-//! [render-init-2]
+    //! [render-init-2]
 
     m_fullscreenQuadSrb.reset(m_rhi->newShaderResourceBindings());
     m_fullscreenQuadSrb->setBindings({
-            QRhiShaderResourceBinding::sampledTexture(0, QRhiShaderResourceBinding::FragmentStage,
-                                       m_texture.get(), m_sampler.get())
+        QRhiShaderResourceBinding::sampledTexture(0, QRhiShaderResourceBinding::FragmentStage,
+                                                  m_texture.get(), m_sampler.get())
     });
     m_fullscreenQuadSrb->create();
 
@@ -389,48 +448,50 @@ void HelloWindow::customRender()
         m_initialUpdates->release();
         m_initialUpdates = nullptr;
     }
-//! [render-1]
+    //! [render-1]
 
-//! [render-rotation]
+    //! [render-rotation]
     m_rotation += 1.0f;
     QMatrix4x4 modelViewProjection = m_viewProjection;
     modelViewProjection.rotate(m_rotation, 0, 1, 0);
     resourceUpdates->updateDynamicBuffer(m_ubuf.get(), 0, 64, modelViewProjection.constData());
-//! [render-rotation]
+    //! [render-rotation]
 
-//! [render-opacity]
+    //! [render-opacity]
     m_opacity += m_opacityDir * 0.005f;
     if (m_opacity < 0.0f || m_opacity > 1.0f) {
         m_opacityDir *= -1;
         m_opacity = qBound(0.0f, m_opacity, 1.0f);
     }
     resourceUpdates->updateDynamicBuffer(m_ubuf.get(), 64, 4, &m_opacity);
-//! [render-opacity]
+    //! [render-opacity]
 
-//! [render-cb]
+    //! [render-cb]
     QRhiCommandBuffer *cb = m_sc->currentFrameCommandBuffer();
     const QSize outputSizeInPixels = m_sc->currentPixelSize();
-//! [render-cb]
+    //! [render-cb]
 
     // (re)create the texture with a size matching the output surface size, when necessary.
     ensureFullscreenTexture(outputSizeInPixels, resourceUpdates);
 
-//! [render-pass]
+    //! [render-pass]
     cb->beginPass(m_sc->currentFrameRenderTarget(), Qt::black, { 1.0f, 0 }, resourceUpdates);
-//! [render-pass]
+    //! [render-pass]
 
     cb->setGraphicsPipeline(m_fullscreenQuadPipeline.get());
     cb->setViewport({ 0, 0, float(outputSizeInPixels.width()), float(outputSizeInPixels.height()) });
     cb->setShaderResources();
     cb->draw(3);
 
-//! [render-pass-record]
+    //! [render-pass-record]
     cb->setGraphicsPipeline(m_colorPipeline.get());
     cb->setShaderResources();
+
     const QRhiCommandBuffer::VertexInput vbufBinding(m_vbuf.get(), 0);
     cb->setVertexInput(0, 1, &vbufBinding);
-    cb->draw(3);
-
+    cb->draw(36); // místo 3
     cb->endPass();
-//! [render-pass-record]
+    //! [render-pass-record]
 }
+
+

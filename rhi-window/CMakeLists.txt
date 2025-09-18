@@ -7,14 +7,16 @@ qt_standard_project_setup()
 
 qt_add_executable(rhi-window
     main.cpp
-    rhiwindow.cpp rhiwindow.h
-    model.h
-    model.h model.cpp
-    camera.h camera.cpp
-    geometry.h
-    transform.h transform.cpp
-    shaders/depth.frag shaders/depth.vert
-
+    rhiwindow.cpp
+    rhiwindow.h
+    qtrhi3d/model.h
+    qtrhi3d/model.cpp
+    qtrhi3d/camera.h
+    qtrhi3d/camera.cpp
+    qtrhi3d/geometry.h
+    qtrhi3d/transform.h
+    qtrhi3d/transform.cpp
+    qtrhi3d/types.h
 )
 
 set_target_properties(rhi-window PROPERTIES
@@ -28,18 +30,7 @@ target_link_libraries(rhi-window PRIVATE
     Qt6::GuiPrivate
 )
 
-set_source_files_properties("shaders/prebuild/color.vert.qsb"
-    PROPERTIES QT_RESOURCE_ALIAS "color.vert.qsb"
-)
-set_source_files_properties("shaders/prebuild/color.frag.qsb"
-    PROPERTIES QT_RESOURCE_ALIAS "color.frag.qsb"
-)
-set_source_files_properties("shaders/prebuild/quad.vert.qsb"
-    PROPERTIES QT_RESOURCE_ALIAS "quad.vert.qsb"
-)
-set_source_files_properties("shaders/prebuild/quad.frag.qsb"
-    PROPERTIES QT_RESOURCE_ALIAS "quad.frag.qsb"
-)
+
 set_source_files_properties("shaders/prebuild/texture.vert.qsb"
     PROPERTIES QT_RESOURCE_ALIAS "texture.vert.qsb"
 )
