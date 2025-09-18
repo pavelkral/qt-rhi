@@ -293,10 +293,10 @@ void HelloWindow::customInit()
 
     floor.transform.position = QVector3D(0, -0.5f, 0);
     floor.transform.scale = QVector3D(10, 10, 10);
-    floor.transform.rotation.setX( 90.0f);
+    floor.transform.rotation.setX( 270.0f);
     m_cube1.transform.position = QVector3D(-1.5f, 0, 0);
-    m_cube2.transform.position = QVector3D(1.5f, 0, 0);
-    m_cube2.transform.scale = QVector3D(0.5f,0.5f, 0.5f);
+    m_cube2.transform.position = QVector3D(2.5f, 1, 0);
+    m_cube2.transform.scale = QVector3D(1.5f,1.5f, 1.5f);
     m_camera.Position = QVector3D(-0.5f,1.5f, 5.5f);
     m_timer.start();
 }
@@ -336,7 +336,7 @@ void HelloWindow::customRender()
     float objectOpacity = 1.0f;
 
 
-    float radius = 10.0f;
+    float radius = 15.0f;
     float height = 20.0f;
     QVector3D center(0.0f, 0.0f, 0.0f);
 
@@ -354,7 +354,7 @@ void HelloWindow::customRender()
     QMatrix4x4 lightProjection;
     float nearPlane = 1.0f;
     float farPlane = 50.0f;
-    float orthoSize = 20.0f;
+    float orthoSize = 30.0f;
     lightProjection.ortho(-orthoSize, orthoSize, -orthoSize, orthoSize, nearPlane, farPlane);
 
     QMatrix4x4 lightView;
@@ -375,8 +375,8 @@ void HelloWindow::customRender()
     ubo.debugMode   = debug;
     ubo.lightIntensity = lightIntensity;
 
-    m_cube1.transform.rotation.setY( m_cube1.transform.rotation.y() + 0.5f);
-    m_cube2.transform.rotation.setY(m_cube2.transform.rotation.y() + 0.5f);
+   // m_cube1.transform.rotation.setY( m_cube1.transform.rotation.y() + 0.5f);
+   // m_cube2.transform.rotation.setY(m_cube2.transform.rotation.y() + 0.5f);
 
     m_cube1.updateUbo(view,m_projection,lightSpaceMatrix,lightColor,lightPos,camPos,m_opacity,ubo,resourceUpdates);
     floor.updateUbo(view,m_projection,lightSpaceMatrix,lightColor,lightPos,camPos,m_opacity,ubo,resourceUpdates);

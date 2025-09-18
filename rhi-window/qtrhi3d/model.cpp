@@ -102,7 +102,6 @@ void Model::updateUniforms(const QMatrix4x4 &viewProjection,float opacity, QRhiR
     u->updateDynamicBuffer(m_ubuf.get(), 0, 64, mvp.constData());
     u->updateDynamicBuffer(m_ubuf.get(), 64, 4, &opacity);
 }
-
 void Model::updateUbo(const QMatrix4x4 &view,
                         const QMatrix4x4 &projection,
                         const QMatrix4x4 &lightSpace,
@@ -113,26 +112,60 @@ void Model::updateUbo(const QMatrix4x4 &view,
                         Ubo ubo,
                         QRhiResourceUpdateBatch *u )
 {
-    // float debug = 0.0F;
-    // float lightIntensity = 5.0f;
-    // ubo.model       = transform.getModelMatrix();
-    // ubo.view        = view;
-    // ubo.projection  = projection;
-    // ubo.lightSpace  = lightSpace;
-    // ubo.lightPos    = QVector4D(lightPos, 1.0f);
-    // ubo.lightColor  = QVector4D(color, 1.0f);
-    // ubo.camPos      = QVector4D(camPos, 1.0f);
-    // ubo.opacity     = QVector4D(0.0f,0.0f,0.0f, opacity);
-    // ubo.debugMode   = debug;
-    // ubo.lightIntensity = lightIntensity;
 
+    struct alignas(16) GpuUbo {
+        float model[16];       // offset 0   (64 B)
+        float view[16];        // offset 64  (64 B)
+        float projection[16];  // offset 128 (64 B)
+        float lightSpace[16];  // offset 192 (64 B)
 
+        float lightPos[4];     // offset 256 (16 B)
+        float color[4];        // offset 272 (16 B)
+        float camPos[4];       // offset 288 (16 B)
+        float opacity[4];      // offset 304 (16 B)
+        float debugMode;       // offset 320 (4 B)
+        float lightIntensity[1];  // offset 324 (4 B)
+        float _padding[2];     // offset 328 (8 B) → aby to zarovnalo na 336
+    };
+
+    static_assert(sizeof(GpuUbo) == 336, "GpuUbo must be 336 bytes");
+
+    GpuUbo gpuUbo{};
+
+    memcpy(gpuUbo.model,      transform.getModelMatrix().constData(), 64);
+    memcpy(gpuUbo.view,       view.constData(),       64);
+    memcpy(gpuUbo.projection, projection.constData(), 64);
+    memcpy(gpuUbo.lightSpace, lightSpace.constData(), 64);
+
+    gpuUbo.lightPos[0] = lightPos.x();
+    gpuUbo.lightPos[1] = lightPos.y();
+    gpuUbo.lightPos[2] = lightPos.z();
+    gpuUbo.lightPos[3] = 1.0f;
+
+    gpuUbo.color[0] = color.x();
+    gpuUbo.color[1] = color.y();
+    gpuUbo.color[2] = color.z();
+    gpuUbo.color[3] = 1.0f;
+
+    gpuUbo.camPos[0] = camPos.x();
+    gpuUbo.camPos[1] = camPos.y();
+    gpuUbo.camPos[2] = camPos.z();
+    gpuUbo.camPos[3] = 1.0f;
+
+    gpuUbo.opacity[0] = 0.0f;
+    gpuUbo.opacity[1] = 0.0f;
+    gpuUbo.opacity[2] = 0.0f;
+    gpuUbo.opacity[3] = opacity;
+
+    gpuUbo.debugMode      = float(ubo.debugMode);
+    gpuUbo.lightIntensity[0] = float(ubo.lightIntensity);;
+
+    //u->updateDynamicBuffer(m_ubuf.get(), 0, sizeof(GpuUbo), &gpuUbo);
    // u->updateDynamicBuffer(m_ubuf.get(), 0, sizeof(Ubo), &ubo);
 
-
-    u->updateDynamicBuffer(m_ubuf.get(), 0,   64, transform.getModelMatrix().constData());
-    u->updateDynamicBuffer(m_ubuf.get(), 64, 64, ubo.view.constData());
-    u->updateDynamicBuffer(m_ubuf.get(), 128, 64, ubo.projection.constData());
+     u->updateDynamicBuffer(m_ubuf.get(), 0,   64, transform.getModelMatrix().constData());
+     u->updateDynamicBuffer(m_ubuf.get(), 64, 64, ubo.view.constData());
+     u->updateDynamicBuffer(m_ubuf.get(), 128, 64, ubo.projection.constData());
     u->updateDynamicBuffer(m_ubuf.get(), 192, 64, ubo.lightSpace.constData());
     u->updateDynamicBuffer(m_ubuf.get(), 256, 16, reinterpret_cast<const float*>(&ubo.lightPos));
     u->updateDynamicBuffer(m_ubuf.get(), 272, 16, reinterpret_cast<const float*>(&ubo.lightColor));
