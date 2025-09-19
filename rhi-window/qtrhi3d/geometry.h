@@ -6,14 +6,13 @@
 #include <QVector>
 #include <cmath>
 
-// Definice Pí, pokud není dostupná
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
 #endif
 
 void generateSphere(float radius, int rings, int sectors,QVector<float>& vertices, QVector<quint16>& indices)
 {
-    // Vymažeme stará data
+
     vertices.clear();
     indices.clear();
 

@@ -17,7 +17,7 @@ qt_add_executable(rhibox
     examplewidget.cpp examplewidget.h cube.h
     main.cpp
     RhiFBXModel.h
-    twocubesrhiwidget.h twocubesrhiwidget.cpp
+
 )
 
 set_target_properties(rhibox PROPERTIES

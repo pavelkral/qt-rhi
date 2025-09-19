@@ -20,10 +20,10 @@ layout(std140, binding = 0) uniform Ubo {
     mat4 projection;
     mat4 lightSpace;
     vec4 lightPos;
-    vec4 color; // barva světla
+    vec4 color;
     vec4 camPos;
-    float debugMode;       // uniformní debug mód
-    float lightIntensity;  // uniformní intenzita světla
+    vec4 misc;
+    vec4 misc1;
 } ubo;
 
 float ambientStrength = 0.8;

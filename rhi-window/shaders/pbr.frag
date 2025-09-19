@@ -24,8 +24,8 @@ layout(std140, binding = 0) uniform Ubo {
     vec4 lightPos;
     vec4 color;
     vec4 camPos;
-    float debugMode;
-    float lightIntensity;
+    vec4 misc;
+    vec4 misc1;
 } ubo;
 
 float shadowCalculation() {
@@ -120,7 +120,7 @@ void main() {
     vec3 kS = F;
     vec3 kD = (1.0 - kS) * (1.0 - metallic);
 
-    vec3 radiance = ubo.color.rgb * ubo.lightIntensity;
+    vec3 radiance = ubo.color.rgb * ubo.misc1.y;
 
     vec3 diffuse = kD * albedo / 3.141592;
     vec3 specular = kS;

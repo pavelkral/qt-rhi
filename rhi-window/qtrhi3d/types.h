@@ -13,9 +13,7 @@ struct Ubo {
     QVector4D lightColor;
     QVector4D camPos;
     QVector4D opacity;
-    float debugMode;
-    float lightIntensity;
-
+    QVector4D misc;
 };
 
 struct Vertex {
@@ -35,4 +33,19 @@ struct TextureSet {
     QString height;
     QString ao;
 };
+
+struct alignas(16) GpuUbo {
+    float model[16];       // offset 0   (64 B)
+    float view[16];        // offset 64  (64 B)
+    float projection[16];  // offset 128 (64 B)
+    float lightSpace[16];  // offset 192 (64 B)
+
+    float lightPos[4];     // offset 256 (16 B)
+    float color[4];        // offset 272 (16 B)
+    float camPos[4];       // offset 288 (16 B)
+    float opacity[4];      // offset 304 (16 B)
+    float misc[4];
+};
+
+
 #endif // TYPES_H

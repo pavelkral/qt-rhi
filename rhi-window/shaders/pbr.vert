@@ -19,8 +19,8 @@ layout(std140, binding = 0) uniform Ubo {
     vec4 lightPos;
     vec4 color;
     vec4 camPos;
-    float debugMode;
-    float lightIntensity;
+    vec4 misc;
+    vec4 misc1;
 } ubo;
 
 void main() {

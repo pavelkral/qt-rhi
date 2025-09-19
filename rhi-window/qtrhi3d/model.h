@@ -23,7 +23,7 @@ public:
     void draw(QRhiCommandBuffer *cb);   
     void updateUniforms(const QMatrix4x4 &viewProjection,float opacity, QRhiResourceUpdateBatch *u);
     QVector<float> computeTangents(const QVector<float>& vertices, const QVector<quint16>& indices);
-    void updateUbo(Ubo ubo,QRhiResourceUpdateBatch *u);
+    void updateUbo(Ubo ubo,QRhiResourceUpdateBatch *u,QRhiBuffer *shadowUbo, QRhiResourceUpdateBatch *shadowBatch);
     void loadTexture(QRhi *m_rhi,const QSize &, QRhiResourceUpdateBatch *u,QString tex_name,std::unique_ptr<QRhiTexture> &texture,
                      std::unique_ptr<QRhiSampler> &sampler);
     Transform &getTransform() {
