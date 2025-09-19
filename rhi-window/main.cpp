@@ -68,7 +68,6 @@ int main(int argc, char **argv)
 #endif
     QSurfaceFormat::setDefaultFormat(fmt);
 
-    // For Vulkan.
 #if QT_CONFIG(vulkan)
     QVulkanInstance inst;
     if (graphicsApi == QRhi::Vulkan) {

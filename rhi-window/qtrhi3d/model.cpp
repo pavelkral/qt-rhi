@@ -27,6 +27,14 @@ void Model::init(QRhi *rhi,QRhiRenderPassDescriptor *rp,const QShader &vs,const 
     const quint32 UBUF_SIZE = 512;
     m_ubuf.reset(rhi->newBuffer(QRhiBuffer::Dynamic, QRhiBuffer::UniformBuffer,UBUF_SIZE ));
     m_ubuf->create();
+    m_shadowUbo.reset(rhi->newBuffer(QRhiBuffer::Dynamic, QRhiBuffer::UniformBuffer, sizeof(GpuUbo)));
+    m_shadowUbo->create();
+
+    m_shadowSrb.reset(rhi->newShaderResourceBindings());
+    m_shadowSrb->setBindings({
+        QRhiShaderResourceBinding::uniformBuffer(0, QRhiShaderResourceBinding::VertexStage, m_shadowUbo.get())
+    });
+    m_shadowSrb->create();
 
     TextureSet set;
     set.albedo = ":/assets/textures/brick/victorian-brick_albedo.png";
@@ -95,18 +103,10 @@ void Model::init(QRhi *rhi,QRhiRenderPassDescriptor *rp,const QShader &vs,const 
     m_pipeline->create();
 }
 
+void Model::updateUbo(Ubo ubo,QRhiResourceUpdateBatch *u)
+{
 
-void Model::updateUniforms(const QMatrix4x4 &viewProjection,float opacity, QRhiResourceUpdateBatch *u)
-{
-    QMatrix4x4 modelMatrix = transform.getModelMatrix();
-    QMatrix4x4 mvp = viewProjection * modelMatrix;
-    u->updateDynamicBuffer(m_ubuf.get(), 0, 64, mvp.constData());
-    u->updateDynamicBuffer(m_ubuf.get(), 64, 4, &opacity);
-}
-void Model::updateUbo(Ubo ubo,QRhiResourceUpdateBatch *u ,QRhiBuffer *shadowUbo, QRhiResourceUpdateBatch *shadowBatch)
-{
     GpuUbo gpuUbo{};
-
     memcpy(gpuUbo.model,transform.getModelMatrix().constData(), 64);
     memcpy(gpuUbo.view,ubo.view.constData(),       64);
     memcpy(gpuUbo.projection, ubo.projection.constData(), 64);
@@ -139,7 +139,6 @@ void Model::updateUbo(Ubo ubo,QRhiResourceUpdateBatch *u ,QRhiBuffer *shadowUbo,
     gpuUbo.misc[3] = 0.0f;
 
     u->updateDynamicBuffer(m_ubuf.get(), 0, sizeof(GpuUbo), &gpuUbo);
-    shadowBatch->updateDynamicBuffer(shadowUbo, 0, sizeof(GpuUbo), &gpuUbo);
 
     //by offset
 
@@ -153,15 +152,6 @@ void Model::updateUbo(Ubo ubo,QRhiResourceUpdateBatch *u ,QRhiBuffer *shadowUbo,
     // u->updateDynamicBuffer(m_ubuf.get(), 304,  16, reinterpret_cast<const float*>(&ubo.opacity));
     // u->updateDynamicBuffer(m_ubuf.get(), 304,  16, reinterpret_cast<const float*>(&ubo.misc));
 
-    // shadowBatch->updateDynamicBuffer(shadowUbo, 0,   64, transform.getModelMatrix().constData());
-    // shadowBatch->updateDynamicBuffer(shadowUbo, 64, 64, ubo.view.constData());
-    // shadowBatch->updateDynamicBuffer(shadowUbo, 128, 64, ubo.projection.constData());
-    // u->updateDynamicBuffer(shadowUbo, 192, 64,ubo.lightSpace.constData());
-    // u->updateDynamicBuffer(shadowUbo, 256, 16, reinterpret_cast<const float*>(&ubo.lightPos));
-    // u->updateDynamicBuffer(shadowUbo, 272, 16, reinterpret_cast<const float*>(&ubo.lightColor));
-    // u->updateDynamicBuffer(shadowUbo, 288, 16, reinterpret_cast<const float*>(&ubo.camPos));
-    // u->updateDynamicBuffer(shadowUbo, 304,  16, reinterpret_cast<const float*>(&ubo.opacity));
-    // u->updateDynamicBuffer(shadowUbo, 304,  16, reinterpret_cast<const float*>(&ubo.misc));
 }
 
 void Model::draw(QRhiCommandBuffer *cb)
@@ -173,15 +163,23 @@ void Model::draw(QRhiCommandBuffer *cb)
     cb->drawIndexed(m_indexCount);
 }
 
-void Model::DrawForShadow(QRhiCommandBuffer *cb,
-                             QRhiGraphicsPipeline *shadowPipeline,
-                             QRhiShaderResourceBindings *shadowSRB,
-                             QRhiBuffer *shadowUbo,
+void Model::updateShadowUbo(Ubo ubo, QRhiResourceUpdateBatch *u) {
+
+    GpuUbo gpuUbo{};
+    memcpy(gpuUbo.model, transform.getModelMatrix().constData(), 64);
+    memcpy(gpuUbo.view, ubo.view.constData(), 64);
+    memcpy(gpuUbo.projection, ubo.projection.constData(), 64);
+    memcpy(gpuUbo.lightSpace, ubo.lightSpace.constData(), 64);
+    u->updateDynamicBuffer(m_shadowUbo.get(), 0, sizeof(GpuUbo), &gpuUbo);
+}
+
+void Model::DrawForShadow(QRhiCommandBuffer *cb,QRhiGraphicsPipeline *shadowPipeline,
                             Ubo ubo,
-                            QRhiResourceUpdateBatch *u) const
+                            QRhiResourceUpdateBatch *u)
 {
+
     cb->setGraphicsPipeline(shadowPipeline);
-    cb->setShaderResources(shadowSRB);
+    cb->setShaderResources(m_shadowSrb.get());
     const QRhiCommandBuffer::VertexInput vbufBinding(m_vbuf.get(), 0);
     cb->setVertexInput(0, 1, &vbufBinding, m_ibuf.get(), 0, QRhiCommandBuffer::IndexUInt16);
     cb->drawIndexed(m_indexCount);

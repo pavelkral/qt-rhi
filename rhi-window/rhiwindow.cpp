@@ -373,10 +373,14 @@ void HelloWindow::customRender()
 
 
 
-    floor.updateUbo(ubo,resourceUpdates,m_shadowUbo,shadowBatch);
-    m_cube1.updateUbo(ubo,resourceUpdates,m_shadowUbo,shadowBatch);
-    m_cube2.updateUbo(ubo,resourceUpdates,m_shadowUbo,shadowBatch);
+    floor.updateUbo(ubo,resourceUpdates);
+    m_cube1.updateUbo(ubo,resourceUpdates);
+    m_cube2.updateUbo(ubo,resourceUpdates);
 
+
+    floor.updateShadowUbo(ubo,shadowBatch);
+    m_cube1.updateShadowUbo(ubo,shadowBatch);
+    m_cube2.updateShadowUbo(ubo,shadowBatch);
 
     Q_ASSERT(m_shadowMapRenderTarget);
     Q_ASSERT(m_shadowPipeline);
@@ -391,9 +395,9 @@ void HelloWindow::customRender()
 
     cb->setGraphicsPipeline(m_shadowPipeline);
     cb->setViewport(QRhiViewport(0, 0, SHADOW_MAP_SIZE.width(), SHADOW_MAP_SIZE.height()));
-        floor.DrawForShadow(cb,m_shadowPipeline,m_shadowSRB,m_shadowUbo,ubo,shadowBatch);
-        m_cube1.DrawForShadow(cb,m_shadowPipeline,m_shadowSRB,m_shadowUbo,ubo,shadowBatch);
-        m_cube2.DrawForShadow(cb,m_shadowPipeline,m_shadowSRB,m_shadowUbo,ubo,shadowBatch);
+        floor.DrawForShadow(cb,m_shadowPipeline,ubo,shadowBatch);
+        m_cube1.DrawForShadow(cb,m_shadowPipeline,ubo,shadowBatch);
+        m_cube2.DrawForShadow(cb,m_shadowPipeline,ubo,shadowBatch);
 
     cb->endPass();
 
