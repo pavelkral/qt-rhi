@@ -23,11 +23,7 @@ public:
     void draw(QRhiCommandBuffer *cb);   
     void updateUniforms(const QMatrix4x4 &viewProjection,float opacity, QRhiResourceUpdateBatch *u);
     QVector<float> computeTangents(const QVector<float>& vertices, const QVector<quint16>& indices);
-    void updateUbo(const QMatrix4x4 &view,const QMatrix4x4 &projection,const QMatrix4x4 &lightSpace,const QVector3D &color,
-                        const QVector3D &lightPos,
-                        const QVector3D &camPos,
-                        const float opacity,Ubo ubo,
-                        QRhiResourceUpdateBatch *u);
+    void updateUbo(Ubo ubo,QRhiResourceUpdateBatch *u);
     void loadTexture(QRhi *m_rhi,const QSize &, QRhiResourceUpdateBatch *u,QString tex_name,std::unique_ptr<QRhiTexture> &texture,
                      std::unique_ptr<QRhiSampler> &sampler);
     Transform &getTransform() {
@@ -35,11 +31,11 @@ public:
     }
 
 
-void DrawForShadow(QRhiCommandBuffer *cb,
-                 QRhiGraphicsPipeline *shadowPipeline,
-                 QRhiShaderResourceBindings *shadowSRB,
-                 QRhiBuffer *shadowUbo,
-                const QMatrix4x4& lightSpaceMatrix,Ubo ubo,QRhiResourceUpdateBatch *u) const ;
+    void DrawForShadow(QRhiCommandBuffer *cb,
+                     QRhiGraphicsPipeline *shadowPipeline,
+                     QRhiShaderResourceBindings *shadowSRB,
+                     QRhiBuffer *shadowUbo,
+                    Ubo ubo,QRhiResourceUpdateBatch *u) const ;
 private:
 
    // Ubo ubo;

@@ -282,7 +282,6 @@ void HelloWindow::customInit()
 
     generateSphere(0.5f, 32, 64, sphereVertices, sphereIndices);
 
-
     m_cube1.addVertAndInd(cubeVertices1, cubeIndices1);
     m_cube2.addVertAndInd(sphereVertices, sphereIndices);
     floor.addVertAndInd(indexedPlaneVertices ,indexedPlaneIndices );
@@ -328,40 +327,34 @@ void HelloWindow::customRender()
     QRhiCommandBuffer *cb = m_sc->currentFrameCommandBuffer();
 
     QMatrix4x4 view = m_camera.GetViewMatrix();
-
-   // QVector3D lightColor(1.0f, 1.0f, 1.0f);
+    QVector3D lightColor(1.0f, 1.0f, 1.0f);
     QMatrix4x4 projection = m_projection;
     QVector3D lightPos(-5.0f, 20.0f, -15.0f);
     QVector3D camPos = m_camera.Position;
     float objectOpacity = 1.0f;
-
-
     float radius = 15.0f;
     float height = 20.0f;
     QVector3D center(0.0f, 0.0f, 0.0f);
-
-
     lightPos.setX(center.x() + radius * cos(lightTime));
     lightPos.setZ(center.z() + radius * sin(lightTime));
     lightPos.setY(height);
 
-    QVector3D lightColor(
-        0.5f + 0.5f * sin(lightTime * 2.0f),
-        0.5f + 0.5f * sin(lightTime * 0.7f + 2.0f),
-        0.5f + 0.5f * sin(lightTime * 1.3f + 4.0f)
-        );
+    // QVector3D lightColor(
+    //     0.5f + 0.5f * sin(lightTime * 2.0f),
+    //     0.5f + 0.5f * sin(lightTime * 0.7f + 2.0f),
+    //     0.5f + 0.5f * sin(lightTime * 1.3f + 4.0f)
+    //     );
 
     QMatrix4x4 lightProjection;
     float nearPlane = 1.0f;
     float farPlane = 50.0f;
     float orthoSize = 30.0f;
     lightProjection.ortho(-orthoSize, orthoSize, -orthoSize, orthoSize, nearPlane, farPlane);
-
     QMatrix4x4 lightView;
     lightView.lookAt(lightPos, center, QVector3D(0,1,0));
     QMatrix4x4 lightSpaceMatrix = lightProjection * lightView;
     float debug = 0.0F;
-    float lightIntensity = 5.0f;
+    float lightIntensity = 2.0f;
 
     Ubo ubo;
     //ubo.model       = transform.getModelMatrix();
@@ -375,16 +368,17 @@ void HelloWindow::customRender()
     ubo.debugMode   = debug;
     ubo.lightIntensity = lightIntensity;
 
-   // m_cube1.transform.rotation.setY( m_cube1.transform.rotation.y() + 0.5f);
-   // m_cube2.transform.rotation.setY(m_cube2.transform.rotation.y() + 0.5f);
-
-    m_cube1.updateUbo(view,m_projection,lightSpaceMatrix,lightColor,lightPos,camPos,m_opacity,ubo,resourceUpdates);
-    floor.updateUbo(view,m_projection,lightSpaceMatrix,lightColor,lightPos,camPos,m_opacity,ubo,resourceUpdates);
-    m_cube2.updateUbo(view,m_projection,lightSpaceMatrix,lightColor,lightPos,camPos,m_opacity,ubo,resourceUpdates);
-
     const QSize outputSizeInPixels = m_sc->currentPixelSize();
     const QColor clearColor = QColor::fromRgbF(0.4f, 0.7f, 0.0f, 1.0f);
     const QColor clearColorDepth = QColor::fromRgbF(1.0f, 1,1,1);
+
+   // m_cube1.transform.rotation.setY( m_cube1.transform.rotation.y() + 0.5f);
+   // m_cube2.transform.rotation.setY(m_cube2.transform.rotation.y() + 0.5f);
+
+    m_cube1.updateUbo(ubo,resourceUpdates);
+    floor.updateUbo(ubo,resourceUpdates);
+    m_cube2.updateUbo(ubo,resourceUpdates);
+
 
     Q_ASSERT(m_shadowMapRenderTarget);
     Q_ASSERT(m_shadowPipeline);
@@ -395,20 +389,16 @@ void HelloWindow::customRender()
 
     cb->setGraphicsPipeline(m_shadowPipeline);
     cb->setViewport(QRhiViewport(0, 0, SHADOW_MAP_SIZE.width(), SHADOW_MAP_SIZE.height()));
-
-    m_cube1.DrawForShadow(cb,m_shadowPipeline,m_shadowSRB,m_shadowUbo,lightSpaceMatrix,ubo,shadowBatch);
-    m_cube2.DrawForShadow(cb,m_shadowPipeline,m_shadowSRB,m_shadowUbo,lightSpaceMatrix,ubo,shadowBatch);
-    floor.DrawForShadow(cb,m_shadowPipeline,m_shadowSRB,m_shadowUbo,lightSpaceMatrix,ubo,shadowBatch);
-
+        m_cube1.DrawForShadow(cb,m_shadowPipeline,m_shadowSRB,m_shadowUbo,ubo,shadowBatch);
+        m_cube2.DrawForShadow(cb,m_shadowPipeline,m_shadowSRB,m_shadowUbo,ubo,shadowBatch);
+        floor.DrawForShadow(cb,m_shadowPipeline,m_shadowSRB,m_shadowUbo,ubo,shadowBatch);
     cb->endPass();
 
     cb->beginPass(m_sc->currentFrameRenderTarget(), clearColor, { 1.0f, 0 }, resourceUpdates);
     cb->setViewport({ 0, 0, float(outputSizeInPixels.width()), float(outputSizeInPixels.height()) });
-
-    floor.draw(cb);
-    m_cube1.draw(cb);
-    m_cube2.draw(cb);
-
+        floor.draw(cb);
+        m_cube1.draw(cb);
+        m_cube2.draw(cb);
     cb->endPass();
 
 }

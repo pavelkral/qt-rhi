@@ -102,15 +102,7 @@ void Model::updateUniforms(const QMatrix4x4 &viewProjection,float opacity, QRhiR
     u->updateDynamicBuffer(m_ubuf.get(), 0, 64, mvp.constData());
     u->updateDynamicBuffer(m_ubuf.get(), 64, 4, &opacity);
 }
-void Model::updateUbo(const QMatrix4x4 &view,
-                        const QMatrix4x4 &projection,
-                        const QMatrix4x4 &lightSpace,
-                        const QVector3D &color,
-                        const QVector3D &lightPos,
-                        const QVector3D &camPos,
-                        const float opacity,
-                        Ubo ubo,
-                        QRhiResourceUpdateBatch *u )
+void Model::updateUbo(Ubo ubo,QRhiResourceUpdateBatch *u )
 {
 
     struct alignas(16) GpuUbo {
@@ -132,30 +124,30 @@ void Model::updateUbo(const QMatrix4x4 &view,
 
     GpuUbo gpuUbo{};
 
-    memcpy(gpuUbo.model,      transform.getModelMatrix().constData(), 64);
-    memcpy(gpuUbo.view,       view.constData(),       64);
-    memcpy(gpuUbo.projection, projection.constData(), 64);
-    memcpy(gpuUbo.lightSpace, lightSpace.constData(), 64);
+    memcpy(gpuUbo.model,transform.getModelMatrix().constData(), 64);
+    memcpy(gpuUbo.view,ubo.view.constData(),       64);
+    memcpy(gpuUbo.projection, ubo.projection.constData(), 64);
+    memcpy(gpuUbo.lightSpace, ubo.lightSpace.constData(), 64);
 
-    gpuUbo.lightPos[0] = lightPos.x();
-    gpuUbo.lightPos[1] = lightPos.y();
-    gpuUbo.lightPos[2] = lightPos.z();
+    gpuUbo.lightPos[0] = ubo.lightPos.x();
+    gpuUbo.lightPos[1] = ubo.lightPos.y();
+    gpuUbo.lightPos[2] = ubo.lightPos.z();
     gpuUbo.lightPos[3] = 1.0f;
 
-    gpuUbo.color[0] = color.x();
-    gpuUbo.color[1] = color.y();
-    gpuUbo.color[2] = color.z();
+    gpuUbo.color[0] = ubo.lightColor.x();
+    gpuUbo.color[1] = ubo.lightColor.y();
+    gpuUbo.color[2] = ubo.lightColor.z();
     gpuUbo.color[3] = 1.0f;
 
-    gpuUbo.camPos[0] = camPos.x();
-    gpuUbo.camPos[1] = camPos.y();
-    gpuUbo.camPos[2] = camPos.z();
+    gpuUbo.camPos[0] = ubo.camPos.x();
+    gpuUbo.camPos[1] = ubo.camPos.y();
+    gpuUbo.camPos[2] = ubo.camPos.z();
     gpuUbo.camPos[3] = 1.0f;
 
     gpuUbo.opacity[0] = 0.0f;
     gpuUbo.opacity[1] = 0.0f;
     gpuUbo.opacity[2] = 0.0f;
-    gpuUbo.opacity[3] = opacity;
+    gpuUbo.opacity[3] = ubo.opacity.w();
 
     gpuUbo.debugMode      = float(ubo.debugMode);
     gpuUbo.lightIntensity[0] = float(ubo.lightIntensity);;
@@ -189,14 +181,13 @@ void Model::DrawForShadow(QRhiCommandBuffer *cb,
                              QRhiGraphicsPipeline *shadowPipeline,
                              QRhiShaderResourceBindings *shadowSRB,
                              QRhiBuffer *shadowUbo,
-                             const QMatrix4x4& lightSpaceMatrix,
                             Ubo ubo,
                             QRhiResourceUpdateBatch *u) const
 {
     u->updateDynamicBuffer(shadowUbo, 0,   64, transform.getModelMatrix().constData());
     u->updateDynamicBuffer(shadowUbo, 64, 64, ubo.view.constData());
     u->updateDynamicBuffer(shadowUbo, 128, 64, ubo.projection.constData());
-    u->updateDynamicBuffer(shadowUbo, 192, 64,lightSpaceMatrix.constData());
+    u->updateDynamicBuffer(shadowUbo, 192, 64,ubo.lightSpace.constData());
     u->updateDynamicBuffer(shadowUbo, 256, 16, reinterpret_cast<const float*>(&ubo.lightPos));
     u->updateDynamicBuffer(shadowUbo, 272, 16, reinterpret_cast<const float*>(&ubo.lightColor));
     u->updateDynamicBuffer(shadowUbo, 288, 16, reinterpret_cast<const float*>(&ubo.camPos));
