@@ -288,12 +288,12 @@ void HelloWindow::customInit()
 
     m_cube1.addVertAndInd(cubeVertices1, cubeIndices1);
     m_cube1.init(m_rhi.get(), m_rp.get(), vs2, fs2, m_initialUpdates,m_shadowMapTexture,m_shadowMapSampler);
-    m_cube1.transform.position = QVector3D(-1.5f, 0, 0);
+    m_cube1.transform.position = QVector3D(0, 1, 0);
 
     m_cube2.addVertAndInd(sphereVertices, sphereIndices); 
     m_cube2.init(m_rhi.get(),m_rp.get(), vs2, fs2, m_initialUpdates,m_shadowMapTexture,m_shadowMapSampler); 
-    m_cube2.transform.position = QVector3D(2.5f, 1, 0);
-    m_cube2.transform.scale = QVector3D(1.5f,1.5f, 1.5f);
+    m_cube2.transform.position = QVector3D(0, 0, 0);
+    m_cube2.transform.scale = QVector3D(0.4f,0.4f, 0.4f);
 
     m_camera.Position = QVector3D(-0.5f,1.5f, 5.5f);
     m_timer.start();
@@ -322,6 +322,7 @@ void HelloWindow::customRender()
         m_opacityDir *= -1;
         m_opacity = qBound(0.0f, m_opacity, 1.0f);
     }
+
     m_rotation += 30.0f * m_dt;
 
     QRhiCommandBuffer *cb = m_sc->currentFrameCommandBuffer();
@@ -332,26 +333,30 @@ void HelloWindow::customRender()
     QVector3D camPos = m_camera.Position;
     float objectOpacity = 1.0f;
     float radius = 15.0f;
-    float height = 20.0f;
+    float height = 6.0f;
     QVector3D center(0.0f, 0.0f, 0.0f);
 
 
     //   QVector3D lightColor(1.0f, 1.0f, 1.0f);
-   // lightPos.setX(center.x() + radius * cos(lightTime));
-   // lightPos.setZ(center.z() + radius * sin(lightTime));
+    lightPos.setX(center.x() + radius * cos(lightTime));
+    lightPos.setZ(center.z() + radius * sin(lightTime));
     lightPos.setY(height);
+   // lightPos.setX(0.0f);
+    //lightPos.setX(0.0f);
+    m_cube2.transform.position = lightPos;
 
-    QVector3D lightColor(
-        0.5f + 0.5f * sin(lightTime * 2.0f),
-        0.5f + 0.5f * sin(lightTime * 0.7f + 2.0f),
-        0.5f + 0.5f * sin(lightTime * 1.3f + 4.0f)
-        );
-    m_cube1.transform.rotation.setY( m_cube1.transform.rotation.y() + 0.5f);
-    m_cube2.transform.rotation.setY(m_cube2.transform.rotation.y() + 0.5f);
+    QVector3D lightColor(1.0f, 0.98f, 0.95f);
+    // QVector3D lightColor(
+    //     0.5f + 0.5f * sin(lightTime * 2.0f),
+    //     0.5f + 0.5f * sin(lightTime * 0.7f + 2.0f),
+    //     0.5f + 0.5f * sin(lightTime * 1.3f + 4.0f)
+    //     );
+  //  m_cube1.transform.rotation.setY( m_cube1.transform.rotation.y() + 0.5f);
+   // m_cube2.transform.rotation.setY(m_cube2.transform.rotation.y() + 0.5f);
 
     float nearPlane = 1.0f;
-    float farPlane = 50.0f;
-    float orthoSize = 25.0f;
+    float farPlane = 30.0f;
+    float orthoSize = 20.0f;
     QMatrix4x4 lightProjection;
     lightProjection.ortho(-orthoSize, orthoSize, -orthoSize, orthoSize, nearPlane, farPlane);
     QMatrix4x4 lightView;
@@ -523,6 +528,7 @@ void HelloWindow::initShadowMapResources(QRhi *rhi) {
     m_shadowPipeline->setDepthBias(2);             // zkus 1..4, ladit podle potřeby
     m_shadowPipeline->setSlopeScaledDepthBias(1.1f);
     m_shadowPipeline->setDepthOp(QRhiGraphicsPipeline::LessOrEqual);
-    m_shadowPipeline->setCullMode(QRhiGraphicsPipeline::Back);
+    m_shadowPipeline->setCullMode(QRhiGraphicsPipeline::Front);
+ //   m_shadowPipeline->setCullMode(QRhiGraphicsPipeline::Back);
     m_shadowPipeline->create();
 }
