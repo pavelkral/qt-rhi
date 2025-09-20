@@ -88,7 +88,7 @@ private:
     QRhiBuffer* m_shadowUbo = nullptr;
     QRhiShaderResourceBindings *m_shadowSRB = nullptr;
     QRhiGraphicsPipeline *m_shadowPipeline = nullptr;
-
+    QVector3D lightPos;
     float m_rotation = 0;
     float m_opacity = 1;
     int m_opacityDir = -1;

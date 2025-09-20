@@ -334,25 +334,25 @@ void HelloWindow::customRender()
     float radius = 15.0f;
     float height = 20.0f;
     QVector3D center(0.0f, 0.0f, 0.0f);
-    QVector3D lightPos(-5.0f, 20.0f, -15.0f);
 
- //   QVector3D lightColor(1.0f, 1.0f, 1.0f);
-    lightPos.setX(center.x() + radius * cos(lightTime));
-    lightPos.setZ(center.z() + radius * sin(lightTime));
+
+    //   QVector3D lightColor(1.0f, 1.0f, 1.0f);
+   // lightPos.setX(center.x() + radius * cos(lightTime));
+   // lightPos.setZ(center.z() + radius * sin(lightTime));
     lightPos.setY(height);
 
-     QVector3D lightColor(
-         0.5f + 0.5f * sin(lightTime * 2.0f),
-         0.5f + 0.5f * sin(lightTime * 0.7f + 2.0f),
-         0.5f + 0.5f * sin(lightTime * 1.3f + 4.0f)
-         );
+    QVector3D lightColor(
+        0.5f + 0.5f * sin(lightTime * 2.0f),
+        0.5f + 0.5f * sin(lightTime * 0.7f + 2.0f),
+        0.5f + 0.5f * sin(lightTime * 1.3f + 4.0f)
+        );
     m_cube1.transform.rotation.setY( m_cube1.transform.rotation.y() + 0.5f);
     m_cube2.transform.rotation.setY(m_cube2.transform.rotation.y() + 0.5f);
 
-    QMatrix4x4 lightProjection;
     float nearPlane = 1.0f;
     float farPlane = 50.0f;
-    float orthoSize = 30.0f;
+    float orthoSize = 25.0f;
+    QMatrix4x4 lightProjection;
     lightProjection.ortho(-orthoSize, orthoSize, -orthoSize, orthoSize, nearPlane, farPlane);
     QMatrix4x4 lightView;
     lightView.lookAt(lightPos, center, QVector3D(0,1,0));
@@ -391,8 +391,8 @@ void HelloWindow::customRender()
     const QColor clearColor = QColor::fromRgbF(0.4f, 0.7f, 0.0f, 1.0f);
     const QColor clearColorDepth = QColor::fromRgbF(1.0f, 1,1,1);
 
-    cb->beginPass(m_shadowMapRenderTarget, clearColorDepth, { 1.0f, 0 }, shadowBatch);
-
+    //cb->beginPass(m_shadowMapRenderTarget, clearColorDepth, { 1.0f, 0 }, shadowBatch);
+    cb->beginPass(m_shadowMapRenderTarget, Qt::black, { 1.0f, 0 }, shadowBatch);
     cb->setGraphicsPipeline(m_shadowPipeline);
     cb->setViewport(QRhiViewport(0, 0, SHADOW_MAP_SIZE.width(), SHADOW_MAP_SIZE.height()));
         floor.DrawForShadow(cb,m_shadowPipeline,ubo,shadowBatch);
@@ -520,6 +520,8 @@ void HelloWindow::initShadowMapResources(QRhi *rhi) {
     m_shadowPipeline->setTopology(QRhiGraphicsPipeline::Triangles);
     m_shadowPipeline->setDepthTest(true);
     m_shadowPipeline->setDepthWrite(true);
+    m_shadowPipeline->setDepthBias(2);             // zkus 1..4, ladit podle potřeby
+    m_shadowPipeline->setSlopeScaledDepthBias(1.1f);
     m_shadowPipeline->setDepthOp(QRhiGraphicsPipeline::LessOrEqual);
     m_shadowPipeline->setCullMode(QRhiGraphicsPipeline::Back);
     m_shadowPipeline->create();
