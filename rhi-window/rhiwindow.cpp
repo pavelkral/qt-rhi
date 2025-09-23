@@ -274,7 +274,22 @@ void HelloWindow::customInit()
     QShader fs1 = getShader(":/light.frag.qsb");
     QShader vs2 = getShader(":/pbr.vert.qsb");
     QShader fs2 = getShader(":/pbr.frag.qsb");
+    QShader vsWire = getShader(":/mcolor.vert.qsb");
+    QShader fsWire = getShader(":/mcolor.frag.qsb");
 
+    float nearPlane = 0.1f;
+    float farPlane = 30.0f;
+    float orthoSize = 20.0f;
+
+    QVector<float> frustumVerts;
+    QVector<quint16> frustumInds;
+    generateLightFrustum (orthoSize, nearPlane, farPlane, frustumVerts, frustumInds);
+
+
+    frustumModel.addVertAndInd(frustumVerts, frustumInds);
+
+
+    frustumModel.init(m_rhi.get(), m_rp.get(), vsWire, fsWire,  m_initialUpdates,m_shadowMapTexture,m_shadowMapSampler);
     QVector<float> sphereVertices;
     QVector<quint16> sphereIndices;
 
@@ -295,7 +310,7 @@ void HelloWindow::customInit()
     m_cube2.transform.position = QVector3D(6.0f,10.4f, 15.4f);
     m_cube2.transform.scale = QVector3D(0.4f,0.4f, 0.4f);
 
-    m_camera.Position = QVector3D(-0.5f,1.5f, 5.5f);
+    m_camera.Position = QVector3D(-0.5f,5.5f, 15.5f);
     m_timer.start();
 }
 
@@ -328,7 +343,6 @@ void HelloWindow::customRender()
     updateCamera(m_dt);
     QMatrix4x4 view = m_camera.GetViewMatrix();
     QMatrix4x4 projection = m_projection;
-
     QVector3D camPos = m_camera.Position;
     float objectOpacity = 1.0f;
     float radius = 15.0f;
@@ -339,9 +353,10 @@ void HelloWindow::customRender()
     //lightPos.setY(height);
    // lightPos.setX(0.0f);
     //lightPos.setX(0.0f);
-    m_cube2.transform.position = lightPos;
+
     lightPos = QVector3D(4.0f,7.4f, 15.4f);
     QVector3D lightColor(1.0f, 0.98f, 0.95f);
+    m_cube2.transform.position = lightPos;
     // QVector3D lightColor(
     //     0.5f + 0.5f * sin(lightTime * 2.0f),
     //     0.5f + 0.5f * sin(lightTime * 0.7f + 2.0f),
@@ -351,7 +366,7 @@ void HelloWindow::customRender()
   //  m_cube1.transform.rotation.setY( m_cube1.transform.rotation.y() + 0.5f);
    // m_cube2.transform.rotation.setY(m_cube2.transform.rotation.y() + 0.5f);
 
-    float nearPlane = 1.0f;
+    float nearPlane = 0.1f;
     float farPlane = 30.0f;
     float orthoSize = 20.0f;
     QMatrix4x4 lightProjection;
@@ -373,9 +388,14 @@ void HelloWindow::customRender()
     ubo.opacity     = QVector4D(0.0f,0.0f,0.0f, m_opacity);
     ubo.misc       = QVector4D(debug,lightIntensity,0.0f, 1.0f);
 
+   // qDebug() << "lightprojection = " << lightProjection << "\n";
+  //  qDebug() << "lightview = " << lightView << "\n";
+   // qDebug() << "lightspace = " << ubo.lightSpace << "\n";
+
     floor.updateUbo(ubo,resourceUpdates);
     m_cube1.updateUbo(ubo,resourceUpdates);
     m_cube2.updateUbo(ubo,resourceUpdates);
+    frustumModel.updateUbo(ubo, resourceUpdates);
 
     floor.updateShadowUbo(ubo,shadowBatch);
     m_cube1.updateShadowUbo(ubo,shadowBatch);
@@ -405,11 +425,51 @@ void HelloWindow::customRender()
         floor.draw(cb);
         m_cube1.draw(cb);
         m_cube2.draw(cb);
+        frustumModel.draw(cb);
     cb->endPass();
 
 }
 
 //=========================================================================================================
+void HelloWindow::generateLightFrustum(float orthoSize, float nearPlane, float farPlane,
+                                       QVector<float> &vertices, QVector<quint16> &indices)
+{
+    vertices.clear();
+    indices.clear();
+
+    QVector<QVector3D> corners = {
+        {-orthoSize, nearPlane, -orthoSize}, // 0
+        { orthoSize, nearPlane, -orthoSize}, // 1
+        { orthoSize, nearPlane,  orthoSize}, // 2
+        {-orthoSize, nearPlane,  orthoSize}, // 3
+        {-orthoSize, farPlane,  -orthoSize}, // 4
+        { orthoSize, farPlane,  -orthoSize}, // 5
+        { orthoSize, farPlane,   orthoSize}, // 6
+        {-orthoSize, farPlane,   orthoSize}  // 7
+    };
+
+    // Přidej vrcholy: x,y,z + 11 nul (normály, uv, tangent, bitangent)
+    for (const QVector3D &c : corners) {
+        vertices.append(c.x());
+        vertices.append(c.y());
+        vertices.append(c.z());
+        for (int i = 0; i < 11; ++i)
+            vertices.append(0.0f);
+    }
+
+    // Indexy pro wireframe
+    const quint16 lineIndices[] = {
+        0,1, 1,2, 2,3, 3,0, // near plane
+        4,5, 5,6, 6,7, 7,4, // far plane
+        0,4, 1,5, 2,6, 3,7  // spojovací hrany
+    };
+
+    // Přidej indexy do QList
+    indices.reserve(24); // optimalizace alokace
+    for (quint16 idx : lineIndices)
+        indices.append(idx);
+}
+
 
 void HelloWindow::keyPressEvent(QKeyEvent *e)
 {
@@ -488,9 +548,11 @@ void HelloWindow::initShadowMapResources(QRhi *rhi) {
     // 2. Render target description s depth attachmentem
     QRhiTextureRenderTargetDescription shadowRtDesc;
     shadowRtDesc.setDepthTexture(m_shadowMapTexture);
+
     // 3. Render target + render pass descriptor
     m_shadowMapRenderTarget = rhi->newTextureRenderTarget(shadowRtDesc);
     m_shadowMapRenderPassDesc = m_shadowMapRenderTarget->newCompatibleRenderPassDescriptor();
+
     m_shadowMapRenderTarget->setRenderPassDescriptor(m_shadowMapRenderPassDesc);
     m_shadowMapRenderTarget->create();
 

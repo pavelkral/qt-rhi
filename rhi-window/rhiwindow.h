@@ -67,12 +67,13 @@ protected:
     void mouseMoveEvent(QMouseEvent *e) override;
 private:
     void updateCamera(float dt);
-
+    void generateLightFrustum(float orthoSize, float nearPlane, float farPlane,
+                                           QVector<float> &vertices, QVector<quint16> &indices);
     Model m_cube1;
     Model m_cube2;
     Model floor;
     Camera m_camera;
-
+    Model frustumModel;
     QSet<int> m_pressedKeys;
     QPointF m_lastMousePos;
     QElapsedTimer m_timer;

@@ -1,8 +1,8 @@
 #version 450
-layout(location = 0) in vec3 inPos;
-layout(location = 1) in vec3 in_normal;
-layout(location = 2) in vec2 inUV;
 
+layout(location = 0) in vec3 inPosition;
+
+// Používáme tvůj stávající Ubo
 layout(std140, binding = 0) uniform Ubo {
     mat4 model;
     mat4 view;
@@ -15,9 +15,7 @@ layout(std140, binding = 0) uniform Ubo {
     vec4 misc1;
 } ubo;
 
-layout(location = 0) out vec2 vUV;
-
 void main() {
-    vUV = inUV;
-    gl_Position = ubo.projection * ubo.view * ubo.model * vec4(inPos, 1.0);
+    // Použijeme model + view + projection
+    gl_Position = ubo.projection * ubo.view * ubo.model * vec4(inPosition, 1.0);
 }
