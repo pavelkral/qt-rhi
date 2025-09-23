@@ -6,8 +6,6 @@
 #include <QFile>
 #include <QImage>
 #include <QFont>
-#include <QRect>
-#include <QPoint>
 #include <rhi/qshader.h>
 #include "qtrhi3d/geometry.h"
 
@@ -236,7 +234,23 @@ HelloWindow::HelloWindow(QRhi::Implementation graphicsApi)
 }
 HelloWindow::~HelloWindow()
 {
+    if (m_shadowPipeline) {
+       // m_shadowPipeline->release();
+        delete m_shadowPipeline;
+        m_shadowPipeline = nullptr;
+    }
 
+    if (m_shadowSRB) {
+       // m_shadowSRB->release();
+        delete m_shadowSRB;
+        m_shadowSRB = nullptr;
+    }
+
+    if (m_shadowUbo) {
+    //    m_shadowUbo->release();
+        delete m_shadowUbo;
+        m_shadowUbo = nullptr;
+    }
 
     delete m_shadowMapTexture;
     delete m_shadowMapSampler;
@@ -260,25 +274,24 @@ void HelloWindow::customInit()
     QShader fs1 = getShader(":/light.frag.qsb");
     QShader vs2 = getShader(":/pbr.vert.qsb");
     QShader fs2 = getShader(":/pbr.frag.qsb");
-    QShader depthvs = getShader(":/shaders/prebuild/depth.vert.qsb");
-    QShader depthfs = getShader(":/shaders/prebuild/depth.frag.qsb");
+
     QVector<float> sphereVertices;
     QVector<quint16> sphereIndices;
 
     generateSphere(0.5f, 32, 64, sphereVertices, sphereIndices);
 
     floor.addVertAndInd(indexedPlaneVertices ,indexedPlaneIndices );
-    floor.init(m_rhi.get(), m_rp.get(),m_shadowMapRenderPassDesc, vs2, fs2,depthvs,depthfs, m_initialUpdates,m_shadowMapTexture,m_shadowMapSampler);
-    floor.transform.position = QVector3D(0, 0.5f, 0);
-   // floor.transform.scale = QVector3D(10, 10, 10);
-   // floor.transform.rotation.setX( -90.0f);
+    floor.init(m_rhi.get(), m_rp.get(), vs2, fs2, m_initialUpdates,m_shadowMapTexture,m_shadowMapSampler);
+    floor.transform.position = QVector3D(0, -0.5f, 0);
+    floor.transform.scale = QVector3D(10, 10, 10);
+    floor.transform.rotation.setX( 270.0f);
 
     m_cube1.addVertAndInd(cubeVertices1, cubeIndices1);
-    m_cube1.init(m_rhi.get(), m_rp.get(),m_shadowMapRenderPassDesc, vs2, fs2,depthvs,depthfs, m_initialUpdates,m_shadowMapTexture,m_shadowMapSampler);
+    m_cube1.init(m_rhi.get(), m_rp.get(), vs2, fs2, m_initialUpdates,m_shadowMapTexture,m_shadowMapSampler);
     m_cube1.transform.position = QVector3D(0, 1, 0);
 
     m_cube2.addVertAndInd(sphereVertices, sphereIndices); 
-    m_cube2.init(m_rhi.get(), m_rp.get(),m_shadowMapRenderPassDesc, vs2, fs2,depthvs,depthfs, m_initialUpdates,m_shadowMapTexture,m_shadowMapSampler);
+    m_cube2.init(m_rhi.get(),m_rp.get(), vs2, fs2, m_initialUpdates,m_shadowMapTexture,m_shadowMapSampler); 
     m_cube2.transform.position = QVector3D(0, 0, 0);
     m_cube2.transform.scale = QVector3D(0.4f,0.4f, 0.4f);
 
@@ -319,15 +332,17 @@ void HelloWindow::customRender()
 
     QVector3D camPos = m_camera.Position;
     float objectOpacity = 1.0f;
-    float radius = 10.0f;
-    float height = 4.0f;
+    float radius = 15.0f;
+    float height = 6.0f;
     QVector3D center(0.0f, 0.0f, 0.0f);
 
+
+    //   QVector3D lightColor(1.0f, 1.0f, 1.0f);
     lightPos.setX(center.x() + radius * cos(lightTime));
     lightPos.setZ(center.z() + radius * sin(lightTime));
     lightPos.setY(height);
    // lightPos.setX(0.0f);
-    //lightPos.setZ(0.0f);
+    //lightPos.setX(0.0f);
     m_cube2.transform.position = lightPos;
 
     QVector3D lightColor(1.0f, 0.98f, 0.95f);
@@ -340,7 +355,7 @@ void HelloWindow::customRender()
    // m_cube2.transform.rotation.setY(m_cube2.transform.rotation.y() + 0.5f);
 
     float nearPlane = 1.0f;
-    float farPlane = 20.0f;
+    float farPlane = 30.0f;
     float orthoSize = 20.0f;
     QMatrix4x4 lightProjection;
     lightProjection.ortho(-orthoSize, orthoSize, -orthoSize, orthoSize, nearPlane, farPlane);
@@ -362,36 +377,37 @@ void HelloWindow::customRender()
     ubo.misc       = QVector4D(debug,lightIntensity,0.0f, 1.0f);
 
 
-    const QSize outputSizeInPixels = m_sc->currentPixelSize();
-    const QColor clearColor = QColor::fromRgbF(0.4f, 0.7f, 0.0f, 1.0f);
-    const QColor clearColorDepth = QColor::fromRgbF(1.0f, 1,1,1);
-
-
-    floor.updateShadowUbo(ubo,shadowBatch);
-    m_cube1.updateShadowUbo(ubo,shadowBatch);
-    m_cube2.updateShadowUbo(ubo,shadowBatch);
-    //cb->beginPass(m_shadowMapRenderTarget, clearColorDepth, { 1.0f, 0 }, shadowBatch);
-    cb->beginPass(m_shadowMapRenderTarget, Qt::black, { 1.0f, 0 }, shadowBatch);
-  //  cb->setScissor(QRhiScissor(0, 0, SHADOW_MAP_SIZE.width(), SHADOW_MAP_SIZE.height()));
-    cb->setViewport(QRhiViewport(0, 0, SHADOW_MAP_SIZE.width(), SHADOW_MAP_SIZE.height()));
-   // QRhiScissor scissor(0, 0, SHADOW_MAP_SIZE.width(), SHADOW_MAP_SIZE.height());
-    //cb->setScissor(scissor);
-        floor.DrawForShadow(cb,shadowBatch);
-        m_cube1.DrawForShadow(cb,shadowBatch);
-        m_cube2.DrawForShadow(cb,shadowBatch);
-
-    cb->endPass();
 
     floor.updateUbo(ubo,resourceUpdates);
     m_cube1.updateUbo(ubo,resourceUpdates);
     m_cube2.updateUbo(ubo,resourceUpdates);
 
+
+    floor.updateShadowUbo(ubo,shadowBatch);
+    m_cube1.updateShadowUbo(ubo,shadowBatch);
+    m_cube2.updateShadowUbo(ubo,shadowBatch);
+
+    Q_ASSERT(m_shadowMapRenderTarget);
+    Q_ASSERT(m_shadowPipeline);
+    Q_ASSERT(m_shadowSRB);
+    Q_ASSERT(m_shadowUbo);
+
+    const QSize outputSizeInPixels = m_sc->currentPixelSize();
+    const QColor clearColor = QColor::fromRgbF(0.4f, 0.7f, 0.0f, 1.0f);
+    const QColor clearColorDepth = QColor::fromRgbF(1.0f, 1,1,1);
+
+    //cb->beginPass(m_shadowMapRenderTarget, clearColorDepth, { 1.0f, 0 }, shadowBatch);
+    cb->beginPass(m_shadowMapRenderTarget, Qt::black, { 1.0f, 0 }, shadowBatch);
+    cb->setGraphicsPipeline(m_shadowPipeline);
+    cb->setViewport(QRhiViewport(0, 0, SHADOW_MAP_SIZE.width(), SHADOW_MAP_SIZE.height()));
+        floor.DrawForShadow(cb,m_shadowPipeline,ubo,shadowBatch);
+        m_cube1.DrawForShadow(cb,m_shadowPipeline,ubo,shadowBatch);
+        m_cube2.DrawForShadow(cb,m_shadowPipeline,ubo,shadowBatch);
+
+    cb->endPass();
+
     cb->beginPass(m_sc->currentFrameRenderTarget(), clearColor, { 1.0f, 0 }, resourceUpdates);
     cb->setViewport({ 0, 0, float(outputSizeInPixels.width()), float(outputSizeInPixels.height()) });
-
-    //QRhiScissor scissor1(0, 0, outputSizeInPixels.width(), outputSizeInPixels.width());
-    //cb->setScissor(scissor1);
-
         floor.draw(cb);
         m_cube1.draw(cb);
         m_cube2.draw(cb);
@@ -465,6 +481,17 @@ void HelloWindow::initShadowMapResources(QRhi *rhi) {
         );
 
     m_shadowMapSampler->create();
+    const quint32 UBUF_SIZE = 512;
+
+    m_shadowUbo = rhi->newBuffer(QRhiBuffer::Dynamic, QRhiBuffer::UniformBuffer, UBUF_SIZE);
+    m_shadowUbo->create();
+
+    m_shadowSRB = rhi->newShaderResourceBindings();
+    m_shadowSRB->setBindings({
+        QRhiShaderResourceBinding::uniformBuffer(0, QRhiShaderResourceBinding::VertexStage, m_shadowUbo)
+    });
+    m_shadowSRB->create();
+    // 2. Render target description s depth attachmentem
     QRhiTextureRenderTargetDescription shadowRtDesc;
     shadowRtDesc.setDepthTexture(m_shadowMapTexture);
     // 3. Render target + render pass descriptor
@@ -473,4 +500,35 @@ void HelloWindow::initShadowMapResources(QRhi *rhi) {
     m_shadowMapRenderTarget->setRenderPassDescriptor(m_shadowMapRenderPassDesc);
     m_shadowMapRenderTarget->create();
 
+    m_shadowPipeline = rhi->newGraphicsPipeline();
+
+    QRhiVertexInputLayout inputLayout;
+    inputLayout.setBindings({ { 3 * sizeof(float) } }); // jen pozice
+    inputLayout.setAttributes({ { 0, 0, QRhiVertexInputAttribute::Float3, 0 } });
+
+    m_shadowPipeline->setVertexInputLayout(inputLayout);
+
+
+    QShader vs = getShader(":/shaders/prebuild/depth.vert.qsb");
+    QShader fs = getShader(":/shaders/prebuild/depth.frag.qsb"); // depth-only shader
+
+    m_shadowPipeline->setShaderStages({
+        { QRhiShaderStage::Vertex, vs },
+        { QRhiShaderStage::Fragment, fs }
+    });
+
+
+    m_shadowPipeline->setShaderResourceBindings(m_shadowSRB);
+
+    Q_ASSERT(m_shadowMapRenderPassDesc); // sanity
+    m_shadowPipeline->setRenderPassDescriptor(m_shadowMapRenderPassDesc);
+    m_shadowPipeline->setTopology(QRhiGraphicsPipeline::Triangles);
+    m_shadowPipeline->setDepthTest(true);
+    m_shadowPipeline->setDepthWrite(true);
+    m_shadowPipeline->setDepthBias(2);             // zkus 1..4, ladit podle potřeby
+    m_shadowPipeline->setSlopeScaledDepthBias(1.1f);
+    m_shadowPipeline->setDepthOp(QRhiGraphicsPipeline::LessOrEqual);
+    m_shadowPipeline->setCullMode(QRhiGraphicsPipeline::Front);
+ //   m_shadowPipeline->setCullMode(QRhiGraphicsPipeline::Back);
+    m_shadowPipeline->create();
 }

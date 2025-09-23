@@ -46,11 +46,6 @@ struct alignas(16) GpuUbo {
     float opacity[4];      // offset 304 (16 B)
     float misc[4];
 };
-struct alignas(16) GpuShadowUbo {
-    float model[16];       // offset 0   (64 B)
-    float view[16];        // offset 64  (64 B)
-    float projection[16];  // offset 128 (64 B)
-    float lightSpace[16];  // offset 192 (64 B)
-};
+
 
 #endif // TYPES_H
