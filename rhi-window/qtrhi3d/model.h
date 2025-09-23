@@ -38,6 +38,7 @@ private:
 
     std::unique_ptr<QRhiBuffer> m_shadowUbo;
     std::unique_ptr<QRhiShaderResourceBindings> m_shadowSrb;
+    std::unique_ptr<QRhiGraphicsPipeline> m_shadowPipeline;
 
     QVector<float> m_vert;
     QVector<quint16> m_ind;
@@ -50,14 +51,14 @@ public:
     Transform transform;
 
     void addVertAndInd(const QVector<float> &vertices, const QVector<quint16> &indices);
-    void init(QRhi *rhi,QRhiRenderPassDescriptor *rp,const QShader &vs,const QShader &fs,
+    void init(QRhi *rhi,QRhiRenderPassDescriptor *rp,QRhiRenderPassDescriptor *shadowDesc,const QShader &vs,const QShader &fs,const QShader &depthvs,const QShader &depthfs,
               QRhiResourceUpdateBatch *u,QRhiTexture *shadowmap,QRhiSampler *shadowsampler);
+
     void updateUbo(Ubo ubo,QRhiResourceUpdateBatch *u);
     void draw(QRhiCommandBuffer *cb);
-    void DrawForShadow(QRhiCommandBuffer *cb,
-                       QRhiGraphicsPipeline *shadowPipeline,
-                       Ubo ubo,QRhiResourceUpdateBatch *u)  ;
     void updateShadowUbo(Ubo ubo, QRhiResourceUpdateBatch *u);
+    void DrawForShadow(QRhiCommandBuffer *cb,QRhiResourceUpdateBatch *u)  ;
+
     QVector<float> computeTangents(const QVector<float>& vertices, const QVector<quint16>& indices);
     void loadTexture(QRhi *m_rhi,const QSize &, QRhiResourceUpdateBatch *u,QString tex_name,
                      std::unique_ptr<QRhiTexture> &texture,

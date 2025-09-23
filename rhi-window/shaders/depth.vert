@@ -8,11 +8,6 @@ layout(std140, binding = 0) uniform Ubo {
     mat4 view;
     mat4 projection;
     mat4 lightSpace;
-    vec4 lightPos;
-    vec4 color;
-    vec4 camPos;
-    vec4 misc;
-    vec4 misc1;
 } ubo;
 
 
