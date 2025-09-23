@@ -122,14 +122,14 @@ void generateSphere(float radius, int rings, int sectors,QVector<float>& vertice
      0,1,2,
      0,2,3
  };
-  QVector<float> indexedPlaneVertices = {
-     // Pozícia             // Normál             // UV
-     -0.5f,-0.5f, 0.0f,   0,0,1,            0.0f,0.0f, // 0
-     0.5f,-0.5f, 0.0f,   0,0,1,            5.0f,0.0f, // 1
-     0.5f, 0.5f, 0.0f,   0,0,1,            5.0f,5.0f, // 2
-     -0.5f, 0.5f, 0.0f,   0,0,1,            0.0f,5.0f  // 3
- };
 
+ QVector<float> indexedPlaneVertices = {
+     // Pos                  // Normal            // UV
+     15.0f, -0.5f, 15.0f,    0.0f, 1.0f, 0.0f,   10.0f, 0.0f,
+     15.0f, -0.5f, -15.0f,   0.0f, 1.0f, 0.0f,   10.0f, 10.0f,
+     -15.0f, -0.5f, -15.0f,  0.0f, 1.0f, 0.0f,   0.0f, 10.0f,
+     -15.0f, -0.5f, 15.0f,   0.0f, 1.0f, 0.0f,   0.0f, 0.0f
+ };
  QVector<quint16> indexedPlaneIndices = {0, 1, 2, 0, 2, 3};
 
 

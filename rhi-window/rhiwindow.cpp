@@ -282,17 +282,17 @@ void HelloWindow::customInit()
 
     floor.addVertAndInd(indexedPlaneVertices ,indexedPlaneIndices );
     floor.init(m_rhi.get(), m_rp.get(), vs2, fs2, m_initialUpdates,m_shadowMapTexture,m_shadowMapSampler);
-    floor.transform.position = QVector3D(0, -0.5f, 0);
-    floor.transform.scale = QVector3D(10, 10, 10);
-    floor.transform.rotation.setX( 270.0f);
+    //floor.transform.position = QVector3D(0, -0.5f, 0);
+    //floor.transform.scale = QVector3D(10, 10, 10);
+    //floor.transform.rotation.setX( 270.0f);
 
     m_cube1.addVertAndInd(cubeVertices1, cubeIndices1);
     m_cube1.init(m_rhi.get(), m_rp.get(), vs2, fs2, m_initialUpdates,m_shadowMapTexture,m_shadowMapSampler);
     m_cube1.transform.position = QVector3D(0, 1, 0);
 
     m_cube2.addVertAndInd(sphereVertices, sphereIndices); 
-    m_cube2.init(m_rhi.get(),m_rp.get(), vs2, fs2, m_initialUpdates,m_shadowMapTexture,m_shadowMapSampler); 
-    m_cube2.transform.position = QVector3D(0, 0, 0);
+    m_cube2.init(m_rhi.get(),m_rp.get(), vs2, fs2, m_initialUpdates,m_shadowMapTexture,m_shadowMapSampler);
+    m_cube2.transform.position = QVector3D(6.0f,10.4f, 15.4f);
     m_cube2.transform.scale = QVector3D(0.4f,0.4f, 0.4f);
 
     m_camera.Position = QVector3D(-0.5f,1.5f, 5.5f);
@@ -316,7 +316,6 @@ void HelloWindow::customRender()
         m_initialUpdates = nullptr;
     }
 
-
     m_opacity += m_opacityDir * 0.005f;
     if (m_opacity < 0.0f || m_opacity > 1.0f) {
         m_opacityDir *= -1;
@@ -335,22 +334,20 @@ void HelloWindow::customRender()
     float radius = 15.0f;
     float height = 6.0f;
     QVector3D center(0.0f, 0.0f, 0.0f);
-
-
-    //   QVector3D lightColor(1.0f, 1.0f, 1.0f);
-    lightPos.setX(center.x() + radius * cos(lightTime));
-    lightPos.setZ(center.z() + radius * sin(lightTime));
-    lightPos.setY(height);
+   // lightPos.setX(center.x() + radius * cos(lightTime));
+   // lightPos.setZ(center.z() + radius * sin(lightTime));
+    //lightPos.setY(height);
    // lightPos.setX(0.0f);
     //lightPos.setX(0.0f);
     m_cube2.transform.position = lightPos;
-
+    lightPos = QVector3D(4.0f,7.4f, 15.4f);
     QVector3D lightColor(1.0f, 0.98f, 0.95f);
     // QVector3D lightColor(
     //     0.5f + 0.5f * sin(lightTime * 2.0f),
     //     0.5f + 0.5f * sin(lightTime * 0.7f + 2.0f),
     //     0.5f + 0.5f * sin(lightTime * 1.3f + 4.0f)
     //     );
+
   //  m_cube1.transform.rotation.setY( m_cube1.transform.rotation.y() + 0.5f);
    // m_cube2.transform.rotation.setY(m_cube2.transform.rotation.y() + 0.5f);
 
@@ -376,12 +373,9 @@ void HelloWindow::customRender()
     ubo.opacity     = QVector4D(0.0f,0.0f,0.0f, m_opacity);
     ubo.misc       = QVector4D(debug,lightIntensity,0.0f, 1.0f);
 
-
-
     floor.updateUbo(ubo,resourceUpdates);
     m_cube1.updateUbo(ubo,resourceUpdates);
     m_cube2.updateUbo(ubo,resourceUpdates);
-
 
     floor.updateShadowUbo(ubo,shadowBatch);
     m_cube1.updateShadowUbo(ubo,shadowBatch);
@@ -396,14 +390,14 @@ void HelloWindow::customRender()
     const QColor clearColor = QColor::fromRgbF(0.4f, 0.7f, 0.0f, 1.0f);
     const QColor clearColorDepth = QColor::fromRgbF(1.0f, 1,1,1);
 
-    //cb->beginPass(m_shadowMapRenderTarget, clearColorDepth, { 1.0f, 0 }, shadowBatch);
+//===============================================================================================
+
     cb->beginPass(m_shadowMapRenderTarget, Qt::black, { 1.0f, 0 }, shadowBatch);
     cb->setGraphicsPipeline(m_shadowPipeline);
     cb->setViewport(QRhiViewport(0, 0, SHADOW_MAP_SIZE.width(), SHADOW_MAP_SIZE.height()));
         floor.DrawForShadow(cb,m_shadowPipeline,ubo,shadowBatch);
         m_cube1.DrawForShadow(cb,m_shadowPipeline,ubo,shadowBatch);
         m_cube2.DrawForShadow(cb,m_shadowPipeline,ubo,shadowBatch);
-
     cb->endPass();
 
     cb->beginPass(m_sc->currentFrameRenderTarget(), clearColor, { 1.0f, 0 }, resourceUpdates);
@@ -508,7 +502,6 @@ void HelloWindow::initShadowMapResources(QRhi *rhi) {
 
     m_shadowPipeline->setVertexInputLayout(inputLayout);
 
-
     QShader vs = getShader(":/shaders/prebuild/depth.vert.qsb");
     QShader fs = getShader(":/shaders/prebuild/depth.frag.qsb"); // depth-only shader
 
@@ -516,7 +509,6 @@ void HelloWindow::initShadowMapResources(QRhi *rhi) {
         { QRhiShaderStage::Vertex, vs },
         { QRhiShaderStage::Fragment, fs }
     });
-
 
     m_shadowPipeline->setShaderResourceBindings(m_shadowSRB);
 
