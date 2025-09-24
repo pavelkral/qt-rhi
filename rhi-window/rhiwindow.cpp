@@ -337,13 +337,13 @@ void HelloWindow::customRender()
     float radius = 15.0f;
     float height = 6.0f;
     QVector3D center(0.0f, 0.0f, 0.0f);
-   // lightPos.setX(center.x() + radius * cos(lightTime));
-   // lightPos.setZ(center.z() + radius * sin(lightTime));
-    //lightPos.setY(height);
+    lightPos.setX(center.x() + radius * cos(lightTime));
+    lightPos.setZ(center.z() + radius * sin(lightTime));
+    lightPos.setY(height);
    // lightPos.setX(0.0f);
     //lightPos.setX(0.0f);
 
-    lightPos = QVector3D(0.0f,4.4f, 0.0f);
+   // lightPos = QVector3D(0.0f,4.4f, 0.0f);
     QVector3D lightColor(1.0f, 0.98f, 0.95f);
     m_cube2.transform.position = lightPos;
     // QVector3D lightColor(
@@ -650,8 +650,17 @@ void HelloWindow::initShadowMapResources(QRhi *rhi) {
     m_shadowPipeline = rhi->newGraphicsPipeline();
 
     QRhiVertexInputLayout inputLayout;
-    inputLayout.setBindings({ { 3 * sizeof(float) } }); // jen pozice
-    inputLayout.setAttributes({ { 0, 0, QRhiVertexInputAttribute::Float3, 0 } });
+    inputLayout.setBindings({
+        { 14 * sizeof(float) }
+    });
+
+    inputLayout.setAttributes({
+        { 0, 0, QRhiVertexInputAttribute::Float3, 0 },                    // pos
+        { 0, 1, QRhiVertexInputAttribute::Float3, 3 * sizeof(float) },    // normal
+        { 0, 2, QRhiVertexInputAttribute::Float2, 6 * sizeof(float) },    // uv
+        { 0, 3, QRhiVertexInputAttribute::Float3, 8 * sizeof(float) },    // tangent
+        { 0, 4, QRhiVertexInputAttribute::Float3, 11 * sizeof(float) }    // bitangent
+    });
 
     m_shadowPipeline->setVertexInputLayout(inputLayout);
 
