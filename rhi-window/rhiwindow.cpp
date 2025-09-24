@@ -274,22 +274,11 @@ void HelloWindow::customInit()
     QShader fs1 = getShader(":/light.frag.qsb");
     QShader vs2 = getShader(":/pbr.vert.qsb");
     QShader fs2 = getShader(":/pbr.frag.qsb");
+
     QShader vsWire = getShader(":/mcolor.vert.qsb");
     QShader fsWire = getShader(":/mcolor.frag.qsb");
 
-    float nearPlane = 0.1f;
-    float farPlane = 30.0f;
-    float orthoSize = 20.0f;
 
-    QVector<float> frustumVerts;
-    QVector<quint16> frustumInds;
-    generateLightFrustum (orthoSize, nearPlane, farPlane, frustumVerts, frustumInds);
-
-
-    frustumModel.addVertAndInd(frustumVerts, frustumInds);
-
-
-    frustumModel.init(m_rhi.get(), m_rp.get(), vsWire, fsWire,  m_initialUpdates,m_shadowMapTexture,m_shadowMapSampler);
     QVector<float> sphereVertices;
     QVector<quint16> sphereIndices;
 
@@ -306,7 +295,7 @@ void HelloWindow::customInit()
     m_cube1.transform.position = QVector3D(0, 1, 0);
 
     m_cube2.addVertAndInd(sphereVertices, sphereIndices); 
-    m_cube2.init(m_rhi.get(),m_rp.get(), vs2, fs2, m_initialUpdates,m_shadowMapTexture,m_shadowMapSampler);
+    m_cube2.init(m_rhi.get(),m_rp.get(), vsWire, fsWire, m_initialUpdates,m_shadowMapTexture,m_shadowMapSampler);
     m_cube2.transform.position = QVector3D(6.0f,10.4f, 15.4f);
     m_cube2.transform.scale = QVector3D(0.4f,0.4f, 0.4f);
 
@@ -354,7 +343,7 @@ void HelloWindow::customRender()
    // lightPos.setX(0.0f);
     //lightPos.setX(0.0f);
 
-    lightPos = QVector3D(4.0f,7.4f, 15.4f);
+    lightPos = QVector3D(0.0f,4.4f, 0.0f);
     QVector3D lightColor(1.0f, 0.98f, 0.95f);
     m_cube2.transform.position = lightPos;
     // QVector3D lightColor(
@@ -366,14 +355,35 @@ void HelloWindow::customRender()
   //  m_cube1.transform.rotation.setY( m_cube1.transform.rotation.y() + 0.5f);
    // m_cube2.transform.rotation.setY(m_cube2.transform.rotation.y() + 0.5f);
 
-    float nearPlane = 0.1f;
-    float farPlane = 30.0f;
-    float orthoSize = 20.0f;
-    QMatrix4x4 lightProjection;
-    lightProjection.ortho(-orthoSize, orthoSize, -orthoSize, orthoSize, nearPlane, farPlane);
-    QMatrix4x4 lightView;
-    lightView.lookAt(lightPos, center, QVector3D(0,1,0));
+    // float nearPlane = 0.1f;
+    // float farPlane = 30.0f;
+    // float orthoSize = 20.0f;
+     QMatrix4x4 lightProjection;
+    // lightProjection.ortho(-orthoSize, orthoSize, -orthoSize, orthoSize, nearPlane, farPlane);
+     QMatrix4x4 lightView;
+    // lightView.lookAt(lightPos, sceneCenter, QVector3D(0,1,0));
+    // QMatrix4x4 lightSpaceMatrix = lightProjection * lightView;
+
+    QVector<Model*> sceneObjects = { &floor, &m_cube1, &m_cube2 };
+    QVector3D sceneExtents;
+    QVector3D sceneCenter = computeSceneCenterAndExtents(sceneObjects, sceneExtents);
+
+    // Nastavení light view
+    lightView.lookAt(lightPos, sceneCenter, QVector3D(0,1,0));
+
+    // Nastavení ortho frustum podle bounding boxu
+    float orthoX = sceneExtents.x() / 2.0f;
+    float orthoZ = sceneExtents.z() / 2.0f;
+
+    // near/far plane od světla k nejbližšímu a nejvzdálenějšímu bodu
+    float nearPlane = 0.0f;
+    float farPlane = sceneExtents.y() + 10.0f; // přidáme buffer
+
+    lightProjection.setToIdentity();
+    lightProjection.ortho(-orthoX, orthoX, -orthoZ, orthoZ, nearPlane, farPlane);
+
     QMatrix4x4 lightSpaceMatrix = lightProjection * lightView;
+
     float debug = 0.0F;
     float lightIntensity = 2.0f;
 
@@ -395,7 +405,7 @@ void HelloWindow::customRender()
     floor.updateUbo(ubo,resourceUpdates);
     m_cube1.updateUbo(ubo,resourceUpdates);
     m_cube2.updateUbo(ubo,resourceUpdates);
-    frustumModel.updateUbo(ubo, resourceUpdates);
+   // frustumModel.updateUbo(ubo, resourceUpdates);
 
     floor.updateShadowUbo(ubo,shadowBatch);
     m_cube1.updateShadowUbo(ubo,shadowBatch);
@@ -417,6 +427,7 @@ void HelloWindow::customRender()
     cb->setViewport(QRhiViewport(0, 0, SHADOW_MAP_SIZE.width(), SHADOW_MAP_SIZE.height()));
         floor.DrawForShadow(cb,m_shadowPipeline,ubo,shadowBatch);
         m_cube1.DrawForShadow(cb,m_shadowPipeline,ubo,shadowBatch);
+      //  m_cube1.testShadowPass(m_rhi.get(), cb, m_shadowMapRenderPassDesc);
         m_cube2.DrawForShadow(cb,m_shadowPipeline,ubo,shadowBatch);
     cb->endPass();
 
@@ -425,49 +436,129 @@ void HelloWindow::customRender()
         floor.draw(cb);
         m_cube1.draw(cb);
         m_cube2.draw(cb);
-        frustumModel.draw(cb);
+       // frustumModel.draw(cb);
     cb->endPass();
 
 }
+// Spočítá bounding box scény
+QVector3D HelloWindow::computeSceneCenterAndExtents(const QVector<Model*> &objects, QVector3D &extents)
+{
+    if (objects.isEmpty()) return QVector3D(0,0,0);
+
+    QVector3D minPt(FLT_MAX, FLT_MAX, FLT_MAX);
+    QVector3D maxPt(-FLT_MAX, -FLT_MAX, -FLT_MAX);
+
+    for (Model* obj : objects) {
+        const QMatrix4x4 &model = obj->transform.getModelMatrix();
+        const QVector<float> &verts = obj->m_vert; // původní vertex data
+
+        for (int i = 0; i < verts.size(); i += 14) { // stride = 14 floatů
+            QVector3D v(verts[i], verts[i+1], verts[i+2]);
+            v = model * v;
+            minPt.setX(qMin(minPt.x(), v.x()));
+            minPt.setY(qMin(minPt.y(), v.y()));
+            minPt.setZ(qMin(minPt.z(), v.z()));
+            maxPt.setX(qMax(maxPt.x(), v.x()));
+            maxPt.setY(qMax(maxPt.y(), v.y()));
+            maxPt.setZ(qMax(maxPt.z(), v.z()));
+        }
+    }
+
+    extents = maxPt - minPt;
+    return (minPt + maxPt) * 0.5f; // center
+}
 
 //=========================================================================================================
-void HelloWindow::generateLightFrustum(float orthoSize, float nearPlane, float farPlane,
-                                       QVector<float> &vertices, QVector<quint16> &indices)
+void HelloWindow::generateLightFrustum(float orthoSize,
+                                       float nearPlane,
+                                       float farPlane,
+                                       QVector<float> &vertices,
+                                       QVector<quint16> &indices)
 {
     vertices.clear();
     indices.clear();
 
+    // 8 rohů ortho boxu (v light-space, Z = depth)
     QVector<QVector3D> corners = {
-        {-orthoSize, nearPlane, -orthoSize}, // 0
-        { orthoSize, nearPlane, -orthoSize}, // 1
-        { orthoSize, nearPlane,  orthoSize}, // 2
-        {-orthoSize, nearPlane,  orthoSize}, // 3
-        {-orthoSize, farPlane,  -orthoSize}, // 4
-        { orthoSize, farPlane,  -orthoSize}, // 5
-        { orthoSize, farPlane,   orthoSize}, // 6
-        {-orthoSize, farPlane,   orthoSize}  // 7
+        {-orthoSize, -orthoSize, -nearPlane}, // 0
+        { orthoSize, -orthoSize, -nearPlane}, // 1
+        { orthoSize,  orthoSize, -nearPlane}, // 2
+        {-orthoSize,  orthoSize, -nearPlane}, // 3
+        {-orthoSize, -orthoSize, -farPlane},  // 4
+        { orthoSize, -orthoSize, -farPlane},  // 5
+        { orthoSize,  orthoSize, -farPlane},  // 6
+        {-orthoSize,  orthoSize, -farPlane}   // 7
     };
 
-    // Přidej vrcholy: x,y,z + 11 nul (normály, uv, tangent, bitangent)
-    for (const QVector3D &c : corners) {
-        vertices.append(c.x());
-        vertices.append(c.y());
-        vertices.append(c.z());
-        for (int i = 0; i < 11; ++i)
-            vertices.append(0.0f);
+    // Normály – jednoduché, ale můžeš je dopočítat per-face.
+    QVector<QVector3D> normals = {
+        {0, 0, -1}, // near
+        {0, 0,  1}, // far
+        {-1, 0, 0}, // left
+        { 1, 0, 0}, // right
+        {0,  1, 0}, // top
+        {0, -1, 0}  // bottom
+    };
+
+    // UV placeholder (0..1)
+    auto addVertex = [&](const QVector3D &pos, const QVector3D &normal, const QVector2D &uv) {
+        vertices.append(pos.x());
+        vertices.append(pos.y());
+        vertices.append(pos.z());
+        vertices.append(normal.x());
+        vertices.append(normal.y());
+        vertices.append(normal.z());
+        vertices.append(uv.x());
+        vertices.append(uv.y());
+    };
+
+    // --- Přidání vrcholů podle stěn (6 faces * 4 vertices) ---
+    // Near
+    addVertex(corners[0], normals[0], {0,0});
+    addVertex(corners[1], normals[0], {1,0});
+    addVertex(corners[2], normals[0], {1,1});
+    addVertex(corners[3], normals[0], {0,1});
+
+    // Far
+    addVertex(corners[5], normals[1], {0,0});
+    addVertex(corners[4], normals[1], {1,0});
+    addVertex(corners[7], normals[1], {1,1});
+    addVertex(corners[6], normals[1], {0,1});
+
+    // Left
+    addVertex(corners[4], normals[2], {0,0});
+    addVertex(corners[0], normals[2], {1,0});
+    addVertex(corners[3], normals[2], {1,1});
+    addVertex(corners[7], normals[2], {0,1});
+
+    // Right
+    addVertex(corners[1], normals[3], {0,0});
+    addVertex(corners[5], normals[3], {1,0});
+    addVertex(corners[6], normals[3], {1,1});
+    addVertex(corners[2], normals[3], {0,1});
+
+    // Top
+    addVertex(corners[3], normals[4], {0,0});
+    addVertex(corners[2], normals[4], {1,0});
+    addVertex(corners[6], normals[4], {1,1});
+    addVertex(corners[7], normals[4], {0,1});
+
+    // Bottom
+    addVertex(corners[4], normals[5], {0,0});
+    addVertex(corners[5], normals[5], {1,0});
+    addVertex(corners[1], normals[5], {1,1});
+    addVertex(corners[0], normals[5], {0,1});
+
+    // --- Indexy (6 faces * 2 triangles * 3 indices) ---
+    for (int f = 0; f < 6; ++f) {
+        quint16 base = f * 4;
+        indices.append(base + 0);
+        indices.append(base + 1);
+        indices.append(base + 2);
+        indices.append(base + 0);
+        indices.append(base + 2);
+        indices.append(base + 3);
     }
-
-    // Indexy pro wireframe
-    const quint16 lineIndices[] = {
-        0,1, 1,2, 2,3, 3,0, // near plane
-        4,5, 5,6, 6,7, 7,4, // far plane
-        0,4, 1,5, 2,6, 3,7  // spojovací hrany
-    };
-
-    // Přidej indexy do QList
-    indices.reserve(24); // optimalizace alokace
-    for (quint16 idx : lineIndices)
-        indices.append(idx);
 }
 
 

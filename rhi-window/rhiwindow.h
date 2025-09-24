@@ -69,6 +69,7 @@ private:
     void updateCamera(float dt);
     void generateLightFrustum(float orthoSize, float nearPlane, float farPlane,
                                            QVector<float> &vertices, QVector<quint16> &indices);
+    QVector3D computeSceneCenterAndExtents(const QVector<Model*> &objects, QVector3D &extents);
     Model m_cube1;
     Model m_cube2;
     Model floor;
