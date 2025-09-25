@@ -268,6 +268,23 @@ void HelloWindow::customInit()
 
     initShadowMapResources(m_rhi.get());
 
+    TextureSet set;
+    set.albedo = ":/assets/textures/brick/victorian-brick_albedo.png";
+    set.normal = ":/assets/textures/brick/victorian-brick_normal-ogl.png";
+    set.metallic = ":/assets/textures/brick/victorian-brick_metallic.png";
+    set.rougness = ":/assets/textures/brick/victorian-brick_roughness.png";
+    set.height = ":/assets/textures/brick/victorian-brick_height.png";
+    set.ao = ":/assets/textures/brick/victorian-brick_ao.png";
+
+    TextureSet set1;
+    set1.albedo = ":/assets/textures/panel/sci-fi-panel1-albedo.png";
+    set1.normal = ":/assets/textures/panel/sci-fi-panel1-normal-ogl.png";
+    set1.metallic = ":/assets/textures/panel/sci-fi-panel1-metallic.png";
+    set1.rougness = ":/assets/textures/panel/sci-fi-panel1-roughness.png";
+    set1.height = ":/assets/textures/panel/sci-fi-panel1-height.png";
+    set1.ao = ":/assets/textures/panel/sci-fi-panel1-ao.png";
+
+
     QShader vs = getShader(":/texture.vert.qsb");
     QShader fs = getShader(":/texture.frag.qsb");
     QShader vs1 = getShader(":/light.vert.qsb");
@@ -285,17 +302,18 @@ void HelloWindow::customInit()
     generateSphere(0.5f, 32, 64, sphereVertices, sphereIndices);
 
     floor.addVertAndInd(indexedPlaneVertices ,indexedPlaneIndices );
-    floor.init(m_rhi.get(), m_rp.get(), vs2, fs2, m_initialUpdates,m_shadowMapTexture,m_shadowMapSampler);
+    floor.init(m_rhi.get(), m_rp.get(), vs2, fs2, m_initialUpdates,m_shadowMapTexture,m_shadowMapSampler,set);
     //floor.transform.position = QVector3D(0, -0.5f, 0);
     //floor.transform.scale = QVector3D(10, 10, 10);
     //floor.transform.rotation.setX( 270.0f);
 
     m_cube1.addVertAndInd(cubeVertices1, cubeIndices1);
-    m_cube1.init(m_rhi.get(), m_rp.get(), vs2, fs2, m_initialUpdates,m_shadowMapTexture,m_shadowMapSampler);
+    m_cube1.init(m_rhi.get(), m_rp.get(), vs2, fs2, m_initialUpdates,m_shadowMapTexture,m_shadowMapSampler,set1);
     m_cube1.transform.position = QVector3D(0, 1, 0);
+    m_cube1.transform.scale = QVector3D(2, 2, 2);
 
     m_cube2.addVertAndInd(sphereVertices, sphereIndices); 
-    m_cube2.init(m_rhi.get(),m_rp.get(), vsWire, fsWire, m_initialUpdates,m_shadowMapTexture,m_shadowMapSampler);
+    m_cube2.init(m_rhi.get(),m_rp.get(), vsWire, fsWire, m_initialUpdates,m_shadowMapTexture,m_shadowMapSampler,set);
     m_cube2.transform.position = QVector3D(6.0f,10.4f, 15.4f);
     m_cube2.transform.scale = QVector3D(0.4f,0.4f, 0.4f);
 
@@ -334,55 +352,51 @@ void HelloWindow::customRender()
     QMatrix4x4 projection = m_projection;
     QVector3D camPos = m_camera.Position;
     float objectOpacity = 1.0f;
-    float radius = 15.0f;
-    float height = 6.0f;
+    float radius = 10.0f;
+    float height = 10.0f;
     QVector3D center(0.0f, 0.0f, 0.0f);
+
+     // lightPos = QVector3D(0.0f,4.4f, 0.0f);
     lightPos.setX(center.x() + radius * cos(lightTime));
     lightPos.setZ(center.z() + radius * sin(lightTime));
     lightPos.setY(height);
    // lightPos.setX(0.0f);
     //lightPos.setX(0.0f);
 
-   // lightPos = QVector3D(0.0f,4.4f, 0.0f);
     QVector3D lightColor(1.0f, 0.98f, 0.95f);
     m_cube2.transform.position = lightPos;
+
     // QVector3D lightColor(
     //     0.5f + 0.5f * sin(lightTime * 2.0f),
     //     0.5f + 0.5f * sin(lightTime * 0.7f + 2.0f),
     //     0.5f + 0.5f * sin(lightTime * 1.3f + 4.0f)
     //     );
 
-  //  m_cube1.transform.rotation.setY( m_cube1.transform.rotation.y() + 0.5f);
-   // m_cube2.transform.rotation.setY(m_cube2.transform.rotation.y() + 0.5f);
+    //  m_cube1.transform.rotation.setY( m_cube1.transform.rotation.y() + 0.5f);
+    // m_cube2.transform.rotation.setY(m_cube2.transform.rotation.y() + 0.5f);
 
+    QMatrix4x4 lightView;
+    QMatrix4x4 lightSpaceMatrix;
+    QMatrix4x4 lightProjection;
     // float nearPlane = 0.1f;
     // float farPlane = 30.0f;
     // float orthoSize = 20.0f;
-     QMatrix4x4 lightProjection;
+
     // lightProjection.ortho(-orthoSize, orthoSize, -orthoSize, orthoSize, nearPlane, farPlane);
-     QMatrix4x4 lightView;
-    // lightView.lookAt(lightPos, sceneCenter, QVector3D(0,1,0));
-    // QMatrix4x4 lightSpaceMatrix = lightProjection * lightView;
+    // lightView.lookAt(lightPos, center, QVector3D(0,1,0));
+    // lightSpaceMatrix = lightProjection * lightView;
 
     QVector<Model*> sceneObjects = { &floor, &m_cube1, &m_cube2 };
     QVector3D sceneExtents;
     QVector3D sceneCenter = computeSceneCenterAndExtents(sceneObjects, sceneExtents);
-
-    // Nastavení light view
     lightView.lookAt(lightPos, sceneCenter, QVector3D(0,1,0));
-
-    // Nastavení ortho frustum podle bounding boxu
     float orthoX = sceneExtents.x() / 2.0f;
     float orthoZ = sceneExtents.z() / 2.0f;
-
-    // near/far plane od světla k nejbližšímu a nejvzdálenějšímu bodu
-    float nearPlane = 0.0f;
+    float nearPlane = 0.1f;
     float farPlane = sceneExtents.y() + 10.0f; // přidáme buffer
-
     lightProjection.setToIdentity();
     lightProjection.ortho(-orthoX, orthoX, -orthoZ, orthoZ, nearPlane, farPlane);
-
-    QMatrix4x4 lightSpaceMatrix = lightProjection * lightView;
+    lightSpaceMatrix = lightProjection * lightView;
 
     float debug = 0.0F;
     float lightIntensity = 2.0f;
@@ -417,7 +431,7 @@ void HelloWindow::customRender()
     Q_ASSERT(m_shadowUbo);
 
     const QSize outputSizeInPixels = m_sc->currentPixelSize();
-    const QColor clearColor = QColor::fromRgbF(0.4f, 0.7f, 0.0f, 1.0f);
+    const QColor clearColor = QColor::fromRgbF(0.0f, 0.0f, 0.0f, 1.0f);
     const QColor clearColorDepth = QColor::fromRgbF(1.0f, 1,1,1);
 
 //===============================================================================================
@@ -425,7 +439,7 @@ void HelloWindow::customRender()
     cb->beginPass(m_shadowMapRenderTarget, Qt::black, { 1.0f, 0 }, shadowBatch);
     cb->setGraphicsPipeline(m_shadowPipeline);
     cb->setViewport(QRhiViewport(0, 0, SHADOW_MAP_SIZE.width(), SHADOW_MAP_SIZE.height()));
-        floor.DrawForShadow(cb,m_shadowPipeline,ubo,shadowBatch);
+       // floor.DrawForShadow(cb,m_shadowPipeline,ubo,shadowBatch);
         m_cube1.DrawForShadow(cb,m_shadowPipeline,ubo,shadowBatch);
       //  m_cube1.testShadowPass(m_rhi.get(), cb, m_shadowMapRenderPassDesc);
         m_cube2.DrawForShadow(cb,m_shadowPipeline,ubo,shadowBatch);
@@ -440,7 +454,7 @@ void HelloWindow::customRender()
     cb->endPass();
 
 }
-// Spočítá bounding box scény
+
 QVector3D HelloWindow::computeSceneCenterAndExtents(const QVector<Model*> &objects, QVector3D &extents)
 {
     if (objects.isEmpty()) return QVector3D(0,0,0);
@@ -450,7 +464,7 @@ QVector3D HelloWindow::computeSceneCenterAndExtents(const QVector<Model*> &objec
 
     for (Model* obj : objects) {
         const QMatrix4x4 &model = obj->transform.getModelMatrix();
-        const QVector<float> &verts = obj->m_vert; // původní vertex data
+        const QVector<float> &verts = obj->m_vert;
 
         for (int i = 0; i < verts.size(); i += 14) { // stride = 14 floatů
             QVector3D v(verts[i], verts[i+1], verts[i+2]);
@@ -478,7 +492,7 @@ void HelloWindow::generateLightFrustum(float orthoSize,
     vertices.clear();
     indices.clear();
 
-    // 8 rohů ortho boxu (v light-space, Z = depth)
+
     QVector<QVector3D> corners = {
         {-orthoSize, -orthoSize, -nearPlane}, // 0
         { orthoSize, -orthoSize, -nearPlane}, // 1
@@ -490,7 +504,7 @@ void HelloWindow::generateLightFrustum(float orthoSize,
         {-orthoSize,  orthoSize, -farPlane}   // 7
     };
 
-    // Normály – jednoduché, ale můžeš je dopočítat per-face.
+
     QVector<QVector3D> normals = {
         {0, 0, -1}, // near
         {0, 0,  1}, // far
@@ -512,7 +526,6 @@ void HelloWindow::generateLightFrustum(float orthoSize,
         vertices.append(uv.y());
     };
 
-    // --- Přidání vrcholů podle stěn (6 faces * 4 vertices) ---
     // Near
     addVertex(corners[0], normals[0], {0,0});
     addVertex(corners[1], normals[0], {1,0});
@@ -679,7 +692,7 @@ void HelloWindow::initShadowMapResources(QRhi *rhi) {
     m_shadowPipeline->setTopology(QRhiGraphicsPipeline::Triangles);
     m_shadowPipeline->setDepthTest(true);
     m_shadowPipeline->setDepthWrite(true);
-    m_shadowPipeline->setDepthBias(2);             // zkus 1..4, ladit podle potřeby
+    m_shadowPipeline->setDepthBias(2);             // zkus 1..4,
     m_shadowPipeline->setSlopeScaledDepthBias(1.1f);
     m_shadowPipeline->setDepthOp(QRhiGraphicsPipeline::LessOrEqual);
     m_shadowPipeline->setCullMode(QRhiGraphicsPipeline::Front);

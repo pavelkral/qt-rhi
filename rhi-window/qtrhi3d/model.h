@@ -50,10 +50,10 @@ public:
     float m_opacity = 1;
     int m_opacityDir = -1;
 
-void testShadowPass(QRhi *rhi, QRhiCommandBuffer *cb, QRhiRenderPassDescriptor *rp);
+    void testShadowPass(QRhi *rhi, QRhiCommandBuffer *cb, QRhiRenderPassDescriptor *rp);
     void addVertAndInd(const QVector<float> &vertices, const QVector<quint16> &indices);
     void init(QRhi *rhi,QRhiRenderPassDescriptor *rp,const QShader &vs,const QShader &fs,
-              QRhiResourceUpdateBatch *u,QRhiTexture *shadowmap,QRhiSampler *shadowsampler);
+              QRhiResourceUpdateBatch *u,QRhiTexture *shadowmap,QRhiSampler *shadowsampler,const TextureSet &set);
 
     void updateUbo(Ubo ubo,QRhiResourceUpdateBatch *u);
     void updateShadowUbo(Ubo ubo, QRhiResourceUpdateBatch *u);

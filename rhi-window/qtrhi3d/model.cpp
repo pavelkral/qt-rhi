@@ -10,7 +10,7 @@ void Model::addVertAndInd(const QVector<float> &vertices, const QVector<quint16>
 }
 
 void Model::init(QRhi *rhi,QRhiRenderPassDescriptor *rp,const QShader &vs,const QShader &fs,
-                QRhiResourceUpdateBatch *u,QRhiTexture *shadowmap,QRhiSampler *shadowsampler)
+                QRhiResourceUpdateBatch *u,QRhiTexture *shadowmap,QRhiSampler *shadowsampler,const TextureSet &set)
 {
 
     QVector<float>  m_vert1= computeTangents( m_vert,m_ind);
@@ -37,13 +37,13 @@ void Model::init(QRhi *rhi,QRhiRenderPassDescriptor *rp,const QShader &vs,const 
     });
     m_shadowSrb->create();
 
-    TextureSet set;
-    set.albedo = ":/assets/textures/brick/victorian-brick_albedo.png";
-    set.normal = ":/assets/textures/brick/victorian-brick_normal-ogl.png";
-    set.metallic = ":/assets/textures/brick/victorian-brick_metallic.png";
-    set.rougness = ":/assets/textures/brick/victorian-brick_roughness.png";
-    set.height = ":/assets/textures/brick/victorian-brick_height.png";
-    set.ao = ":/assets/textures/brick/victorian-brick_ao.png";
+    // TextureSet set;
+    // set.albedo = ":/assets/textures/brick/victorian-brick_albedo.png";
+    // set.normal = ":/assets/textures/brick/victorian-brick_normal-ogl.png";
+    // set.metallic = ":/assets/textures/brick/victorian-brick_metallic.png";
+    // set.rougness = ":/assets/textures/brick/victorian-brick_roughness.png";
+    // set.height = ":/assets/textures/brick/victorian-brick_height.png";
+    // set.ao = ":/assets/textures/brick/victorian-brick_ao.png";
 
     loadTexture(rhi,QSize(), u,set.albedo,m_texture,m_sampler);
     loadTexture(rhi,QSize(), u,set.normal,m_tex_norm,m_sampler_norm);

@@ -17,6 +17,7 @@ qt_add_executable(rhi-window
     qtrhi3d/transform.h
     qtrhi3d/transform.cpp
     qtrhi3d/types.h
+
 )
 
 set_target_properties(rhi-window PROPERTIES
@@ -95,6 +96,12 @@ qt_add_resources(rhi-window "rhi-window"
          "../assets/textures/brick/victorian-brick_metallic.png"
          "../assets/textures/brick/victorian-brick_normal-ogl.png"
          "../assets/textures/brick/victorian-brick_roughness.png"
+         "../assets/textures/panel/sci-fi-panel1-albedo.png"
+         "../assets/textures/panel/sci-fi-panel1-ao.png"
+         "../assets/textures/panel/sci-fi-panel1-height.png"
+         "../assets/textures/panel/sci-fi-panel1-metallic.png"
+         "../assets/textures/panel/sci-fi-panel1-normal-ogl.png"
+         "../assets/textures/panel/sci-fi-panel1-roughness.png"
 )
 
 install(TARGETS rhi-window
