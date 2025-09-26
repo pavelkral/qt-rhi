@@ -164,7 +164,6 @@ QMatrix4x4 RhiWindow::createProjection(QRhi *rhi, float fovDeg, float aspect, fl
 {
     QMatrix4x4 proj;
     proj.perspective(fovDeg, aspect, nearPlane, farPlane);
-
     // Flip Y pro Vulkan
     if (rhi->backend() == QRhi::Vulkan) {
         proj(1,1) *= -1.0f;
@@ -348,12 +347,12 @@ void HelloWindow::customRender()
 
     QRhiCommandBuffer *cb = m_sc->currentFrameCommandBuffer();
     updateCamera(m_dt);
-    QMatrix4x4 view = m_camera.GetViewMatrix();
+
     QMatrix4x4 projection = m_projection;
     QVector3D camPos = m_camera.Position;
     float objectOpacity = 1.0f;
-    float radius = 10.0f;
-    float height = 10.0f;
+    float radius = 5.0f;
+    float height = 5.0f;
     QVector3D center(0.0f, 0.0f, 0.0f);
 
      // lightPos = QVector3D(0.0f,4.4f, 0.0f);
@@ -378,29 +377,29 @@ void HelloWindow::customRender()
     QMatrix4x4 lightView;
     QMatrix4x4 lightSpaceMatrix;
     QMatrix4x4 lightProjection;
-    // float nearPlane = 0.1f;
-    // float farPlane = 30.0f;
-    // float orthoSize = 20.0f;
+    float nearPlane = -30.1f;
+    float farPlane = 30.0f;
+    float orthoSize = 30.0f;
 
-    // lightProjection.ortho(-orthoSize, orthoSize, -orthoSize, orthoSize, nearPlane, farPlane);
-    // lightView.lookAt(lightPos, center, QVector3D(0,1,0));
+     lightProjection.ortho(-orthoSize, orthoSize, -orthoSize, orthoSize, nearPlane, farPlane);
+    lightView.lookAt(lightPos, center, QVector3D(0,1,0));
+     lightSpaceMatrix = lightProjection * lightView;
+
+    // QVector<Model*> sceneObjects = { &floor, &m_cube1, &m_cube2 };
+    // QVector3D sceneExtents;
+    // QVector3D sceneCenter = computeSceneCenterAndExtents(sceneObjects, sceneExtents);
+    // lightView.lookAt(lightPos, sceneCenter, QVector3D(0,1,0));
+    // float orthoX = sceneExtents.x() / 2.0f;
+    // float orthoZ = sceneExtents.z() / 2.0f;
+    // float nearPlane = 0.1f;
+    // float farPlane = sceneExtents.y() + 10.0f; // přidáme buffer
+    // lightProjection.setToIdentity();
+    // lightProjection.ortho(-orthoX, orthoX, -orthoZ, orthoZ, nearPlane, farPlane);
     // lightSpaceMatrix = lightProjection * lightView;
 
-    QVector<Model*> sceneObjects = { &floor, &m_cube1, &m_cube2 };
-    QVector3D sceneExtents;
-    QVector3D sceneCenter = computeSceneCenterAndExtents(sceneObjects, sceneExtents);
-    lightView.lookAt(lightPos, sceneCenter, QVector3D(0,1,0));
-    float orthoX = sceneExtents.x() / 2.0f;
-    float orthoZ = sceneExtents.z() / 2.0f;
-    float nearPlane = 0.1f;
-    float farPlane = sceneExtents.y() + 10.0f; // přidáme buffer
-    lightProjection.setToIdentity();
-    lightProjection.ortho(-orthoX, orthoX, -orthoZ, orthoZ, nearPlane, farPlane);
-    lightSpaceMatrix = lightProjection * lightView;
-
     float debug = 0.0F;
-    float lightIntensity = 2.0f;
-
+    float lightIntensity = 1.0f;
+    QMatrix4x4 view = m_camera.GetViewMatrix();
     Ubo ubo;
     //ubo.model       = transform.getModelMatrix();
     ubo.view        = view;
@@ -439,7 +438,7 @@ void HelloWindow::customRender()
     cb->beginPass(m_shadowMapRenderTarget, Qt::black, { 1.0f, 0 }, shadowBatch);
     cb->setGraphicsPipeline(m_shadowPipeline);
     cb->setViewport(QRhiViewport(0, 0, SHADOW_MAP_SIZE.width(), SHADOW_MAP_SIZE.height()));
-       // floor.DrawForShadow(cb,m_shadowPipeline,ubo,shadowBatch);
+        floor.DrawForShadow(cb,m_shadowPipeline,ubo,shadowBatch);
         m_cube1.DrawForShadow(cb,m_shadowPipeline,ubo,shadowBatch);
       //  m_cube1.testShadowPass(m_rhi.get(), cb, m_shadowMapRenderPassDesc);
         m_cube2.DrawForShadow(cb,m_shadowPipeline,ubo,shadowBatch);
@@ -686,6 +685,37 @@ void HelloWindow::initShadowMapResources(QRhi *rhi) {
     });
 
     m_shadowPipeline->setShaderResourceBindings(m_shadowSRB);
+    if (graphicsApiName() == "Vulkan") {
+
+
+    }
+    QRhi::Implementation impl = rhi->backend();   // vrací enum QRhi::Implementation
+
+    switch (impl) {
+    case QRhi::Vulkan:
+        qDebug() << "Vulkan";
+        // m_shadowPipeline->setCullMode(QRhiGraphicsPipeline::Front);
+        m_shadowPipeline->setCullMode(QRhiGraphicsPipeline::Back);
+        break;
+    case QRhi::OpenGLES2:
+        qDebug() << "OpenGL / OpenGLES";
+        // m_shadowPipeline->setCullMode(QRhiGraphicsPipeline::Front);
+        m_shadowPipeline->setCullMode(QRhiGraphicsPipeline::Back);
+        break;
+    case QRhi::D3D11:
+        qDebug() << "Direct3D11";
+         m_shadowPipeline->setCullMode(QRhiGraphicsPipeline::Front);
+        //m_shadowPipeline->setCullMode(QRhiGraphicsPipeline::Back);
+        break;
+    case QRhi::D3D12:
+        qDebug() << "Direct3D12";
+         m_shadowPipeline->setCullMode(QRhiGraphicsPipeline::Front);
+       // m_shadowPipeline->setCullMode(QRhiGraphicsPipeline::Back);
+        break;
+    case QRhi::Metal:      qDebug() << "Metal";
+        break;
+    default:               qDebug() << "Null / Unknown"; break;
+    }
 
     Q_ASSERT(m_shadowMapRenderPassDesc); // sanity
     m_shadowPipeline->setRenderPassDescriptor(m_shadowMapRenderPassDesc);
@@ -695,7 +725,6 @@ void HelloWindow::initShadowMapResources(QRhi *rhi) {
     m_shadowPipeline->setDepthBias(2);             // zkus 1..4,
     m_shadowPipeline->setSlopeScaledDepthBias(1.1f);
     m_shadowPipeline->setDepthOp(QRhiGraphicsPipeline::LessOrEqual);
-    m_shadowPipeline->setCullMode(QRhiGraphicsPipeline::Front);
- //   m_shadowPipeline->setCullMode(QRhiGraphicsPipeline::Back);
+
     m_shadowPipeline->create();
 }
