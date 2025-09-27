@@ -72,11 +72,6 @@ private:
     QVector3D computeSceneCenterAndExtents(const QVector<Model*> &objects, QVector3D &extents);
     void updateFullscreenTexture(const QSize &pixelSize, QRhiResourceUpdateBatch *u);
 
-    Model m_cube1;
-    Model m_cube2;
-    Model floor;
-    Camera m_camera;
-    Model frustumModel;
     QSet<int> m_pressedKeys;
     QPointF m_lastMousePos;
     QElapsedTimer m_timer;
@@ -98,10 +93,16 @@ private:
     QRhiShaderResourceBindings *m_shadowSRB = nullptr;
     QRhiGraphicsPipeline *m_shadowPipeline = nullptr;
 
-    QVector3D lightPos;
+    QVector3D lightPosition;
     float m_rotation = 0;
     float m_opacity = 1;
     int m_opacityDir = -1;
+
+    Model cubeModel1;
+    Model lightSphere;
+    Model floor;
+    Camera mainCamera;
+    Model frustumModel;
 };
 
 #endif

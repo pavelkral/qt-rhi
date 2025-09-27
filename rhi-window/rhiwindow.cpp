@@ -157,7 +157,7 @@ void RhiWindow::resizeSwapChain()
 {
     m_hasSwapChain = m_sc->createOrResize(); // also handles m_ds
     const QSize outputSize = m_sc->currentPixelSize();
-     m_projection = createProjection(m_rhi.get(), 45.0f, outputSize.width() / (float)outputSize.height(), 0.1f, 1000.0f);
+    m_projection = createProjection(m_rhi.get(), 45.0f, outputSize.width() / (float)outputSize.height(), 0.1f, 1000.0f);
 
 }
 QMatrix4x4 RhiWindow::createProjection(QRhi *rhi, float fovDeg, float aspect, float nearPlane, float farPlane)
@@ -168,9 +168,9 @@ QMatrix4x4 RhiWindow::createProjection(QRhi *rhi, float fovDeg, float aspect, fl
     if (rhi->backend() == QRhi::Vulkan) {
         proj(1,1) *= -1.0f;
     }
-
     return proj;
 }
+
 void RhiWindow::releaseSwapChain()
 {
     if (m_hasSwapChain) {
@@ -225,7 +225,7 @@ static QShader getShader(const QString &name)
 
 HelloWindow::HelloWindow(QRhi::Implementation graphicsApi)
     : RhiWindow(graphicsApi),
-    m_camera(QVector3D(0.0f, 0.0f, 5.0f))
+    mainCamera(QVector3D(0.0f, 0.0f, 5.0f))
 {
   //  setFocusPolicy(Qt::StrongFocus);
     // Skryje kurzor a zachytí ho v okně
@@ -267,6 +267,9 @@ void HelloWindow::customInit()
 
     initShadowMapResources(m_rhi.get());
 
+    const QSize outputSize = m_sc->currentPixelSize();
+    m_projection = createProjection(m_rhi.get(), 45.0f, outputSize.width() / (float)outputSize.height(), 0.1f, 1000.0f);
+
     TextureSet set;
     set.albedo = ":/assets/textures/brick/victorian-brick_albedo.png";
     set.normal = ":/assets/textures/brick/victorian-brick_normal-ogl.png";
@@ -306,17 +309,17 @@ void HelloWindow::customInit()
     //floor.transform.scale = QVector3D(10, 10, 10);
     //floor.transform.rotation.setX( 270.0f);
 
-    m_cube1.addVertAndInd(cubeVertices1, cubeIndices1);
-    m_cube1.init(m_rhi.get(), m_rp.get(), vs2, fs2, m_initialUpdates,m_shadowMapTexture,m_shadowMapSampler,set1);
-    m_cube1.transform.position = QVector3D(0, 1, 0);
-    m_cube1.transform.scale = QVector3D(2, 2, 2);
+    cubeModel1.addVertAndInd(cubeVertices1, cubeIndices1);
+    cubeModel1.init(m_rhi.get(), m_rp.get(), vs2, fs2, m_initialUpdates,m_shadowMapTexture,m_shadowMapSampler,set1);
+    cubeModel1.transform.position = QVector3D(0, 1, 0);
+    cubeModel1.transform.scale = QVector3D(2, 2, 2);
 
-    m_cube2.addVertAndInd(sphereVertices, sphereIndices); 
-    m_cube2.init(m_rhi.get(),m_rp.get(), vsWire, fsWire, m_initialUpdates,m_shadowMapTexture,m_shadowMapSampler,set);
-    m_cube2.transform.position = QVector3D(6.0f,10.4f, 15.4f);
-    m_cube2.transform.scale = QVector3D(0.4f,0.4f, 0.4f);
+    lightSphere.addVertAndInd(sphereVertices, sphereIndices);
+    lightSphere.init(m_rhi.get(),m_rp.get(), vsWire, fsWire, m_initialUpdates,m_shadowMapTexture,m_shadowMapSampler,set);
+    lightSphere.transform.position = QVector3D(6.0f,10.4f, 15.4f);
+    lightSphere.transform.scale = QVector3D(0.4f,0.4f, 0.4f);
 
-    m_camera.Position = QVector3D(-0.5f,5.5f, 15.5f);
+    mainCamera.Position = QVector3D(-0.5f,5.5f, 15.5f);
     m_timer.start();
 }
 
@@ -349,21 +352,21 @@ void HelloWindow::customRender()
     updateCamera(m_dt);
 
     QMatrix4x4 projection = m_projection;
-    QVector3D camPos = m_camera.Position;
+    QVector3D camPos = mainCamera.Position;
     float objectOpacity = 1.0f;
     float radius = 5.0f;
     float height = 5.0f;
     QVector3D center(0.0f, 0.0f, 0.0f);
 
      // lightPos = QVector3D(0.0f,4.4f, 0.0f);
-    lightPos.setX(center.x() + radius * cos(lightTime));
-    lightPos.setZ(center.z() + radius * sin(lightTime));
-    lightPos.setY(height);
+    lightPosition.setX(center.x() + radius * cos(lightTime));
+    lightPosition.setZ(center.z() + radius * sin(lightTime));
+    lightPosition.setY(height);
    // lightPos.setX(0.0f);
     //lightPos.setX(0.0f);
 
     QVector3D lightColor(1.0f, 0.98f, 0.95f);
-    m_cube2.transform.position = lightPos;
+    lightSphere.transform.position = lightPosition;
 
     // QVector3D lightColor(
     //     0.5f + 0.5f * sin(lightTime * 2.0f),
@@ -382,7 +385,7 @@ void HelloWindow::customRender()
     float orthoSize = 30.0f;
 
      lightProjection.ortho(-orthoSize, orthoSize, -orthoSize, orthoSize, nearPlane, farPlane);
-    lightView.lookAt(lightPos, center, QVector3D(0,1,0));
+    lightView.lookAt(lightPosition, center, QVector3D(0,1,0));
      lightSpaceMatrix = lightProjection * lightView;
 
     // QVector<Model*> sceneObjects = { &floor, &m_cube1, &m_cube2 };
@@ -399,13 +402,13 @@ void HelloWindow::customRender()
 
     float debug = 0.0F;
     float lightIntensity = 1.0f;
-    QMatrix4x4 view = m_camera.GetViewMatrix();
+    QMatrix4x4 view = mainCamera.GetViewMatrix();
     Ubo ubo;
     //ubo.model       = transform.getModelMatrix();
     ubo.view        = view;
     ubo.projection  = projection;
     ubo.lightSpace  = lightSpaceMatrix;
-    ubo.lightPos    = QVector4D(lightPos, 1.0f);
+    ubo.lightPos    = QVector4D(lightPosition, 1.0f);
     ubo.lightColor  = QVector4D(lightColor, 1.0f);
     ubo.camPos      = QVector4D(camPos, 1.0f);
     ubo.opacity     = QVector4D(0.0f,0.0f,0.0f, m_opacity);
@@ -416,13 +419,13 @@ void HelloWindow::customRender()
    // qDebug() << "lightspace = " << ubo.lightSpace << "\n";
 
     floor.updateUbo(ubo,resourceUpdates);
-    m_cube1.updateUbo(ubo,resourceUpdates);
-    m_cube2.updateUbo(ubo,resourceUpdates);
+    cubeModel1.updateUbo(ubo,resourceUpdates);
+    lightSphere.updateUbo(ubo,resourceUpdates);
    // frustumModel.updateUbo(ubo, resourceUpdates);
 
     floor.updateShadowUbo(ubo,shadowBatch);
-    m_cube1.updateShadowUbo(ubo,shadowBatch);
-    m_cube2.updateShadowUbo(ubo,shadowBatch);
+    cubeModel1.updateShadowUbo(ubo,shadowBatch);
+    lightSphere.updateShadowUbo(ubo,shadowBatch);
 
     Q_ASSERT(m_shadowMapRenderTarget);
     Q_ASSERT(m_shadowPipeline);
@@ -440,9 +443,9 @@ void HelloWindow::customRender()
     cb->setGraphicsPipeline(m_shadowPipeline);
     cb->setViewport(QRhiViewport(0, 0, SHADOW_MAP_SIZE.width(), SHADOW_MAP_SIZE.height()));
         floor.DrawForShadow(cb,m_shadowPipeline,ubo,shadowBatch);
-        m_cube1.DrawForShadow(cb,m_shadowPipeline,ubo,shadowBatch);
+        cubeModel1.DrawForShadow(cb,m_shadowPipeline,ubo,shadowBatch);
       //  m_cube1.testShadowPass(m_rhi.get(), cb, m_shadowMapRenderPassDesc);
-        m_cube2.DrawForShadow(cb,m_shadowPipeline,ubo,shadowBatch);
+        lightSphere.DrawForShadow(cb,m_shadowPipeline,ubo,shadowBatch);
     cb->endPass();
 
 
@@ -457,12 +460,59 @@ void HelloWindow::customRender()
         cb->draw(3);
 
         floor.draw(cb);
-        m_cube1.draw(cb);
-        m_cube2.draw(cb);
+        cubeModel1.draw(cb);
+        lightSphere.draw(cb);
        // frustumModel.draw(cb);
     cb->endPass();
 
 }
+//======================================================iNPUT
+
+void HelloWindow::keyPressEvent(QKeyEvent *e)
+{
+    m_pressedKeys.insert(e->key());
+}
+
+void HelloWindow::keyReleaseEvent(QKeyEvent *e)
+{
+    m_pressedKeys.remove(e->key());
+}
+
+void HelloWindow::mouseMoveEvent(QMouseEvent *e)
+{
+    // Pokud je to první pohyb myši, jen nastavíme počáteční pozici
+    if (m_lastMousePos.isNull()) {
+        m_lastMousePos = e->position();
+        return;
+    }
+
+    float xoffset = e->position().x() - m_lastMousePos.x();
+    float yoffset = m_lastMousePos.y() - e->position().y(); // Obráceně, protože Y souřadnice rostou dolů
+
+    m_lastMousePos = e->position();
+    mainCamera.ProcessMouseMovement(xoffset, yoffset);
+
+    // center cursor
+    //QPoint center = mapToGlobal(geometry().center());
+    //QCursor::setPos(center);
+    //m_lastMousePos = mapFromGlobal(center);
+}
+
+void HelloWindow::updateCamera(float dt)
+{
+    if (m_pressedKeys.contains(Qt::Key_W))
+        mainCamera.ProcessKeyboard(FORWARD, dt);
+    if (m_pressedKeys.contains(Qt::Key_S))
+        mainCamera.ProcessKeyboard(BACKWARD, dt);
+    if (m_pressedKeys.contains(Qt::Key_A))
+        mainCamera.ProcessKeyboard(LEFT, dt);
+    if (m_pressedKeys.contains(Qt::Key_D))
+        mainCamera.ProcessKeyboard(RIGHT, dt);
+    if (m_pressedKeys.contains(Qt::Key_Escape))
+        qApp->quit();
+}
+
+//======================================================iNIT RESOURCES AND PIPELINES
 
 QVector3D HelloWindow::computeSceneCenterAndExtents(const QVector<Model*> &objects, QVector3D &extents)
 {
@@ -492,16 +542,11 @@ QVector3D HelloWindow::computeSceneCenterAndExtents(const QVector<Model*> &objec
 }
 
 //=========================================================================================================
-void HelloWindow::generateLightFrustum(float orthoSize,
-                                       float nearPlane,
-                                       float farPlane,
-                                       QVector<float> &vertices,
+void HelloWindow::generateLightFrustum(float orthoSize,float nearPlane,float farPlane,QVector<float> &vertices,
                                        QVector<quint16> &indices)
 {
     vertices.clear();
     indices.clear();
-
-
     QVector<QVector3D> corners = {
         {-orthoSize, -orthoSize, -nearPlane}, // 0
         { orthoSize, -orthoSize, -nearPlane}, // 1
@@ -512,8 +557,6 @@ void HelloWindow::generateLightFrustum(float orthoSize,
         { orthoSize,  orthoSize, -farPlane},  // 6
         {-orthoSize,  orthoSize, -farPlane}   // 7
     };
-
-
     QVector<QVector3D> normals = {
         {0, 0, -1}, // near
         {0, 0,  1}, // far
@@ -522,7 +565,6 @@ void HelloWindow::generateLightFrustum(float orthoSize,
         {0,  1, 0}, // top
         {0, -1, 0}  // bottom
     };
-
     // UV placeholder (0..1)
     auto addVertex = [&](const QVector3D &pos, const QVector3D &normal, const QVector2D &uv) {
         vertices.append(pos.x());
@@ -534,44 +576,37 @@ void HelloWindow::generateLightFrustum(float orthoSize,
         vertices.append(uv.x());
         vertices.append(uv.y());
     };
-
     // Near
     addVertex(corners[0], normals[0], {0,0});
     addVertex(corners[1], normals[0], {1,0});
     addVertex(corners[2], normals[0], {1,1});
     addVertex(corners[3], normals[0], {0,1});
-
     // Far
     addVertex(corners[5], normals[1], {0,0});
     addVertex(corners[4], normals[1], {1,0});
     addVertex(corners[7], normals[1], {1,1});
     addVertex(corners[6], normals[1], {0,1});
-
     // Left
     addVertex(corners[4], normals[2], {0,0});
     addVertex(corners[0], normals[2], {1,0});
     addVertex(corners[3], normals[2], {1,1});
     addVertex(corners[7], normals[2], {0,1});
-
     // Right
     addVertex(corners[1], normals[3], {0,0});
     addVertex(corners[5], normals[3], {1,0});
     addVertex(corners[6], normals[3], {1,1});
     addVertex(corners[2], normals[3], {0,1});
-
     // Top
     addVertex(corners[3], normals[4], {0,0});
     addVertex(corners[2], normals[4], {1,0});
     addVertex(corners[6], normals[4], {1,1});
     addVertex(corners[7], normals[4], {0,1});
-
     // Bottom
     addVertex(corners[4], normals[5], {0,0});
     addVertex(corners[5], normals[5], {1,0});
     addVertex(corners[1], normals[5], {1,1});
     addVertex(corners[0], normals[5], {0,1});
-
-    // --- Indexy (6 faces * 2 triangles * 3 indices) ---
+    // --- Index (6 faces * 2 triangles * 3 indices) ---
     for (int f = 0; f < 6; ++f) {
         quint16 base = f * 4;
         indices.append(base + 0);
@@ -582,52 +617,6 @@ void HelloWindow::generateLightFrustum(float orthoSize,
         indices.append(base + 3);
     }
 }
-
-
-void HelloWindow::keyPressEvent(QKeyEvent *e)
-{
-    m_pressedKeys.insert(e->key());
-}
-
-void HelloWindow::keyReleaseEvent(QKeyEvent *e)
-{
-    m_pressedKeys.remove(e->key());
-}
-
-void HelloWindow::mouseMoveEvent(QMouseEvent *e)
-{
-    // Pokud je to první pohyb myši, jen nastavíme počáteční pozici
-    if (m_lastMousePos.isNull()) {
-        m_lastMousePos = e->position();
-        return;
-    }
-
-    float xoffset = e->position().x() - m_lastMousePos.x();
-    float yoffset = m_lastMousePos.y() - e->position().y(); // Obráceně, protože Y souřadnice rostou dolů
-
-    m_lastMousePos = e->position();
-    m_camera.ProcessMouseMovement(xoffset, yoffset);
-
-    // center cursor
-     //QPoint center = mapToGlobal(geometry().center());
-     //QCursor::setPos(center);
-     //m_lastMousePos = mapFromGlobal(center);
-}
-
-void HelloWindow::updateCamera(float dt)
-{
-    if (m_pressedKeys.contains(Qt::Key_W))
-        m_camera.ProcessKeyboard(FORWARD, dt);
-    if (m_pressedKeys.contains(Qt::Key_S))
-        m_camera.ProcessKeyboard(BACKWARD, dt);
-    if (m_pressedKeys.contains(Qt::Key_A))
-        m_camera.ProcessKeyboard(LEFT, dt);
-    if (m_pressedKeys.contains(Qt::Key_D))
-        m_camera.ProcessKeyboard(RIGHT, dt);
-    if (m_pressedKeys.contains(Qt::Key_Escape))
-        qApp->quit();
-}
-
 void HelloWindow::initShadowMapResources(QRhi *rhi) {
 
     m_shadowMapTexture = rhi->newTexture(
@@ -764,6 +753,7 @@ void HelloWindow::initShadowMapResources(QRhi *rhi) {
     m_fullscreenQuadPipeline->setRenderPassDescriptor(m_rp.get());
     m_fullscreenQuadPipeline->create();
 }
+
 void HelloWindow::updateFullscreenTexture(const QSize &pixelSize, QRhiResourceUpdateBatch *u)
 {
     if (m_fullscreenTexture && m_fullscreenTexture->pixelSize() == pixelSize)
@@ -780,16 +770,16 @@ void HelloWindow::updateFullscreenTexture(const QSize &pixelSize, QRhiResourceUp
     image.setDevicePixelRatio(devicePixelRatio());
     //! [ensure-texture]
     QPainter painter(&image);
-    painter.fillRect(QRectF(QPointF(0, 0), size()), QColor::fromRgbF(0.4f, 0.7f, 0.0f, 1.0f));
+    painter.fillRect(QRectF(QPointF(0, 0), size()), QColor::fromRgbF(0.0f, 0.0f, 0.0f, 1.0f));
     painter.setPen(Qt::transparent);
     painter.setBrush({ QGradient(QGradient::DeepBlue) });
     painter.drawRoundedRect(QRectF(QPointF(20, 20), size() - QSize(40, 40)), 16, 16);
     painter.setPen(Qt::black);
     QFont font;
-    font.setPixelSize(0.05 * qMin(width(), height()));
+    font.setPixelSize(0.04 * qMin(width(), height()));
     painter.setFont(font);
-    painter.drawText(QRectF(QPointF(60, 60), size() - QSize(120, 120)), 0,
-                     QLatin1String("Rendering with QRhi.\nThe 3D API is %1.\nUse the command-line options.")
+    painter.drawText(QRectF(QPointF(30, 30), size() - QSize(60, 60)), 0,
+                     QLatin1String("QRhi %1 API")
                          .arg(graphicsApiName()));
     painter.end();
 
