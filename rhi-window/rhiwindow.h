@@ -17,7 +17,7 @@ public:
     RhiWindow(QRhi::Implementation graphicsApi);
     QString graphicsApiName() const;
     void releaseSwapChain();
-
+    QMatrix4x4 m_projection;
 protected:
     virtual void customInit() = 0;
     virtual void customRender() = 0;
@@ -29,7 +29,7 @@ protected:
     std::unique_ptr<QRhiSwapChain> m_sc;
     std::unique_ptr<QRhiRenderBuffer> m_ds;
     std::unique_ptr<QRhiRenderPassDescriptor> m_rp;
-    QMatrix4x4 m_projection;
+
     QMatrix4x4 createProjection(QRhi *rhi, float fovDeg, float aspect, float nearPlane, float farPlane);
     bool m_hasSwapChain = false;
     QMatrix4x4 m_viewProjection;
@@ -70,6 +70,8 @@ private:
     void generateLightFrustum(float orthoSize, float nearPlane, float farPlane,
                                            QVector<float> &vertices, QVector<quint16> &indices);
     QVector3D computeSceneCenterAndExtents(const QVector<Model*> &objects, QVector3D &extents);
+    void updateFullscreenTexture(const QSize &pixelSize, QRhiResourceUpdateBatch *u);
+
     Model m_cube1;
     Model m_cube2;
     Model floor;
@@ -87,9 +89,15 @@ private:
     QRhiTextureRenderTarget *m_shadowMapRenderTarget = nullptr;
     QRhiRenderPassDescriptor * m_shadowMapRenderPassDesc = nullptr;
 
+    std::unique_ptr<QRhiShaderResourceBindings> m_fullscreenQuadSrb;
+    std::unique_ptr<QRhiGraphicsPipeline> m_fullscreenQuadPipeline;
+    std::unique_ptr<QRhiTexture> m_fullscreenTexture;
+    std::unique_ptr<QRhiSampler> m_fullScreenSampler;
+
     QRhiBuffer* m_shadowUbo = nullptr;
     QRhiShaderResourceBindings *m_shadowSRB = nullptr;
     QRhiGraphicsPipeline *m_shadowPipeline = nullptr;
+
     QVector3D lightPos;
     float m_rotation = 0;
     float m_opacity = 1;

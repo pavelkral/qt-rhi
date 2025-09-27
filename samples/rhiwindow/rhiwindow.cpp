@@ -327,7 +327,7 @@ HelloWindow::HelloWindow(QRhi::Implementation graphicsApi)
 }
 
 //! [ensure-texture]
-void HelloWindow::ensureFullscreenTexture(const QSize &pixelSize, QRhiResourceUpdateBatch *u)
+void HelloWindow::updateFullscreenTexture(const QSize &pixelSize, QRhiResourceUpdateBatch *u)
 {
     if (m_texture && m_texture->pixelSize() == pixelSize)
         return;
@@ -378,11 +378,11 @@ void HelloWindow::customInit()
     m_ubuf->create();
     //! [render-init-1]
 
-    ensureFullscreenTexture(m_sc->surfacePixelSize(), m_initialUpdates);
+    updateFullscreenTexture(m_sc->surfacePixelSize(), m_initialUpdates);
 
-    m_sampler.reset(m_rhi->newSampler(QRhiSampler::Linear, QRhiSampler::Linear, QRhiSampler::None,
+    m_fullScreenSampler.reset(m_rhi->newSampler(QRhiSampler::Linear, QRhiSampler::Linear, QRhiSampler::None,
                                       QRhiSampler::ClampToEdge, QRhiSampler::ClampToEdge));
-    m_sampler->create();
+    m_fullScreenSampler->create();
 
     //! [render-init-2]
     m_colorTriSrb.reset(m_rhi->newShaderResourceBindings());
@@ -423,7 +423,7 @@ void HelloWindow::customInit()
     m_fullscreenQuadSrb.reset(m_rhi->newShaderResourceBindings());
     m_fullscreenQuadSrb->setBindings({
         QRhiShaderResourceBinding::sampledTexture(0, QRhiShaderResourceBinding::FragmentStage,
-                                                  m_texture.get(), m_sampler.get())
+                                                  m_texture.get(), m_fullScreenSampler.get())
     });
     m_fullscreenQuadSrb->create();
 
@@ -472,7 +472,7 @@ void HelloWindow::customRender()
     //! [render-cb]
 
     // (re)create the texture with a size matching the output surface size, when necessary.
-    ensureFullscreenTexture(outputSizeInPixels, resourceUpdates);
+    updateFullscreenTexture(outputSizeInPixels, resourceUpdates);
 
     //! [render-pass]
     cb->beginPass(m_sc->currentFrameRenderTarget(), Qt::black, { 1.0f, 0 }, resourceUpdates);

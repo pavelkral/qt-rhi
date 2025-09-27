@@ -433,6 +433,7 @@ void HelloWindow::customRender()
     const QColor clearColor = QColor::fromRgbF(0.0f, 0.0f, 0.0f, 1.0f);
     const QColor clearColorDepth = QColor::fromRgbF(1.0f, 1,1,1);
 
+    updateFullscreenTexture(outputSizeInPixels, resourceUpdates);
 //===============================================================================================
 
     cb->beginPass(m_shadowMapRenderTarget, Qt::black, { 1.0f, 0 }, shadowBatch);
@@ -444,8 +445,17 @@ void HelloWindow::customRender()
         m_cube2.DrawForShadow(cb,m_shadowPipeline,ubo,shadowBatch);
     cb->endPass();
 
+
+
     cb->beginPass(m_sc->currentFrameRenderTarget(), clearColor, { 1.0f, 0 }, resourceUpdates);
     cb->setViewport({ 0, 0, float(outputSizeInPixels.width()), float(outputSizeInPixels.height()) });
+
+
+        cb->setGraphicsPipeline(m_fullscreenQuadPipeline.get());
+       // cb->setShaderResources();
+        cb->setShaderResources(m_fullscreenQuadSrb.get());
+        cb->draw(3);
+
         floor.draw(cb);
         m_cube1.draw(cb);
         m_cube2.draw(cb);
@@ -719,7 +729,7 @@ void HelloWindow::initShadowMapResources(QRhi *rhi) {
 
     Q_ASSERT(m_shadowMapRenderPassDesc); // sanity
     m_shadowPipeline->setRenderPassDescriptor(m_shadowMapRenderPassDesc);
-    m_shadowPipeline->setTopology(QRhiGraphicsPipeline::Triangles);
+   // m_shadowPipeline->setTopology(QRhiGraphicsPipeline::Triangles);
     m_shadowPipeline->setDepthTest(true);
     m_shadowPipeline->setDepthWrite(true);
     m_shadowPipeline->setDepthBias(2);             // zkus 1..4,
@@ -727,4 +737,66 @@ void HelloWindow::initShadowMapResources(QRhi *rhi) {
     m_shadowPipeline->setDepthOp(QRhiGraphicsPipeline::LessOrEqual);
 
     m_shadowPipeline->create();
+
+
+    //=======================================================================================
+
+    updateFullscreenTexture(m_sc->surfacePixelSize(), m_initialUpdates);
+
+    m_fullScreenSampler.reset(m_rhi->newSampler(QRhiSampler::Linear, QRhiSampler::Linear, QRhiSampler::None,
+                                      QRhiSampler::ClampToEdge, QRhiSampler::ClampToEdge));
+    m_fullScreenSampler->create();
+
+    m_fullscreenQuadSrb.reset(m_rhi->newShaderResourceBindings());
+    m_fullscreenQuadSrb->setBindings({
+        QRhiShaderResourceBinding::sampledTexture(0, QRhiShaderResourceBinding::FragmentStage,
+                                                  m_fullscreenTexture.get(), m_fullScreenSampler.get())
+    });
+    m_fullscreenQuadSrb->create();
+
+    m_fullscreenQuadPipeline.reset(m_rhi->newGraphicsPipeline());
+    m_fullscreenQuadPipeline->setShaderStages({
+        { QRhiShaderStage::Vertex, getShader(QLatin1String(":/shaders/prebuild/quad.vert.qsb")) },
+        { QRhiShaderStage::Fragment, getShader(QLatin1String(":/shaders/prebuild/quad.frag.qsb")) }
+    });
+    m_fullscreenQuadPipeline->setVertexInputLayout({});
+    m_fullscreenQuadPipeline->setShaderResourceBindings(m_fullscreenQuadSrb.get());
+    m_fullscreenQuadPipeline->setRenderPassDescriptor(m_rp.get());
+    m_fullscreenQuadPipeline->create();
+}
+void HelloWindow::updateFullscreenTexture(const QSize &pixelSize, QRhiResourceUpdateBatch *u)
+{
+    if (m_fullscreenTexture && m_fullscreenTexture->pixelSize() == pixelSize)
+        return;
+
+    if (!m_fullscreenTexture)
+        m_fullscreenTexture.reset(m_rhi->newTexture(QRhiTexture::RGBA8, pixelSize));
+    else
+        m_fullscreenTexture->setPixelSize(pixelSize);
+
+    m_fullscreenTexture->create();
+
+    QImage image(pixelSize, QImage::Format_RGBA8888_Premultiplied);
+    image.setDevicePixelRatio(devicePixelRatio());
+    //! [ensure-texture]
+    QPainter painter(&image);
+    painter.fillRect(QRectF(QPointF(0, 0), size()), QColor::fromRgbF(0.4f, 0.7f, 0.0f, 1.0f));
+    painter.setPen(Qt::transparent);
+    painter.setBrush({ QGradient(QGradient::DeepBlue) });
+    painter.drawRoundedRect(QRectF(QPointF(20, 20), size() - QSize(40, 40)), 16, 16);
+    painter.setPen(Qt::black);
+    QFont font;
+    font.setPixelSize(0.05 * qMin(width(), height()));
+    painter.setFont(font);
+    painter.drawText(QRectF(QPointF(60, 60), size() - QSize(120, 120)), 0,
+                     QLatin1String("Rendering with QRhi.\nThe 3D API is %1.\nUse the command-line options.")
+                         .arg(graphicsApiName()));
+    painter.end();
+
+    if (m_rhi->isYUpInNDC())
+        image.flip();
+
+    //! [ensure-texture-2]
+    u->uploadTexture(m_fullscreenTexture.get(), image);
+    //! [ensure-texture-2]
 }
