@@ -13,8 +13,8 @@ int main(int argc, char **argv)
     // Use platform-specific defaults when no command-line arguments given.
 #if defined(Q_OS_WIN)
   // graphicsApi = QRhi::D3D12;
-    graphicsApi = QRhi::Vulkan;
-  //  graphicsApi = QRhi::OpenGLES2;
+   // graphicsApi = QRhi::Vulkan;
+    graphicsApi = QRhi::OpenGLES2;
 #elif QT_CONFIG(metal)
     graphicsApi = QRhi::Metal;
 #elif QT_CONFIG(vulkan)
@@ -90,7 +90,8 @@ int main(int argc, char **argv)
         window.setVulkanInstance(&inst);
 #endif
     window.resize(1280, 720);
-    window.setTitle(QCoreApplication::applicationName() + QLatin1String(" - ") + window.graphicsApiName());
+    //window.setTitle(QCoreApplication::applicationName() + QLatin1String(" - ") + window.graphicsApiName());
+    window.setTitle("QRhi" + QLatin1String(" - ") + window.graphicsApiName());
     window.show();
     int ret = app.exec();
 

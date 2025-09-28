@@ -32,7 +32,7 @@ protected:
 
     QMatrix4x4 createProjection(QRhi *rhi, float fovDeg, float aspect, float nearPlane, float farPlane);
     bool m_hasSwapChain = false;
-    QMatrix4x4 m_viewProjection;
+   // QMatrix4x4 m_viewProjection;
 
 private:
     void init();
@@ -99,6 +99,9 @@ private:
     int m_opacityDir = -1;
 
     Model cubeModel1;
+    Model cubeModel;
+    Model sphereModel;
+    Model sphereModel1;
     Model lightSphere;
     Model floor;
     Camera mainCamera;

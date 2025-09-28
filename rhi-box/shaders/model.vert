@@ -10,10 +10,14 @@ layout(binding = 0) uniform UBuf {
     mat4 uModel;
     mat4 uView;
     mat4 uProj;
-    vec3 uLightPos;     float uAmbientStrength;
-    vec3 uLightColor;   float uMetallicFactor;
-    vec3 uCameraPos;    float uSmoothnessFactor;
-    vec3 uAlbedoColor;  float pad0;
+    vec3 uLightPos;
+    float uAmbientStrength;
+    vec3 uLightColor;
+    float uMetallicFactor;
+    vec3 uCameraPos;
+    float uSmoothnessFactor;
+    vec3 uAlbedoColor;
+    float pad0;
     int  uHasAlbedo;
     int  uHasNormal;
     int  uHasMetallic;

@@ -6,6 +6,7 @@
 #include <QFile>
 #include <QImage>
 #include <QFont>
+#include <QRandomGenerator>
 #include <rhi/qshader.h>
 #include "qtrhi3d/geometry.h"
 
@@ -308,16 +309,30 @@ void HelloWindow::customInit()
     //floor.transform.position = QVector3D(0, -0.5f, 0);
     //floor.transform.scale = QVector3D(10, 10, 10);
     //floor.transform.rotation.setX( 270.0f);
-
     cubeModel1.addVertAndInd(cubeVertices1, cubeIndices1);
-    cubeModel1.init(m_rhi.get(), m_rp.get(), vs2, fs2, m_initialUpdates,m_shadowMapTexture,m_shadowMapSampler,set1);
-    cubeModel1.transform.position = QVector3D(0, 1, 0);
+    cubeModel1.init(m_rhi.get(), m_rp.get(), vs1, fs1, m_initialUpdates,m_shadowMapTexture,m_shadowMapSampler,set1);
+    cubeModel1.transform.position = QVector3D(-6, 0.5, 0);
     cubeModel1.transform.scale = QVector3D(2, 2, 2);
+
+    cubeModel.addVertAndInd(cubeVertices1, cubeIndices1);
+    cubeModel.init(m_rhi.get(), m_rp.get(), vs2, fs2, m_initialUpdates,m_shadowMapTexture,m_shadowMapSampler,set);
+    cubeModel.transform.position = QVector3D(6, 0.5, 0);
+    cubeModel.transform.scale = QVector3D(2, 2, 2);
 
     lightSphere.addVertAndInd(sphereVertices, sphereIndices);
     lightSphere.init(m_rhi.get(),m_rp.get(), vsWire, fsWire, m_initialUpdates,m_shadowMapTexture,m_shadowMapSampler,set);
     lightSphere.transform.position = QVector3D(6.0f,10.4f, 15.4f);
-    lightSphere.transform.scale = QVector3D(0.4f,0.4f, 0.4f);
+    lightSphere.transform.scale = QVector3D(0.2f,0.2f, 0.2f);
+
+    sphereModel.addVertAndInd(sphereVertices, sphereIndices);
+    sphereModel.init(m_rhi.get(),m_rp.get(), vs1, fs1, m_initialUpdates,m_shadowMapTexture,m_shadowMapSampler,set);
+    sphereModel.transform.position = QVector3D(2.0f,1.0f, -6.0f);
+    sphereModel.transform.scale = QVector3D(3.0f,3.0f, 3.0f);
+
+    sphereModel1.addVertAndInd(sphereVertices, sphereIndices);
+    sphereModel1.init(m_rhi.get(),m_rp.get(), vs2, fs2, m_initialUpdates,m_shadowMapTexture,m_shadowMapSampler,set1);
+    sphereModel1.transform.position = QVector3D(-2.0f,1.0f, -6.0f);
+    sphereModel1.transform.scale = QVector3D(3.0f,3.0f, 3.0f);
 
     mainCamera.Position = QVector3D(-0.5f,5.5f, 15.5f);
     m_timer.start();
@@ -420,11 +435,17 @@ void HelloWindow::customRender()
 
     floor.updateUbo(ubo,resourceUpdates);
     cubeModel1.updateUbo(ubo,resourceUpdates);
+    cubeModel.updateUbo(ubo,resourceUpdates);
+    sphereModel.updateUbo(ubo,resourceUpdates);
+    sphereModel1.updateUbo(ubo,resourceUpdates);
     lightSphere.updateUbo(ubo,resourceUpdates);
    // frustumModel.updateUbo(ubo, resourceUpdates);
 
     floor.updateShadowUbo(ubo,shadowBatch);
     cubeModel1.updateShadowUbo(ubo,shadowBatch);
+    cubeModel.updateShadowUbo(ubo,resourceUpdates);
+    sphereModel.updateShadowUbo(ubo,resourceUpdates);
+    sphereModel1.updateShadowUbo(ubo,resourceUpdates);
     lightSphere.updateShadowUbo(ubo,shadowBatch);
 
     Q_ASSERT(m_shadowMapRenderTarget);
@@ -444,8 +465,11 @@ void HelloWindow::customRender()
     cb->setViewport(QRhiViewport(0, 0, SHADOW_MAP_SIZE.width(), SHADOW_MAP_SIZE.height()));
         floor.DrawForShadow(cb,m_shadowPipeline,ubo,shadowBatch);
         cubeModel1.DrawForShadow(cb,m_shadowPipeline,ubo,shadowBatch);
+        cubeModel.DrawForShadow(cb,m_shadowPipeline,ubo,shadowBatch);
+        sphereModel.DrawForShadow(cb,m_shadowPipeline,ubo,shadowBatch);
+        sphereModel1.DrawForShadow(cb,m_shadowPipeline,ubo,shadowBatch);
       //  m_cube1.testShadowPass(m_rhi.get(), cb, m_shadowMapRenderPassDesc);
-        lightSphere.DrawForShadow(cb,m_shadowPipeline,ubo,shadowBatch);
+      //  lightSphere.DrawForShadow(cb,m_shadowPipeline,ubo,shadowBatch);
     cb->endPass();
 
 
@@ -461,7 +485,10 @@ void HelloWindow::customRender()
 
         floor.draw(cb);
         cubeModel1.draw(cb);
-        lightSphere.draw(cb);
+        cubeModel.draw(cb);
+        sphereModel.draw(cb);
+        sphereModel1.draw(cb);
+      //  lightSphere.draw(cb);
        // frustumModel.draw(cb);
     cb->endPass();
 
@@ -514,109 +541,6 @@ void HelloWindow::updateCamera(float dt)
 
 //======================================================iNIT RESOURCES AND PIPELINES
 
-QVector3D HelloWindow::computeSceneCenterAndExtents(const QVector<Model*> &objects, QVector3D &extents)
-{
-    if (objects.isEmpty()) return QVector3D(0,0,0);
-
-    QVector3D minPt(FLT_MAX, FLT_MAX, FLT_MAX);
-    QVector3D maxPt(-FLT_MAX, -FLT_MAX, -FLT_MAX);
-
-    for (Model* obj : objects) {
-        const QMatrix4x4 &model = obj->transform.getModelMatrix();
-        const QVector<float> &verts = obj->m_vert;
-
-        for (int i = 0; i < verts.size(); i += 14) { // stride = 14 floatů
-            QVector3D v(verts[i], verts[i+1], verts[i+2]);
-            v = model * v;
-            minPt.setX(qMin(minPt.x(), v.x()));
-            minPt.setY(qMin(minPt.y(), v.y()));
-            minPt.setZ(qMin(minPt.z(), v.z()));
-            maxPt.setX(qMax(maxPt.x(), v.x()));
-            maxPt.setY(qMax(maxPt.y(), v.y()));
-            maxPt.setZ(qMax(maxPt.z(), v.z()));
-        }
-    }
-
-    extents = maxPt - minPt;
-    return (minPt + maxPt) * 0.5f; // center
-}
-
-//=========================================================================================================
-void HelloWindow::generateLightFrustum(float orthoSize,float nearPlane,float farPlane,QVector<float> &vertices,
-                                       QVector<quint16> &indices)
-{
-    vertices.clear();
-    indices.clear();
-    QVector<QVector3D> corners = {
-        {-orthoSize, -orthoSize, -nearPlane}, // 0
-        { orthoSize, -orthoSize, -nearPlane}, // 1
-        { orthoSize,  orthoSize, -nearPlane}, // 2
-        {-orthoSize,  orthoSize, -nearPlane}, // 3
-        {-orthoSize, -orthoSize, -farPlane},  // 4
-        { orthoSize, -orthoSize, -farPlane},  // 5
-        { orthoSize,  orthoSize, -farPlane},  // 6
-        {-orthoSize,  orthoSize, -farPlane}   // 7
-    };
-    QVector<QVector3D> normals = {
-        {0, 0, -1}, // near
-        {0, 0,  1}, // far
-        {-1, 0, 0}, // left
-        { 1, 0, 0}, // right
-        {0,  1, 0}, // top
-        {0, -1, 0}  // bottom
-    };
-    // UV placeholder (0..1)
-    auto addVertex = [&](const QVector3D &pos, const QVector3D &normal, const QVector2D &uv) {
-        vertices.append(pos.x());
-        vertices.append(pos.y());
-        vertices.append(pos.z());
-        vertices.append(normal.x());
-        vertices.append(normal.y());
-        vertices.append(normal.z());
-        vertices.append(uv.x());
-        vertices.append(uv.y());
-    };
-    // Near
-    addVertex(corners[0], normals[0], {0,0});
-    addVertex(corners[1], normals[0], {1,0});
-    addVertex(corners[2], normals[0], {1,1});
-    addVertex(corners[3], normals[0], {0,1});
-    // Far
-    addVertex(corners[5], normals[1], {0,0});
-    addVertex(corners[4], normals[1], {1,0});
-    addVertex(corners[7], normals[1], {1,1});
-    addVertex(corners[6], normals[1], {0,1});
-    // Left
-    addVertex(corners[4], normals[2], {0,0});
-    addVertex(corners[0], normals[2], {1,0});
-    addVertex(corners[3], normals[2], {1,1});
-    addVertex(corners[7], normals[2], {0,1});
-    // Right
-    addVertex(corners[1], normals[3], {0,0});
-    addVertex(corners[5], normals[3], {1,0});
-    addVertex(corners[6], normals[3], {1,1});
-    addVertex(corners[2], normals[3], {0,1});
-    // Top
-    addVertex(corners[3], normals[4], {0,0});
-    addVertex(corners[2], normals[4], {1,0});
-    addVertex(corners[6], normals[4], {1,1});
-    addVertex(corners[7], normals[4], {0,1});
-    // Bottom
-    addVertex(corners[4], normals[5], {0,0});
-    addVertex(corners[5], normals[5], {1,0});
-    addVertex(corners[1], normals[5], {1,1});
-    addVertex(corners[0], normals[5], {0,1});
-    // --- Index (6 faces * 2 triangles * 3 indices) ---
-    for (int f = 0; f < 6; ++f) {
-        quint16 base = f * 4;
-        indices.append(base + 0);
-        indices.append(base + 1);
-        indices.append(base + 2);
-        indices.append(base + 0);
-        indices.append(base + 2);
-        indices.append(base + 3);
-    }
-}
 void HelloWindow::initShadowMapResources(QRhi *rhi) {
 
     m_shadowMapTexture = rhi->newTexture(
@@ -768,25 +692,147 @@ void HelloWindow::updateFullscreenTexture(const QSize &pixelSize, QRhiResourceUp
 
     QImage image(pixelSize, QImage::Format_RGBA8888_Premultiplied);
     image.setDevicePixelRatio(devicePixelRatio());
-    //! [ensure-texture]
+
     QPainter painter(&image);
-    painter.fillRect(QRectF(QPointF(0, 0), size()), QColor::fromRgbF(0.0f, 0.0f, 0.0f, 1.0f));
-    painter.setPen(Qt::transparent);
-    painter.setBrush({ QGradient(QGradient::DeepBlue) });
-    painter.drawRoundedRect(QRectF(QPointF(20, 20), size() - QSize(40, 40)), 16, 16);
+    painter.setRenderHint(QPainter::Antialiasing, true);
+
+    // --- obloha (gradient nahoře světlejší, dole tmavší) ---
+    QLinearGradient skyGradient(QPointF(0, 0), QPointF(0, pixelSize.height()));
+    skyGradient.setColorAt(0.0, QColor::fromRgbF(0.53f, 0.81f, 0.98f, 1.0f)); // světle modrá
+    skyGradient.setColorAt(1.0, QColor::fromRgbF(0.0f, 0.4f, 0.8f, 1.0f));   // tmavší modrá
+    painter.fillRect(QRectF(QPointF(0, 0), pixelSize), skyGradient);
+
+    // --- jednoduché "mraky" ---
+    // painter.setPen(Qt::NoPen);
+    // painter.setBrush(QColor(255, 255, 255, 100)); // poloprůhledná bílá
+
+    // QRandomGenerator *rng = QRandomGenerator::global();
+    // int cloudCount = 6;
+    // for (int i = 0; i < cloudCount; ++i) {
+    //     int x = (pixelSize.width() / cloudCount) * i + rng->bounded(50);
+    //     int y = pixelSize.height() / 5 + (rng->bounded(60) - 30);
+    //     int w = 120 + rng->bounded(80);
+    //     int h = 60 + rng->bounded(30);
+    //     painter.drawEllipse(QRect(x, y, w, h));
+    // }
+
+    // --- text (zachován z původní verze) ---
     painter.setPen(Qt::black);
     QFont font;
-    font.setPixelSize(0.04 * qMin(width(), height()));
+    font.setPixelSize(0.03 * qMin(width(), height()));
     painter.setFont(font);
-    painter.drawText(QRectF(QPointF(30, 30), size() - QSize(60, 60)), 0,
-                     QLatin1String("QRhi %1 API")
-                         .arg(graphicsApiName()));
+    //painter.drawText(QRectF(QPointF(10, 10), size() - QSize(20, 20)), 0,QLatin1String("QRhi %1 API").arg(graphicsApiName()));
+    painter.drawText(QRectF(QPointF(10, 10), size() - QSize(20, 20)), 0,QLatin1String("QRhi %1 API").arg(graphicsApiName()));
+
     painter.end();
 
     if (m_rhi->isYUpInNDC())
-        image.flip();
+        image = image.mirrored();
 
-    //! [ensure-texture-2]
     u->uploadTexture(m_fullscreenTexture.get(), image);
-    //! [ensure-texture-2]
+}
+
+
+QVector3D HelloWindow::computeSceneCenterAndExtents(const QVector<Model*> &objects, QVector3D &extents)
+{
+    if (objects.isEmpty()) return QVector3D(0,0,0);
+
+    QVector3D minPt(FLT_MAX, FLT_MAX, FLT_MAX);
+    QVector3D maxPt(-FLT_MAX, -FLT_MAX, -FLT_MAX);
+
+    for (Model* obj : objects) {
+        const QMatrix4x4 &model = obj->transform.getModelMatrix();
+        const QVector<float> &verts = obj->m_vert;
+
+        for (int i = 0; i < verts.size(); i += 14) { // stride = 14 floatů
+            QVector3D v(verts[i], verts[i+1], verts[i+2]);
+            v = model * v;
+            minPt.setX(qMin(minPt.x(), v.x()));
+            minPt.setY(qMin(minPt.y(), v.y()));
+            minPt.setZ(qMin(minPt.z(), v.z()));
+            maxPt.setX(qMax(maxPt.x(), v.x()));
+            maxPt.setY(qMax(maxPt.y(), v.y()));
+            maxPt.setZ(qMax(maxPt.z(), v.z()));
+        }
+    }
+
+    extents = maxPt - minPt;
+    return (minPt + maxPt) * 0.5f; // center
+}
+
+//=========================================================================================================
+void HelloWindow::generateLightFrustum(float orthoSize,float nearPlane,float farPlane,QVector<float> &vertices,
+                                       QVector<quint16> &indices)
+{
+    vertices.clear();
+    indices.clear();
+    QVector<QVector3D> corners = {
+        {-orthoSize, -orthoSize, -nearPlane}, // 0
+        { orthoSize, -orthoSize, -nearPlane}, // 1
+        { orthoSize,  orthoSize, -nearPlane}, // 2
+        {-orthoSize,  orthoSize, -nearPlane}, // 3
+        {-orthoSize, -orthoSize, -farPlane},  // 4
+        { orthoSize, -orthoSize, -farPlane},  // 5
+        { orthoSize,  orthoSize, -farPlane},  // 6
+        {-orthoSize,  orthoSize, -farPlane}   // 7
+    };
+    QVector<QVector3D> normals = {
+        {0, 0, -1}, // near
+        {0, 0,  1}, // far
+        {-1, 0, 0}, // left
+        { 1, 0, 0}, // right
+        {0,  1, 0}, // top
+        {0, -1, 0}  // bottom
+    };
+    // UV placeholder (0..1)
+    auto addVertex = [&](const QVector3D &pos, const QVector3D &normal, const QVector2D &uv) {
+        vertices.append(pos.x());
+        vertices.append(pos.y());
+        vertices.append(pos.z());
+        vertices.append(normal.x());
+        vertices.append(normal.y());
+        vertices.append(normal.z());
+        vertices.append(uv.x());
+        vertices.append(uv.y());
+    };
+    // Near
+    addVertex(corners[0], normals[0], {0,0});
+    addVertex(corners[1], normals[0], {1,0});
+    addVertex(corners[2], normals[0], {1,1});
+    addVertex(corners[3], normals[0], {0,1});
+    // Far
+    addVertex(corners[5], normals[1], {0,0});
+    addVertex(corners[4], normals[1], {1,0});
+    addVertex(corners[7], normals[1], {1,1});
+    addVertex(corners[6], normals[1], {0,1});
+    // Left
+    addVertex(corners[4], normals[2], {0,0});
+    addVertex(corners[0], normals[2], {1,0});
+    addVertex(corners[3], normals[2], {1,1});
+    addVertex(corners[7], normals[2], {0,1});
+    // Right
+    addVertex(corners[1], normals[3], {0,0});
+    addVertex(corners[5], normals[3], {1,0});
+    addVertex(corners[6], normals[3], {1,1});
+    addVertex(corners[2], normals[3], {0,1});
+    // Top
+    addVertex(corners[3], normals[4], {0,0});
+    addVertex(corners[2], normals[4], {1,0});
+    addVertex(corners[6], normals[4], {1,1});
+    addVertex(corners[7], normals[4], {0,1});
+    // Bottom
+    addVertex(corners[4], normals[5], {0,0});
+    addVertex(corners[5], normals[5], {1,0});
+    addVertex(corners[1], normals[5], {1,1});
+    addVertex(corners[0], normals[5], {0,1});
+    // --- Index (6 faces * 2 triangles * 3 indices) ---
+    for (int f = 0; f < 6; ++f) {
+        quint16 base = f * 4;
+        indices.append(base + 0);
+        indices.append(base + 1);
+        indices.append(base + 2);
+        indices.append(base + 0);
+        indices.append(base + 2);
+        indices.append(base + 3);
+    }
 }
