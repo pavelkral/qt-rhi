@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.16)
 project(rhi-window LANGUAGES CXX)
 
-find_package(Qt6 REQUIRED COMPONENTS Core GuiPrivate)
+find_package(Qt6 REQUIRED COMPONENTS Core GuiPrivate Gui Widgets)
 
 qt_standard_project_setup()
 
@@ -29,6 +29,7 @@ target_link_libraries(rhi-window PRIVATE
     Qt6::Core
     Qt6::Gui
     Qt6::GuiPrivate
+    Qt6::Widgets
 )
 
 

@@ -106,3 +106,53 @@ int main(int argc, char **argv)
 
     return ret;
 }
+
+//===================================================Editor Layout
+
+// QMainWindow mainWindow;
+
+// // Vytvoření RhiWindow (dědí z QWindow)
+// HelloWindow *rhiWindow = new HelloWindow(graphicsApi);
+
+// #if QT_CONFIG(vulkan)
+// //  QVulkanInstance inst;
+// inst.create();
+// if (graphicsApi == QRhi::Vulkan)
+//     rhiWindow->setVulkanInstance(&inst);
+// #endif
+
+// rhiWindow->resize(1280, 720);
+// rhiWindow->setTitle("QRhi - " + rhiWindow->graphicsApiName());
+
+// // Zabalíme RhiWindow do QWidgetu
+// QWidget *container = QWidget::createWindowContainer(rhiWindow);
+// QSlider *slider = new QSlider(Qt::Vertical);
+// slider->setRange(0, 100);
+// slider->setValue(50);
+
+// // Propojení signálu slideru s tvým HelloWindow (příklad)
+// QObject::connect(slider, &QSlider::valueChanged, [rhiWindow](int value){
+//     // Představme si, že máš metodu setSomeParameter(int)
+//     rhiWindow->setSomeParameter(value);
+// });
+// // Layout
+// QWidget *centralWidget = new QWidget();
+// QVBoxLayout *layout = new QVBoxLayout(centralWidget);
+// layout->addWidget(container);
+
+// mainWindow.setCentralWidget(centralWidget);
+// mainWindow.resize(1280, 720);
+// mainWindow.show();
+// int ret = app.exec();
+
+// // RhiWindow::event() will not get invoked when the
+// // PlatformSurfaceAboutToBeDestroyed event is sent during the QWindow
+// // destruction. That happens only when exiting via app::quit() instead of
+// // the more common QWindow::close(). Take care of it: if the QPlatformWindow
+// // is still around (there was no close() yet), get rid of the swapchain
+// // while it's not too late.
+// if (rhiWindow->handle())
+//     rhiWindow->releaseSwapChain();
+
+// return ret;
+
