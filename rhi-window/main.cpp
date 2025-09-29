@@ -1,20 +1,26 @@
 
 #include <QGuiApplication>
+#include <QApplication>
+#include <QMainWindow>
 #include <QCommandLineParser>
 #include <QtWidgets/QHBoxLayout>
 #include <QtWidgets/qslider.h>
 #include <QtWidgets/qwidget.h>
 #include "rhiwindow.h"
 
+//#define EDITOR_MODE
+
 int main(int argc, char **argv)
 {
-    QGuiApplication app(argc, argv);
+    QApplication app(argc, argv);
     QRhi::Implementation graphicsApi;
+    int ret = 0;
+
     // Use platform-specific defaults when no command-line arguments given.
 #if defined(Q_OS_WIN)
   // graphicsApi = QRhi::D3D12;
-   // graphicsApi = QRhi::Vulkan;
-    graphicsApi = QRhi::OpenGLES2;
+    graphicsApi = QRhi::Vulkan;
+   // graphicsApi = QRhi::OpenGLES2;
 #elif QT_CONFIG(metal)
     graphicsApi = QRhi::Metal;
 #elif QT_CONFIG(vulkan)
@@ -83,76 +89,63 @@ int main(int argc, char **argv)
     }
 #endif
 
-    HelloWindow window(graphicsApi);
+#ifdef EDITOR_MODE
+    {
+        QMainWindow mainWindow;
+        HelloWindow *rhiWindow = new HelloWindow(graphicsApi);
 
 #if QT_CONFIG(vulkan)
-    if (graphicsApi == QRhi::Vulkan)
-        window.setVulkanInstance(&inst);
+        if (graphicsApi == QRhi::Vulkan)
+            rhiWindow->setVulkanInstance(&inst);
 #endif
-    window.resize(1280, 720);
-    //window.setTitle(QCoreApplication::applicationName() + QLatin1String(" - ") + window.graphicsApiName());
-    window.setTitle("QRhi" + QLatin1String(" - ") + window.graphicsApiName());
-    window.show();
-    int ret = app.exec();
 
-    // RhiWindow::event() will not get invoked when the
-    // PlatformSurfaceAboutToBeDestroyed event is sent during the QWindow
-    // destruction. That happens only when exiting via app::quit() instead of
-    // the more common QWindow::close(). Take care of it: if the QPlatformWindow
-    // is still around (there was no close() yet), get rid of the swapchain
-    // while it's not too late.
-    if (window.handle())
-        window.releaseSwapChain();
+        rhiWindow->resize(1280, 720);
+        rhiWindow->setTitle("QRhi - " + rhiWindow->graphicsApiName() + " (Editor Mode)");
+
+        QWidget *container = QWidget::createWindowContainer(rhiWindow);
+        QSlider *slider = new QSlider(Qt::Vertical);
+        slider->setRange(0, 100);
+        slider->setValue(50);
+
+        QObject::connect(slider, &QSlider::valueChanged, [rhiWindow](int value){
+            // rhiWindow->setSomeParameter(value);
+        });
+
+        QWidget *centralWidget = new QWidget();
+        QHBoxLayout *layout = new QHBoxLayout(centralWidget);
+        layout->addWidget(container);
+        layout->addWidget(slider);
+
+        mainWindow.setCentralWidget(centralWidget);
+        mainWindow.resize(1320, 720);
+        mainWindow.show();
+
+        ret = app.exec();
+
+        if (rhiWindow->handle())
+            rhiWindow->releaseSwapChain();
+
+         delete rhiWindow;
+    }
+#else // !EDITOR_MODE
+    {
+        HelloWindow window(graphicsApi);
+
+#if QT_CONFIG(vulkan)
+        if (graphicsApi == QRhi::Vulkan)
+            window.setVulkanInstance(&inst);
+#endif
+
+        window.resize(1280, 720);
+        window.setTitle("QRhi" + QLatin1String(" - ") + window.graphicsApiName());
+        window.show();
+
+        ret = app.exec();
+
+        if (window.handle())
+            window.releaseSwapChain();
+    }
+#endif
 
     return ret;
 }
-
-//===================================================Editor Layout
-
-// QMainWindow mainWindow;
-
-// // Vytvoření RhiWindow (dědí z QWindow)
-// HelloWindow *rhiWindow = new HelloWindow(graphicsApi);
-
-// #if QT_CONFIG(vulkan)
-// //  QVulkanInstance inst;
-// inst.create();
-// if (graphicsApi == QRhi::Vulkan)
-//     rhiWindow->setVulkanInstance(&inst);
-// #endif
-
-// rhiWindow->resize(1280, 720);
-// rhiWindow->setTitle("QRhi - " + rhiWindow->graphicsApiName());
-
-// // Zabalíme RhiWindow do QWidgetu
-// QWidget *container = QWidget::createWindowContainer(rhiWindow);
-// QSlider *slider = new QSlider(Qt::Vertical);
-// slider->setRange(0, 100);
-// slider->setValue(50);
-
-// // Propojení signálu slideru s tvým HelloWindow (příklad)
-// QObject::connect(slider, &QSlider::valueChanged, [rhiWindow](int value){
-//     // Představme si, že máš metodu setSomeParameter(int)
-//     rhiWindow->setSomeParameter(value);
-// });
-// // Layout
-// QWidget *centralWidget = new QWidget();
-// QVBoxLayout *layout = new QVBoxLayout(centralWidget);
-// layout->addWidget(container);
-
-// mainWindow.setCentralWidget(centralWidget);
-// mainWindow.resize(1280, 720);
-// mainWindow.show();
-// int ret = app.exec();
-
-// // RhiWindow::event() will not get invoked when the
-// // PlatformSurfaceAboutToBeDestroyed event is sent during the QWindow
-// // destruction. That happens only when exiting via app::quit() instead of
-// // the more common QWindow::close(). Take care of it: if the QPlatformWindow
-// // is still around (there was no close() yet), get rid of the swapchain
-// // while it's not too late.
-// if (rhiWindow->handle())
-//     rhiWindow->releaseSwapChain();
-
-// return ret;
-

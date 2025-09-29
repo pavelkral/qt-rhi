@@ -18,6 +18,7 @@ public:
     QString graphicsApiName() const;
     void releaseSwapChain();
     QMatrix4x4 m_projection;
+     bool m_cameraMovementEnabled = true;
 protected:
     virtual void customInit() = 0;
     virtual void customRender() = 0;
@@ -76,7 +77,7 @@ private:
     QPointF m_lastMousePos;
     QElapsedTimer m_timer;
     float m_dt = 0;
-    QRhiResourceUpdateBatch *m_initialUpdates = nullptr;
+    QRhiResourceUpdateBatch *m_initialUpdateBatch = nullptr;
 
     const QSize SHADOW_MAP_SIZE = QSize(2048, 2048);
     QRhiTexture *m_shadowMapTexture = nullptr;
