@@ -107,6 +107,8 @@ private:
     Model floor;
     Camera mainCamera;
     Model frustumModel;
+
+    QVector<Model*> models;
 };
 
 #endif

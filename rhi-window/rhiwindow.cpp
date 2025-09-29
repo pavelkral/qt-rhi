@@ -332,6 +332,13 @@ void HelloWindow::customInit()
     sphereModel1.transform.position = QVector3D(-2.0f,1.0f, -6.0f);
     sphereModel1.transform.scale = QVector3D(3.0f,3.0f, 3.0f);
 
+    models.append(&floor);
+    models.append(&cubeModel1);
+    models.append(&cubeModel);
+    models.append(&lightSphere);
+    models.append(&sphereModel);
+    models.append(&sphereModel1);
+
     mainCamera.Position = QVector3D(-0.5f,5.5f, 15.5f);
     m_timer.start();
 }
@@ -387,8 +394,8 @@ void HelloWindow::customRender()
     //     0.5f + 0.5f * sin(lightTime * 1.3f + 4.0f)
     //     );
 
-    //  m_cube1.transform.rotation.setY( m_cube1.transform.rotation.y() + 0.5f);
-    // m_cube2.transform.rotation.setY(m_cube2.transform.rotation.y() + 0.5f);
+     sphereModel1.transform.rotation.setY( sphereModel1.transform.rotation.y() + 0.5f);
+     cubeModel1.transform.rotation.setY(cubeModel1.transform.rotation.y() + 0.5f);
 
     QMatrix4x4 lightView;
     QMatrix4x4 lightSpaceMatrix;
@@ -431,20 +438,13 @@ void HelloWindow::customRender()
   //  qDebug() << "lightview = " << lightView << "\n";
    // qDebug() << "lightspace = " << ubo.lightSpace << "\n";
 
-    floor.updateUbo(ubo,resourceUpdateBatch);
-    cubeModel1.updateUbo(ubo,resourceUpdateBatch);
-    cubeModel.updateUbo(ubo,resourceUpdateBatch);
-    sphereModel.updateUbo(ubo,resourceUpdateBatch);
-    sphereModel1.updateUbo(ubo,resourceUpdateBatch);
-    lightSphere.updateUbo(ubo,resourceUpdateBatch);
-   // frustumModel.updateUbo(ubo, resourceUpdates);
+    for (auto m : std::as_const(models)) {
+        m->updateUbo(ubo,resourceUpdateBatch);
+    }
 
-    floor.updateShadowUbo(ubo,shadowUpdateBatch);
-    cubeModel1.updateShadowUbo(ubo,shadowUpdateBatch);
-    cubeModel.updateShadowUbo(ubo,resourceUpdateBatch);
-    sphereModel.updateShadowUbo(ubo,resourceUpdateBatch);
-    sphereModel1.updateShadowUbo(ubo,resourceUpdateBatch);
-    lightSphere.updateShadowUbo(ubo,shadowUpdateBatch);
+    for (auto m : std::as_const(models)) {
+        m->updateShadowUbo(ubo,shadowUpdateBatch);
+    }
 
     Q_ASSERT(m_shadowMapRenderTarget);
     Q_ASSERT(m_shadowPipeline);
@@ -461,31 +461,25 @@ void HelloWindow::customRender()
     cb->beginPass(m_shadowMapRenderTarget, Qt::black, { 1.0f, 0 }, shadowUpdateBatch);
     cb->setGraphicsPipeline(m_shadowPipeline);
     cb->setViewport(QRhiViewport(0, 0, SHADOW_MAP_SIZE.width(), SHADOW_MAP_SIZE.height()));
-        floor.DrawForShadow(cb,m_shadowPipeline,ubo,shadowUpdateBatch);
-        cubeModel1.DrawForShadow(cb,m_shadowPipeline,ubo,shadowUpdateBatch);
-        cubeModel.DrawForShadow(cb,m_shadowPipeline,ubo,shadowUpdateBatch);
-        sphereModel.DrawForShadow(cb,m_shadowPipeline,ubo,shadowUpdateBatch);
-        sphereModel1.DrawForShadow(cb,m_shadowPipeline,ubo,shadowUpdateBatch);
-      //  m_cube1.testShadowPass(m_rhi.get(), cb, m_shadowMapRenderPassDesc);
-      //  lightSphere.DrawForShadow(cb,m_shadowPipeline,ubo,shadowBatch);
+
+        for (auto m : std::as_const(models)) {
+            m->DrawForShadow(cb,m_shadowPipeline,ubo,shadowUpdateBatch);
+        }
+
     cb->endPass();
 
     cb->beginPass(m_sc->currentFrameRenderTarget(), clearColor, { 1.0f, 0 }, resourceUpdateBatch);
     cb->setViewport({ 0, 0, float(outputSizeInPixels.width()), float(outputSizeInPixels.height()) });
-
 
         cb->setGraphicsPipeline(m_fullscreenQuadPipeline.get());
        // cb->setShaderResources();
         cb->setShaderResources(m_fullscreenQuadSrb.get());
         cb->draw(3);
 
-        floor.draw(cb);
-        cubeModel1.draw(cb);
-        cubeModel.draw(cb);
-        sphereModel.draw(cb);
-        sphereModel1.draw(cb);
-        //lightSphere.draw(cb);
-        //frustumModel.draw(cb);
+        for (auto m : std::as_const(models)) {
+            m->draw(cb);
+        }
+
     cb->endPass();
 
 }
@@ -760,7 +754,7 @@ QVector3D HelloWindow::computeSceneCenterAndExtents(const QVector<Model*> &objec
         const QMatrix4x4 &model = obj->transform.getModelMatrix();
         const QVector<float> &verts = obj->m_vert;
 
-        for (int i = 0; i < verts.size(); i += 14) { // stride = 14 floatů
+        for (int i = 0; i < verts.size(); i += 14) { // stride = 14 floats
             QVector3D v(verts[i], verts[i+1], verts[i+2]);
             v = model * v;
             minPt.setX(qMin(minPt.x(), v.x()));
