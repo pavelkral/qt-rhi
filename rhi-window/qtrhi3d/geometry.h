@@ -5,10 +5,70 @@
 #include <qtypes.h>
 #include <QVector>
 #include <cmath>
+#include <qvector3d.h>
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
 #endif
+void generatePlane(float width, float depth, int segX, int segZ,
+                   float tileU, float tileV,
+                   QVector<float>& vertices, QVector<quint16>& indices)
+{
+    vertices.clear();
+    indices.clear();
+
+    float halfW = width * 0.5f;
+    float halfD = depth * 0.5f;
+
+    float stepX = width / segX;
+    float stepZ = depth / segZ;
+
+    float uvStepX = 1.0f / segX;
+    float uvStepZ = 1.0f / segZ;
+
+    // Generování vrcholů
+    for (int z = 0; z <= segZ; z++) {
+        for (int x = 0; x <= segX; x++) {
+            float posX = -halfW + x * stepX;
+            float posZ = -halfD + z * stepZ;
+
+            // Pozice
+            vertices.push_back(posX);
+            vertices.push_back(0.0f);
+            vertices.push_back(posZ);
+
+            // Normála (směrem nahoru)
+            vertices.push_back(0.0f);
+            vertices.push_back(1.0f);
+            vertices.push_back(0.0f);
+
+            // UV s tilingem
+            vertices.push_back(x * uvStepX * tileU);
+            vertices.push_back(z * uvStepZ * tileV);
+        }
+    }
+
+    // Generování indexů
+    for (int z = 0; z < segZ; z++) {
+        for (int x = 0; x < segX; x++) {
+            quint16 v1 = z * (segX + 1) + x;
+            quint16 v2 = v1 + 1;
+            quint16 v3 = v1 + (segX + 1);
+            quint16 v4 = v3 + 1;
+
+            // První trojúhelník
+            indices.push_back(v1);
+            indices.push_back(v2);
+            indices.push_back(v3);
+
+            // Druhý trojúhelník
+            indices.push_back(v2);
+            indices.push_back(v4);
+            indices.push_back(v3);
+        }
+    }
+}
+
 
 void generateSphere(float radius, int rings, int sectors,QVector<float>& vertices, QVector<quint16>& indices)
 {
@@ -63,53 +123,83 @@ void generateSphere(float radius, int rings, int sectors,QVector<float>& vertice
         }
     }
 }
- QVector<float> cubeVertices1 = {
-     // pos                 // normal       // uv
-     // Front (+Z)
-     -0.5f,-0.5f, 0.5f,     0,0,1,          0.0f,0.0f,
-     0.5f,-0.5f, 0.5f,     0,0,1,          1.0f,0.0f,
-     0.5f, 0.5f, 0.5f,     0,0,1,          1.0f,1.0f,
-     -0.5f, 0.5f, 0.5f,     0,0,1,          0.0f,1.0f,
 
-     // Back (-Z)
-     -0.5f,-0.5f,-0.5f,     0,0,-1,         1.0f,0.0f,
-     0.5f,-0.5f,-0.5f,     0,0,-1,         0.0f,0.0f,
-     0.5f, 0.5f,-0.5f,     0,0,-1,         0.0f,1.0f,
-     -0.5f, 0.5f,-0.5f,     0,0,-1,         1.0f,1.0f,
+void generateCube(float size, QVector<float>& vertices, QVector<quint16>& indices)
+{
+    vertices.clear();
+    indices.clear();
 
-     // Left (-X)
-     -0.5f,-0.5f,-0.5f,    -1,0,0,          0.0f,0.0f,
-     -0.5f,-0.5f, 0.5f,    -1,0,0,          1.0f,0.0f,
-     -0.5f, 0.5f, 0.5f,    -1,0,0,          1.0f,1.0f,
-     -0.5f, 0.5f,-0.5f,    -1,0,0,          0.0f,1.0f,
+    float half = size * 0.5f;
 
-     // Right (+X)
-     0.5f,-0.5f,-0.5f,     1,0,0,          1.0f,0.0f,
-     0.5f,-0.5f, 0.5f,     1,0,0,          0.0f,0.0f,
-     0.5f, 0.5f, 0.5f,     1,0,0,          0.0f,1.0f,
-     0.5f, 0.5f,-0.5f,     1,0,0,          1.0f,1.0f,
+    // Struktura: {px,py,pz, nx,ny,nz, u,v}
+    struct Face {
+        QVector3D normal;
+        QVector3D v[4];
+        QVector2D uv[4];
+    };
 
-     // Top (+Y)
-     -0.5f, 0.5f, 0.5f,     0,1,0,          0.0f,0.0f,
-     0.5f, 0.5f, 0.5f,     0,1,0,          1.0f,0.0f,
-     0.5f, 0.5f,-0.5f,     0,1,0,          1.0f,1.0f,
-     -0.5f, 0.5f,-0.5f,     0,1,0,          0.0f,1.0f,
+    // 6 stěn krychle
+    std::vector<Face> faces = {
+        // Front (+Z)
+        { QVector3D(0,0,1),
+         { {-half,-half, half}, { half,-half, half}, { half, half, half}, {-half, half, half} },
+         { {0,0}, {1,0}, {1,1}, {0,1} } },
 
-     // Bottom (-Y)
-     -0.5f,-0.5f, 0.5f,     0,-1,0,         0.0f,1.0f,
-     0.5f,-0.5f, 0.5f,     0,-1,0,         1.0f,1.0f,
-     0.5f,-0.5f,-0.5f,     0,-1,0,         1.0f,0.0f,
-     -0.5f,-0.5f,-0.5f,     0,-1,0,         0.0f,0.0f,
- };
+        // Back (-Z)
+        { QVector3D(0,0,-1),
+         { { half,-half,-half}, {-half,-half,-half}, {-half, half,-half}, { half, half,-half} },
+         { {0,0}, {1,0}, {1,1}, {0,1} } },
 
- QVector<quint16> cubeIndices1 = {
-     0,1,2,  0,2,3,       // front
-     4,5,6,  4,6,7,       // back
-     8,9,10, 8,10,11,     // left
-     12,13,14, 12,14,15,  // right
-     16,17,18, 16,18,19,  // top
-     20,21,22, 20,22,23   // bottom
- };
+        // Left (-X)
+        { QVector3D(-1,0,0),
+         { {-half,-half,-half}, {-half,-half, half}, {-half, half, half}, {-half, half,-half} },
+         { {0,0}, {1,0}, {1,1}, {0,1} } },
+
+        // Right (+X)
+        { QVector3D(1,0,0),
+         { { half,-half, half}, { half,-half,-half}, { half, half,-half}, { half, half, half} },
+         { {0,0}, {1,0}, {1,1}, {0,1} } },
+
+        // Top (+Y)
+        { QVector3D(0,1,0),
+         { {-half, half, half}, { half, half, half}, { half, half,-half}, {-half, half,-half} },
+         { {0,0}, {1,0}, {1,1}, {0,1} } },
+
+        // Bottom (-Y)
+        { QVector3D(0,-1,0),
+         { {-half,-half,-half}, { half,-half,-half}, { half,-half, half}, {-half,-half, half} },
+         { {0,0}, {1,0}, {1,1}, {0,1} } },
+        };
+
+    quint16 indexOffset = 0;
+    for (auto& face : faces) {
+        // Přidání vrcholů (pozice, normála, UV)
+        for (int i = 0; i < 4; i++) {
+            vertices.push_back(face.v[i].x());
+            vertices.push_back(face.v[i].y());
+            vertices.push_back(face.v[i].z());
+
+            vertices.push_back(face.normal.x());
+            vertices.push_back(face.normal.y());
+            vertices.push_back(face.normal.z());
+
+            vertices.push_back(face.uv[i].x());
+            vertices.push_back(face.uv[i].y());
+        }
+
+        // Přidání indexů (2 trojúhelníky na stěnu)
+        indices.push_back(indexOffset + 0);
+        indices.push_back(indexOffset + 1);
+        indices.push_back(indexOffset + 2);
+
+        indices.push_back(indexOffset + 0);
+        indices.push_back(indexOffset + 2);
+        indices.push_back(indexOffset + 3);
+
+        indexOffset += 4;
+    }
+}
+
  QVector<float> planeVertices1 = {
      // pos               // normal         // uv
      -0.5f,-0.5f, 0.0f,   0,0,1,            0.0f,0.0f, // 0

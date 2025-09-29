@@ -229,7 +229,7 @@ HelloWindow::HelloWindow(QRhi::Implementation graphicsApi)
     mainCamera(QVector3D(0.0f, 0.0f, 5.0f))
 {
   //  setFocusPolicy(Qt::StrongFocus);
-    // Skryje kurzor a zachytí ho v okně
+
     setCursor(Qt::BlankCursor);
 }
 HelloWindow::~HelloWindow()
@@ -256,9 +256,6 @@ HelloWindow::~HelloWindow()
     delete m_shadowMapSampler;
     delete m_shadowMapRenderTarget;
     delete m_shadowMapRenderPassDesc;
-   //delete m_shadowUbo;
- // delete m_shadowSRB;
- // delete m_shadowPipeline;
 
 
 }
@@ -299,7 +296,6 @@ void HelloWindow::customInit()
 
     QVector<float> sphereVertices;
     QVector<quint16> sphereIndices;
-
     generateSphere(0.5f, 32, 64, sphereVertices, sphereIndices);
 
     floor.addVertAndInd(indexedPlaneVertices ,indexedPlaneIndices );
@@ -307,14 +303,23 @@ void HelloWindow::customInit()
     //floor.transform.position = QVector3D(0, -0.5f, 0);
     //floor.transform.scale = QVector3D(10, 10, 10);
     //floor.transform.rotation.setX( 270.0f);
-    cubeModel1.addVertAndInd(cubeVertices1, cubeIndices1);
+    QVector<float> cVertices;
+    QVector<quint16> cIndices;
+    generateCube(1.0f, cVertices, cIndices);
+
+    cubeModel1.addVertAndInd(cVertices, cIndices);
     cubeModel1.init(m_rhi.get(), m_rp.get(), vs1, fs1, m_initialUpdateBatch,m_shadowMapTexture,m_shadowMapSampler,set1);
-    cubeModel1.transform.position = QVector3D(-6, 0.5, 0);
+    cubeModel1.transform.position = QVector3D(-6, 1.5, 0);
     cubeModel1.transform.scale = QVector3D(2, 2, 2);
 
-    cubeModel.addVertAndInd(cubeVertices1, cubeIndices1);
+    QVector<float> planeVertices;
+    QVector<quint16> planeIndices;
+
+    generatePlane(3.0f, 3.0f, 10, 10, 1.0f, 1.0f, planeVertices, planeIndices);
+
+    cubeModel.addVertAndInd(planeVertices, planeIndices);
     cubeModel.init(m_rhi.get(), m_rp.get(), vs2, fs2, m_initialUpdateBatch,m_shadowMapTexture,m_shadowMapSampler,set);
-    cubeModel.transform.position = QVector3D(6, 0.5, 0);
+    cubeModel.transform.position = QVector3D(6, 1.0, 0);
     cubeModel.transform.scale = QVector3D(2, 2, 2);
 
     lightSphere.addVertAndInd(sphereVertices, sphereIndices);
@@ -324,7 +329,7 @@ void HelloWindow::customInit()
 
     sphereModel.addVertAndInd(sphereVertices, sphereIndices);
     sphereModel.init(m_rhi.get(),m_rp.get(), vs1, fs1, m_initialUpdateBatch,m_shadowMapTexture,m_shadowMapSampler,set);
-    sphereModel.transform.position = QVector3D(2.0f,1.0f, -6.0f);
+    sphereModel.transform.position = QVector3D(2.0f,2.0f, -6.0f);
     sphereModel.transform.scale = QVector3D(3.0f,3.0f, 3.0f);
 
     sphereModel1.addVertAndInd(sphereVertices, sphereIndices);
@@ -407,6 +412,17 @@ void HelloWindow::customRender()
     lightProjection.ortho(-orthoSize, orthoSize, -orthoSize, orthoSize, nearPlane, farPlane);
     lightView.lookAt(lightPosition, center, QVector3D(0,1,0));
     lightSpaceMatrix = lightProjection * lightView;
+
+    QRhi::Implementation backend = m_rhi->backend();
+    if (backend == QRhi::D3D11 || backend == QRhi::D3D12) {
+        // D3D má Z v NDC 0..1 místo -1..1
+        QMatrix4x4 d3dCorrection;
+        d3dCorrection.setToIdentity();
+        d3dCorrection(2,2) = 0.5f;  // scale Z
+        d3dCorrection(3,2) = 0.5f;  // bias Z
+
+        lightSpaceMatrix= d3dCorrection * lightSpaceMatrix;
+    }
 
     // QVector<Model*> sceneObjects = { &floor, &m_cube1, &m_cube2 };
     // QVector3D sceneExtents;
@@ -650,18 +666,37 @@ void HelloWindow::initShadowMapResources(QRhi *rhi) {
     default:               qDebug() << "Null / Unknown"; break;
     }
 
-    Q_ASSERT(m_shadowMapRenderPassDesc); // sanity
+    //Q_ASSERT(m_shadowMapRenderPassDesc); // sanity
     m_shadowPipeline->setRenderPassDescriptor(m_shadowMapRenderPassDesc);
    // m_shadowPipeline->setTopology(QRhiGraphicsPipeline::Triangles);
     m_shadowPipeline->setDepthTest(true);
     m_shadowPipeline->setDepthWrite(true);
-    m_shadowPipeline->setDepthBias(2);             // zkus 1..4,
-    m_shadowPipeline->setSlopeScaledDepthBias(1.1f);
+
+    switch (impl) {
+    case QRhi::Vulkan:
+    case QRhi::OpenGLES2:
+        m_shadowPipeline->setDepthBias(5);
+        m_shadowPipeline->setSlopeScaledDepthBias(1.1f);
+        break;
+
+    case QRhi::D3D11:
+    case QRhi::D3D12:
+        m_shadowPipeline->setDepthBias(1500);   // D3D constant bias výrazně větší
+        m_shadowPipeline->setSlopeScaledDepthBias(1.0f);
+        break;
+
+    case QRhi::Metal:
+        m_shadowPipeline->setDepthBias(5);
+        m_shadowPipeline->setSlopeScaledDepthBias(1.0f);
+        break;
+
+    default:
+        break;
+    }
     m_shadowPipeline->setDepthOp(QRhiGraphicsPipeline::LessOrEqual);
+    m_shadowPipeline->setCullMode(QRhiGraphicsPipeline::None);
 
     m_shadowPipeline->create();
-
-
     //=======================================================================================
 
     updateFullscreenTexture(m_sc->surfacePixelSize(), m_initialUpdateBatch);

@@ -30,26 +30,28 @@ layout(std140, binding = 0) uniform Ubo {
 
 
 // --- Shadow map helper ---
-float shadowCalculation(vec3 normal, vec3 fragPos)
+float shadowCalculationVulkan(vec3 normal, vec3 fragPos)
 {
+    // Transformace fragmentu do light-space
     vec4 fragPosLightSpace = ubo.lightSpace * vec4(fragPos, 1.0);
 
-    // perspektivní dělení
+    // Perspektivní dělení
     vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
-    // remap [-1,1] -> [0,1]
+
+    // Remap Z [-1,1] -> [0,1] pro Vulkan
     projCoords = projCoords * 0.5 + 0.5;
 
-    // mimo shadow mapu → osvětlený fragment
+    // Pokud fragment je mimo shadow mapu, je osvětlen
     if (projCoords.x < 0.0 || projCoords.x > 1.0 ||
         projCoords.y < 0.0 || projCoords.y > 1.0 ||
-        projCoords.z > 1.0)
+        projCoords.z < 0.0 || projCoords.z > 1.0)
     {
         return 1.0;
     }
 
     float currentDepth = projCoords.z;
 
-    // bias proti acne
+    // Bias proti acne
     float bias = max(0.001 * (1.0 - dot(normalize(normal), normalize(ubo.lightPos.xyz - fragPos))),
                      0.001);
 
@@ -66,8 +68,6 @@ float shadowCalculation(vec3 normal, vec3 fragPos)
 
     return shadow;
 }
-
-
 void main()
 {
     // --- TBN matice ---
@@ -76,21 +76,23 @@ void main()
     vec3 N = normalize(frag_normal);
     mat3 TBN = mat3(T, B, N);
 
+    // --- normála v world space ---
+    vec3 N_world = normalize(TBN * (texture(tex_normal, frag_uv).xyz * 2.0 - 1.0));
+
+    // --- stíny ---
+    float shadowFactor = shadowCalculationVulkan(N_world, frag_pos);
+
     // --- směry ---
     vec3 V = normalize(ubo.camPos.xyz - frag_pos);
     vec3 L = normalize(ubo.lightPos.xyz - frag_pos);
+    vec3 H = normalize(V + L);
 
     // --- textury ---
-    vec3 albedo    = texture(tex_albedo, frag_uv).rgb;
+    vec3 albedo = texture(tex_albedo, frag_uv).rgb;
     float metallic = texture(tex_metallic, frag_uv).r;
-    float roughness= texture(tex_roughness, frag_uv).r;
-    float ao       = texture(tex_ao, frag_uv).r;
+    float roughness = texture(tex_roughness, frag_uv).r;
+    float ao = texture(tex_ao, frag_uv).r;
 
-    vec3 tangentNormal = texture(tex_normal, frag_uv).xyz * 2.0 - 1.0;
-    vec3 N_world = normalize(TBN * tangentNormal);
-
-    // --- PBR ---
-    vec3 H = normalize(V + L);
     vec3 F0 = mix(vec3(0.04), albedo, metallic);
     vec3 F = F0 + (1.0 - F0) * pow(1.0 - max(dot(H, V), 0.0), 5.0);
 
@@ -102,12 +104,8 @@ void main()
 
     vec3 diffuse  = kD * albedo / 3.141592;
     vec3 specular = kS;
-
     vec3 Lo = (diffuse + specular) * radiance * NdotL;
     vec3 ambient = albedo * ao * 0.1;
-
-    // --- Stíny ---
-    float shadowFactor = shadowCalculation(N_world, frag_pos);
 
     vec3 color = ambient + shadowFactor * Lo;
 
@@ -116,4 +114,3 @@ void main()
 
     out_color = vec4(color, 1.0);
 }
-

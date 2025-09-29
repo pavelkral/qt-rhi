@@ -4,17 +4,7 @@
 #include <QMatrix4x4>
 #include <QVector4D>
 
-struct Ubo {
-    QMatrix4x4 model;
-    QMatrix4x4 view;
-    QMatrix4x4 projection;
-    QMatrix4x4 lightSpace;
-    QVector4D lightPos;
-    QVector4D lightColor;
-    QVector4D camPos;
-    QVector4D opacity;
-    QVector4D misc;
-};
+
 
 struct Vertex {
     QVector3D pos;
@@ -32,6 +22,18 @@ struct TextureSet {
     QString rougness;
     QString height;
     QString ao;
+};
+
+struct Ubo {
+    QMatrix4x4 model;
+    QMatrix4x4 view;
+    QMatrix4x4 projection;
+    QMatrix4x4 lightSpace;
+    QVector4D lightPos;
+    QVector4D lightColor;
+    QVector4D camPos;
+    QVector4D opacity;
+    QVector4D misc;
 };
 
 struct alignas(16) GpuUbo {
