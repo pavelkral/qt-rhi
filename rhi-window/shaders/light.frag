@@ -11,6 +11,7 @@ layout(binding = 3) uniform sampler2D tex_metallic;
 layout(binding = 4) uniform sampler2D tex_roughness;
 layout(binding = 5) uniform sampler2D tex_ao;
 layout(binding = 6) uniform sampler2D tex_height;
+layout(binding = 7) uniform sampler2D tex_shadows;
 
 layout(location = 0) out vec4 out_color;
 
@@ -36,7 +37,7 @@ void main() {
 
     // Ambient
    // vec3 ambient = 0.3 * ubo.color.rgb;
-    vec3 ambient = ambientStrength * ubo.color.rgb * texture(tex_albedo, repeatedUV).rgb;
+    vec3 ambient = ambientStrength * ubo.color.rgb * texture(tex_shadows, repeatedUV).rgb;
     // Diffuse
     float diff = max(dot(norm, lightDir), 0.0);
     vec3 diffuse = diff * ubo.color.rgb;
@@ -47,7 +48,7 @@ void main() {
     float spec = pow(max(dot(viewDir, reflectDir), 0.0), 32.0);
     vec3 specular = 0.3 * spec * vec3(1.0);
 
-    vec4 texColor = texture(tex_albedo,repeatedUV);
+    vec4 texColor = texture(tex_shadows,repeatedUV);
     vec3 lighting = (ambient + diffuse + specular) * texColor.rgb;
     float alpha = texColor.a ;
 

@@ -318,7 +318,7 @@ void HelloWindow::customInit()
     generatePlane(3.0f, 3.0f, 10, 10, 1.0f, 1.0f, planeVertices, planeIndices);
 
     cubeModel.addVertAndInd(cVertices, cIndices);
-    cubeModel.init(m_rhi.get(), m_rp.get(), vs2, fs2, m_initialUpdateBatch,m_shadowMapTexture,m_shadowMapSampler,set);
+    cubeModel.init(m_rhi.get(), m_rp.get(), vs1, fs1, m_initialUpdateBatch,m_shadowMapTexture,m_shadowMapSampler,set);
     cubeModel.transform.position = QVector3D(6, 1.0, 0);
     cubeModel.transform.scale = QVector3D(2, 2, 2);
 
@@ -424,6 +424,7 @@ void HelloWindow::customRender()
         d3dCorrection(1,1) = -1.0f;
         zFix(2,2) = 0.5f;
         zFix(2,3) = 0.5f;
+        d3dCorrection(1,1) *= -1.0f;
 
         d3dCorrection = zFix * d3dCorrection;
 
@@ -439,6 +440,7 @@ void HelloWindow::customRender()
         lightProjection(1,3) = 0.0f;            // symetrické ortho → posun Y = 0
         lightProjection(2,3) = -nearPlane / fn;
         lightSpaceMatrix= d3dCorrection * lightProjection * lightView;
+      //  lightSpaceMatrix = QRhi::clipSpaceCorrMatrix() * lightSpaceMatrix;
     }
     else{
          lightProjection.ortho(-orthoSize, orthoSize, -orthoSize, orthoSize, nearPlane, farPlane);
