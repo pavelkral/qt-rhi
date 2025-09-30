@@ -199,6 +199,81 @@ void generateCube(float size, QVector<float>& vertices, QVector<quint16>& indice
         indexOffset += 4;
     }
 }
+void generateLightFrustum(float orthoSize,float nearPlane,float farPlane,QVector<float> &vertices,
+                                       QVector<quint16> &indices)
+{
+    vertices.clear();
+    indices.clear();
+    QVector<QVector3D> corners = {
+        {-orthoSize, -orthoSize, -nearPlane}, // 0
+        { orthoSize, -orthoSize, -nearPlane}, // 1
+        { orthoSize,  orthoSize, -nearPlane}, // 2
+        {-orthoSize,  orthoSize, -nearPlane}, // 3
+        {-orthoSize, -orthoSize, -farPlane},  // 4
+        { orthoSize, -orthoSize, -farPlane},  // 5
+        { orthoSize,  orthoSize, -farPlane},  // 6
+        {-orthoSize,  orthoSize, -farPlane}   // 7
+    };
+    QVector<QVector3D> normals = {
+        {0, 0, -1}, // near
+        {0, 0,  1}, // far
+        {-1, 0, 0}, // left
+        { 1, 0, 0}, // right
+        {0,  1, 0}, // top
+        {0, -1, 0}  // bottom
+    };
+    // UV placeholder (0..1)
+    auto addVertex = [&](const QVector3D &pos, const QVector3D &normal, const QVector2D &uv) {
+        vertices.append(pos.x());
+        vertices.append(pos.y());
+        vertices.append(pos.z());
+        vertices.append(normal.x());
+        vertices.append(normal.y());
+        vertices.append(normal.z());
+        vertices.append(uv.x());
+        vertices.append(uv.y());
+    };
+    // Near
+    addVertex(corners[0], normals[0], {0,0});
+    addVertex(corners[1], normals[0], {1,0});
+    addVertex(corners[2], normals[0], {1,1});
+    addVertex(corners[3], normals[0], {0,1});
+    // Far
+    addVertex(corners[5], normals[1], {0,0});
+    addVertex(corners[4], normals[1], {1,0});
+    addVertex(corners[7], normals[1], {1,1});
+    addVertex(corners[6], normals[1], {0,1});
+    // Left
+    addVertex(corners[4], normals[2], {0,0});
+    addVertex(corners[0], normals[2], {1,0});
+    addVertex(corners[3], normals[2], {1,1});
+    addVertex(corners[7], normals[2], {0,1});
+    // Right
+    addVertex(corners[1], normals[3], {0,0});
+    addVertex(corners[5], normals[3], {1,0});
+    addVertex(corners[6], normals[3], {1,1});
+    addVertex(corners[2], normals[3], {0,1});
+    // Top
+    addVertex(corners[3], normals[4], {0,0});
+    addVertex(corners[2], normals[4], {1,0});
+    addVertex(corners[6], normals[4], {1,1});
+    addVertex(corners[7], normals[4], {0,1});
+    // Bottom
+    addVertex(corners[4], normals[5], {0,0});
+    addVertex(corners[5], normals[5], {1,0});
+    addVertex(corners[1], normals[5], {1,1});
+    addVertex(corners[0], normals[5], {0,1});
+    // --- Index (6 faces * 2 triangles * 3 indices) ---
+    for (int f = 0; f < 6; ++f) {
+        quint16 base = f * 4;
+        indices.append(base + 0);
+        indices.append(base + 1);
+        indices.append(base + 2);
+        indices.append(base + 0);
+        indices.append(base + 2);
+        indices.append(base + 3);
+    }
+}
 
  QVector<float> planeVertices1 = {
      // pos               // normal         // uv

@@ -107,7 +107,7 @@ protected:
         u.uSmoothnessFactor = 0.5f;
         u.uHasAlbedo = u.uHasNormal = u.uHasMetallic = u.uHasSmoothness = 0;
 
-        m_model->draw(cb,u);
+      //  m_model->draw(cb,u);
 
         cb->endPass();
     }

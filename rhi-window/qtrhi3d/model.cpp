@@ -171,6 +171,10 @@ void Model::updateShadowUbo(Ubo ubo, QRhiResourceUpdateBatch *u) {
     memcpy(gpuUbo.view, ubo.view.constData(), 64);
     memcpy(gpuUbo.projection, ubo.projection.constData(), 64);
     memcpy(gpuUbo.lightSpace, ubo.lightSpace.constData(), 64);
+    gpuUbo.lightPos[0] = ubo.lightPos.x();
+    gpuUbo.lightPos[1] = ubo.lightPos.y();
+    gpuUbo.lightPos[2] = ubo.lightPos.z();
+    gpuUbo.lightPos[3] = 1.0f;
 
 
     u->updateDynamicBuffer(m_shadowUbo.get(), 0, sizeof(GpuUbo), &gpuUbo);

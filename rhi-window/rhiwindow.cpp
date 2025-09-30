@@ -308,7 +308,7 @@ void HelloWindow::customInit()
     generateCube(1.0f, cVertices, cIndices);
 
     cubeModel1.addVertAndInd(cVertices, cIndices);
-    cubeModel1.init(m_rhi.get(), m_rp.get(), vs1, fs1, m_initialUpdateBatch,m_shadowMapTexture,m_shadowMapSampler,set1);
+    cubeModel1.init(m_rhi.get(), m_rp.get(), vs2, fs2, m_initialUpdateBatch,m_shadowMapTexture,m_shadowMapSampler,set1);
     cubeModel1.transform.position = QVector3D(-6, 1.5, 0);
     cubeModel1.transform.scale = QVector3D(2, 2, 2);
 
@@ -317,7 +317,7 @@ void HelloWindow::customInit()
 
     generatePlane(3.0f, 3.0f, 10, 10, 1.0f, 1.0f, planeVertices, planeIndices);
 
-    cubeModel.addVertAndInd(planeVertices, planeIndices);
+    cubeModel.addVertAndInd(cVertices, cIndices);
     cubeModel.init(m_rhi.get(), m_rp.get(), vs2, fs2, m_initialUpdateBatch,m_shadowMapTexture,m_shadowMapSampler,set);
     cubeModel.transform.position = QVector3D(6, 1.0, 0);
     cubeModel.transform.scale = QVector3D(2, 2, 2);
@@ -328,7 +328,7 @@ void HelloWindow::customInit()
     lightSphere.transform.scale = QVector3D(0.2f,0.2f, 0.2f);
 
     sphereModel.addVertAndInd(sphereVertices, sphereIndices);
-    sphereModel.init(m_rhi.get(),m_rp.get(), vs1, fs1, m_initialUpdateBatch,m_shadowMapTexture,m_shadowMapSampler,set);
+    sphereModel.init(m_rhi.get(),m_rp.get(), vs2, fs2, m_initialUpdateBatch,m_shadowMapTexture,m_shadowMapSampler,set);
     sphereModel.transform.position = QVector3D(2.0f,2.0f, -6.0f);
     sphereModel.transform.scale = QVector3D(3.0f,3.0f, 3.0f);
 
@@ -376,11 +376,11 @@ void HelloWindow::customRender()
     QRhiCommandBuffer *cb = m_sc->currentFrameCommandBuffer();
     updateCamera(m_dt);
 
-    QMatrix4x4 projection = m_projection;
+   // QMatrix4x4 projection = m_projection;
     QVector3D camPos = mainCamera.Position;
     float objectOpacity = 1.0f;
-    float radius = 5.0f;
-    float height = 5.0f;
+    float radius = 10.0f;
+    float height = 10.0f;
     QVector3D center(0.0f, 0.0f, 0.0f);
 
      // lightPos = QVector3D(0.0f,4.4f, 0.0f);
@@ -405,23 +405,44 @@ void HelloWindow::customRender()
     QMatrix4x4 lightView;
     QMatrix4x4 lightSpaceMatrix;
     QMatrix4x4 lightProjection;
-    float nearPlane = -30.1f;
-    float farPlane = 30.0f;
-    float orthoSize = 30.0f;
+    float nearPlane = 0.1f;
+    float farPlane = 60.0f;
+    float orthoSize = 40.0f;
 
-    lightProjection.ortho(-orthoSize, orthoSize, -orthoSize, orthoSize, nearPlane, farPlane);
     lightView.lookAt(lightPosition, center, QVector3D(0,1,0));
-    lightSpaceMatrix = lightProjection * lightView;
+
+    QMatrix4x4 d3dCorrection;
+    d3dCorrection.setToIdentity();
+    QMatrix4x4 zFix;
+    zFix.setToIdentity();
 
     QRhi::Implementation backend = m_rhi->backend();
-    if (backend == QRhi::D3D11 || backend == QRhi::D3D12) {
+    if (backend == QRhi::D3D11 || backend == QRhi::D3D12  || backend == QRhi::Vulkan ) {
         // D3D má Z v NDC 0..1 místo -1..1
-        QMatrix4x4 d3dCorrection;
-        d3dCorrection.setToIdentity();
-        d3dCorrection(2,2) = 0.5f;  // scale Z
-        d3dCorrection(3,2) = 0.5f;  // bias Z
+        //d3dCorrection(2,2) = 0.5f;  // scale Z
+        //d3dCorrection(3,2) = 0.5f;  // bias Z
+        d3dCorrection(1,1) = -1.0f;
+        zFix(2,2) = 0.5f;
+        zFix(2,3) = 0.5f;
 
-        lightSpaceMatrix= d3dCorrection * lightSpaceMatrix;
+        d3dCorrection = zFix * d3dCorrection;
+
+        float rl = orthoSize * 2.0f;
+        float tb = orthoSize * 2.0f;
+        float fn = farPlane - nearPlane;
+
+        lightProjection.setToIdentity();
+        lightProjection(0,0) = 2.0f / rl;
+        lightProjection(1,1) = 2.0f / tb;
+        lightProjection(2,2) = 1.0f / fn;       // Z 0..1
+        lightProjection(0,3) = 0.0f;            // symetrické ortho → posun X = 0
+        lightProjection(1,3) = 0.0f;            // symetrické ortho → posun Y = 0
+        lightProjection(2,3) = -nearPlane / fn;
+        lightSpaceMatrix= d3dCorrection * lightProjection * lightView;
+    }
+    else{
+         lightProjection.ortho(-orthoSize, orthoSize, -orthoSize, orthoSize, nearPlane, farPlane);
+         lightSpaceMatrix= lightProjection * lightView;
     }
 
     // QVector<Model*> sceneObjects = { &floor, &m_cube1, &m_cube2 };
@@ -442,7 +463,7 @@ void HelloWindow::customRender()
     Ubo ubo;
     //ubo.model       = transform.getModelMatrix();
     ubo.view        = view;
-    ubo.projection  = projection;
+    ubo.projection  = m_projection;
     ubo.lightSpace  = lightSpaceMatrix;
     ubo.lightPos    = QVector4D(lightPosition, 1.0f);
     ubo.lightColor  = QVector4D(lightColor, 1.0f);
@@ -479,8 +500,14 @@ void HelloWindow::customRender()
     cb->setViewport(QRhiViewport(0, 0, SHADOW_MAP_SIZE.width(), SHADOW_MAP_SIZE.height()));
 
         for (auto m : std::as_const(models)) {
-            m->DrawForShadow(cb,m_shadowPipeline,ubo,shadowUpdateBatch);
+          //  m->DrawForShadow(cb,m_shadowPipeline,ubo,shadowUpdateBatch);
         }
+       //floor.DrawForShadow(cb,m_shadowPipeline,ubo,shadowUpdateBatch);
+
+        cubeModel.DrawForShadow(cb,m_shadowPipeline,ubo,shadowUpdateBatch);
+        cubeModel1.DrawForShadow(cb,m_shadowPipeline,ubo,shadowUpdateBatch);
+        sphereModel1.DrawForShadow(cb,m_shadowPipeline,ubo,shadowUpdateBatch);
+        sphereModel.DrawForShadow(cb,m_shadowPipeline,ubo,shadowUpdateBatch);
 
     cb->endPass();
 
@@ -644,21 +671,21 @@ void HelloWindow::initShadowMapResources(QRhi *rhi) {
     case QRhi::Vulkan:
         qDebug() << "Vulkan";
         // m_shadowPipeline->setCullMode(QRhiGraphicsPipeline::Front);
-        m_shadowPipeline->setCullMode(QRhiGraphicsPipeline::Back);
+        m_shadowPipeline->setCullMode(QRhiGraphicsPipeline::None);
         break;
     case QRhi::OpenGLES2:
         qDebug() << "OpenGL / OpenGLES";
         // m_shadowPipeline->setCullMode(QRhiGraphicsPipeline::Front);
-        m_shadowPipeline->setCullMode(QRhiGraphicsPipeline::Back);
+        m_shadowPipeline->setCullMode(QRhiGraphicsPipeline::None);
         break;
     case QRhi::D3D11:
         qDebug() << "Direct3D11";
-         m_shadowPipeline->setCullMode(QRhiGraphicsPipeline::Front);
+         m_shadowPipeline->setCullMode(QRhiGraphicsPipeline::None);
         //m_shadowPipeline->setCullMode(QRhiGraphicsPipeline::Back);
         break;
     case QRhi::D3D12:
         qDebug() << "Direct3D12";
-         m_shadowPipeline->setCullMode(QRhiGraphicsPipeline::Front);
+         m_shadowPipeline->setCullMode(QRhiGraphicsPipeline::None);
        // m_shadowPipeline->setCullMode(QRhiGraphicsPipeline::Back);
         break;
     case QRhi::Metal:      qDebug() << "Metal";
@@ -668,7 +695,7 @@ void HelloWindow::initShadowMapResources(QRhi *rhi) {
 
     //Q_ASSERT(m_shadowMapRenderPassDesc); // sanity
     m_shadowPipeline->setRenderPassDescriptor(m_shadowMapRenderPassDesc);
-   // m_shadowPipeline->setTopology(QRhiGraphicsPipeline::Triangles);
+    m_shadowPipeline->setTopology(QRhiGraphicsPipeline::Triangles);
     m_shadowPipeline->setDepthTest(true);
     m_shadowPipeline->setDepthWrite(true);
 
@@ -681,7 +708,7 @@ void HelloWindow::initShadowMapResources(QRhi *rhi) {
 
     case QRhi::D3D11:
     case QRhi::D3D12:
-        m_shadowPipeline->setDepthBias(1500);   // D3D constant bias výrazně větší
+        m_shadowPipeline->setDepthBias(1000);   // D3D constant bias
         m_shadowPipeline->setSlopeScaledDepthBias(1.0f);
         break;
 
@@ -694,7 +721,7 @@ void HelloWindow::initShadowMapResources(QRhi *rhi) {
         break;
     }
     m_shadowPipeline->setDepthOp(QRhiGraphicsPipeline::LessOrEqual);
-    m_shadowPipeline->setCullMode(QRhiGraphicsPipeline::None);
+  //  m_shadowPipeline->setCullMode(QRhiGraphicsPipeline::None);
 
     m_shadowPipeline->create();
     //=======================================================================================
@@ -806,78 +833,3 @@ QVector3D HelloWindow::computeSceneCenterAndExtents(const QVector<Model*> &objec
 }
 
 //=========================================================================================================
-void HelloWindow::generateLightFrustum(float orthoSize,float nearPlane,float farPlane,QVector<float> &vertices,
-                                       QVector<quint16> &indices)
-{
-    vertices.clear();
-    indices.clear();
-    QVector<QVector3D> corners = {
-        {-orthoSize, -orthoSize, -nearPlane}, // 0
-        { orthoSize, -orthoSize, -nearPlane}, // 1
-        { orthoSize,  orthoSize, -nearPlane}, // 2
-        {-orthoSize,  orthoSize, -nearPlane}, // 3
-        {-orthoSize, -orthoSize, -farPlane},  // 4
-        { orthoSize, -orthoSize, -farPlane},  // 5
-        { orthoSize,  orthoSize, -farPlane},  // 6
-        {-orthoSize,  orthoSize, -farPlane}   // 7
-    };
-    QVector<QVector3D> normals = {
-        {0, 0, -1}, // near
-        {0, 0,  1}, // far
-        {-1, 0, 0}, // left
-        { 1, 0, 0}, // right
-        {0,  1, 0}, // top
-        {0, -1, 0}  // bottom
-    };
-    // UV placeholder (0..1)
-    auto addVertex = [&](const QVector3D &pos, const QVector3D &normal, const QVector2D &uv) {
-        vertices.append(pos.x());
-        vertices.append(pos.y());
-        vertices.append(pos.z());
-        vertices.append(normal.x());
-        vertices.append(normal.y());
-        vertices.append(normal.z());
-        vertices.append(uv.x());
-        vertices.append(uv.y());
-    };
-    // Near
-    addVertex(corners[0], normals[0], {0,0});
-    addVertex(corners[1], normals[0], {1,0});
-    addVertex(corners[2], normals[0], {1,1});
-    addVertex(corners[3], normals[0], {0,1});
-    // Far
-    addVertex(corners[5], normals[1], {0,0});
-    addVertex(corners[4], normals[1], {1,0});
-    addVertex(corners[7], normals[1], {1,1});
-    addVertex(corners[6], normals[1], {0,1});
-    // Left
-    addVertex(corners[4], normals[2], {0,0});
-    addVertex(corners[0], normals[2], {1,0});
-    addVertex(corners[3], normals[2], {1,1});
-    addVertex(corners[7], normals[2], {0,1});
-    // Right
-    addVertex(corners[1], normals[3], {0,0});
-    addVertex(corners[5], normals[3], {1,0});
-    addVertex(corners[6], normals[3], {1,1});
-    addVertex(corners[2], normals[3], {0,1});
-    // Top
-    addVertex(corners[3], normals[4], {0,0});
-    addVertex(corners[2], normals[4], {1,0});
-    addVertex(corners[6], normals[4], {1,1});
-    addVertex(corners[7], normals[4], {0,1});
-    // Bottom
-    addVertex(corners[4], normals[5], {0,0});
-    addVertex(corners[5], normals[5], {1,0});
-    addVertex(corners[1], normals[5], {1,1});
-    addVertex(corners[0], normals[5], {0,1});
-    // --- Index (6 faces * 2 triangles * 3 indices) ---
-    for (int f = 0; f < 6; ++f) {
-        quint16 base = f * 4;
-        indices.append(base + 0);
-        indices.append(base + 1);
-        indices.append(base + 2);
-        indices.append(base + 0);
-        indices.append(base + 2);
-        indices.append(base + 3);
-    }
-}

@@ -6,6 +6,7 @@
 #include <QFile>
 #include <QPainter>
 
+#include <QQuaternion>
 static const QSize CUBE_TEX_SIZE(512, 512);
 
 ExampleRhiWidget::ExampleRhiWidget(QWidget *parent)

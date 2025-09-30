@@ -9,6 +9,7 @@
 
 #include <QWindow>
 #include <QOffscreenSurface>
+#include <QElapsedTimer>
 #include <rhi/qrhi.h>
 
 class RhiWindow : public QWindow
@@ -68,36 +69,37 @@ protected:
     void mouseMoveEvent(QMouseEvent *e) override;
 private:
     void updateCamera(float dt);
-    void generateLightFrustum(float orthoSize, float nearPlane, float farPlane,
-                                           QVector<float> &vertices, QVector<quint16> &indices);
     QVector3D computeSceneCenterAndExtents(const QVector<Model*> &objects, QVector3D &extents);
     void updateFullscreenTexture(const QSize &pixelSize, QRhiResourceUpdateBatch *u);
 
     QSet<int> m_pressedKeys;
     QPointF m_lastMousePos;
     QElapsedTimer m_timer;
+
     float m_dt = 0;
+    const QSize SHADOW_MAP_SIZE = QSize(2048, 2048);
     QRhiResourceUpdateBatch *m_initialUpdateBatch = nullptr;
 
-    const QSize SHADOW_MAP_SIZE = QSize(2048, 2048);
     QRhiTexture *m_shadowMapTexture = nullptr;
     QRhiSampler *m_shadowMapSampler = nullptr;
     QRhiTextureRenderTarget *m_shadowMapRenderTarget = nullptr;
     QRhiRenderPassDescriptor * m_shadowMapRenderPassDesc = nullptr;
+
+    QRhiBuffer* m_shadowUbo = nullptr;
+    QRhiShaderResourceBindings *m_shadowSRB = nullptr;
+    QRhiGraphicsPipeline *m_shadowPipeline = nullptr;
 
     std::unique_ptr<QRhiShaderResourceBindings> m_fullscreenQuadSrb;
     std::unique_ptr<QRhiGraphicsPipeline> m_fullscreenQuadPipeline;
     std::unique_ptr<QRhiTexture> m_fullscreenTexture;
     std::unique_ptr<QRhiSampler> m_fullScreenSampler;
 
-    QRhiBuffer* m_shadowUbo = nullptr;
-    QRhiShaderResourceBindings *m_shadowSRB = nullptr;
-    QRhiGraphicsPipeline *m_shadowPipeline = nullptr;
-
     QVector3D lightPosition;
     float m_rotation = 0;
     float m_opacity = 1;
     int m_opacityDir = -1;
+
+    Camera mainCamera;
 
     Model cubeModel1;
     Model cubeModel;
@@ -105,8 +107,8 @@ private:
     Model sphereModel1;
     Model lightSphere;
     Model floor;
-    Camera mainCamera;
-    Model frustumModel;
+
+  //  Model frustumModel;
 
     QVector<Model*> models;
 };

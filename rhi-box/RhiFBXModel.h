@@ -264,14 +264,23 @@ private:
             aiMesh* aMesh = scene->mMeshes[node->mMeshes[i]];
             RhiMesh mesh;
             mesh.cpuVertices.reserve(aMesh->mNumVertices * 14);
-
+            std::cout << ">>> Processing mesh: " << i
+                      << " (vertices=" << aMesh->mNumVertices
+                      << ", faces=" << aMesh->mNumFaces << ")\n";
             for (unsigned v = 0; v < aMesh->mNumVertices; ++v) {
                 aiVector3D p = aMesh->mVertices[v];
                 aiVector3D n = aMesh->mNormals ? aMesh->mNormals[v] : aiVector3D(0,1,0);
                 aiVector3D t = aMesh->mTangents ? aMesh->mTangents[v] : aiVector3D(1,0,0);
                 aiVector3D b = aMesh->mBitangents ? aMesh->mBitangents[v] : aiVector3D(0,0,1);
                 aiVector3D uv = aMesh->mTextureCoords[0] ? aMesh->mTextureCoords[0][v] : aiVector3D(0,0,0);
-
+                if (v < 3) {
+                    std::cout << "  v" << v
+                              << " pos=(" << p.x << "," << p.y << "," << p.z << ")"
+                              << " n=(" << n.x << "," << n.y << "," << n.z << ")"
+                              << " uv=(" << uv.x << "," << uv.y << ")"
+                              << " t=(" << t.x << "," << t.y << "," << t.z << ")"
+                              << " b=(" << b.x << "," << b.y << "," << b.z << ")\n";
+                }
                 // pos (3), normal (3), uv (2), tangent (3), bitangent (3)
                 mesh.cpuVertices.push_back(p.x); mesh.cpuVertices.push_back(p.y); mesh.cpuVertices.push_back(p.z);
                 mesh.cpuVertices.push_back(n.x); mesh.cpuVertices.push_back(n.y); mesh.cpuVertices.push_back(n.z);
