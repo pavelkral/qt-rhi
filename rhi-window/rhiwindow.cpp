@@ -289,10 +289,39 @@ void HelloWindow::customInit()
     QShader fs = getShader(":/texture.frag.qsb");
     QShader vs1 = getShader(":/light.vert.qsb");
     QShader fs1 = getShader(":/light.frag.qsb");
-    QShader vs2 = getShader(":/pbr.vert.qsb");
-    QShader fs2 = getShader(":/pbr.frag.qsb");
+    QShader vs2 ;
+    QShader fs2 ;
     QShader vsWire = getShader(":/mcolor.vert.qsb");
     QShader fsWire = getShader(":/mcolor.frag.qsb");
+
+    QRhi::Implementation impl = m_rhi->backend();   //  enum QRhi::Implementation
+
+    switch (m_rhi->backend()) {
+    case QRhi::Vulkan:
+        qDebug() << "Vulkan";
+        vs2 = getShader(":/shaders/prebuild/pbrvk.vert.qsb");
+        fs2 = getShader(":/shaders/prebuild/pbrvk.frag.qsb");
+        break;
+    case QRhi::OpenGLES2:
+        qDebug() << "OpenGL / OpenGLES";
+         vs2 = getShader(":/pbr.vert.qsb");
+         fs2 = getShader(":/pbr.frag.qsb");
+        break;
+    case QRhi::D3D11:
+        qDebug() << "Direct3D11";
+        vs2 = getShader(":/shaders/prebuild/pbrd3d.vert.qsb");
+        fs2 = getShader(":/shaders/prebuild/pbrd3d.frag.qsb");
+        break;
+    case QRhi::D3D12:
+        qDebug() << "Direct3D12";
+        vs2 = getShader(":/shaders/prebuild/pbrd3d.vert.qsb");
+        fs2 = getShader(":/shaders/prebuild/pbrd3d.frag.qsb");
+        break;
+    case QRhi::Metal:      qDebug() << "Metal";
+        break;
+    default:               qDebug() << "Null / Unknown"; break;
+    }
+
 
     QVector<float> sphereVertices;
     QVector<quint16> sphereIndices;
@@ -411,36 +440,12 @@ void HelloWindow::customRender()
 
     lightView.lookAt(lightPosition, center, QVector3D(0,1,0));
 
-    QMatrix4x4 d3dCorrection;
-    d3dCorrection.setToIdentity();
-    QMatrix4x4 zFix;
-    zFix.setToIdentity();
-
     QRhi::Implementation backend = m_rhi->backend();
     if (backend == QRhi::D3D11 || backend == QRhi::D3D12  || backend == QRhi::Vulkan ) {
-        // D3D má Z v NDC 0..1 místo -1..1
-        //d3dCorrection(2,2) = 0.5f;  // scale Z
-        //d3dCorrection(3,2) = 0.5f;  // bias Z
-        d3dCorrection(1,1) = -1.0f;
-        zFix(2,2) = 0.5f;
-        zFix(2,3) = 0.5f;
-        d3dCorrection(1,1) *= -1.0f;
 
-        d3dCorrection = zFix * d3dCorrection;
-
-        float rl = orthoSize * 2.0f;
-        float tb = orthoSize * 2.0f;
-        float fn = farPlane - nearPlane;
-
-        lightProjection.setToIdentity();
-        lightProjection(0,0) = 2.0f / rl;
-        lightProjection(1,1) = 2.0f / tb;
-        lightProjection(2,2) = 1.0f / fn;       // Z 0..1
-        lightProjection(0,3) = 0.0f;            // symetrické ortho → posun X = 0
-        lightProjection(1,3) = 0.0f;            // symetrické ortho → posun Y = 0
-        lightProjection(2,3) = -nearPlane / fn;
-        lightSpaceMatrix= d3dCorrection * lightProjection * lightView;
-      //  lightSpaceMatrix = QRhi::clipSpaceCorrMatrix() * lightSpaceMatrix;
+        lightProjection.ortho(-orthoSize, orthoSize, -orthoSize, orthoSize, nearPlane, farPlane);
+        lightSpaceMatrix= lightProjection * lightView;
+        lightSpaceMatrix = m_rhi->clipSpaceCorrMatrix() * lightSpaceMatrix;
     }
     else{
          lightProjection.ortho(-orthoSize, orthoSize, -orthoSize, orthoSize, nearPlane, farPlane);
@@ -504,7 +509,7 @@ void HelloWindow::customRender()
         for (auto m : std::as_const(models)) {
           //  m->DrawForShadow(cb,m_shadowPipeline,ubo,shadowUpdateBatch);
         }
-       //floor.DrawForShadow(cb,m_shadowPipeline,ubo,shadowUpdateBatch);
+       floor.DrawForShadow(cb,m_shadowPipeline,ubo,shadowUpdateBatch);
 
         cubeModel.DrawForShadow(cb,m_shadowPipeline,ubo,shadowUpdateBatch);
         cubeModel1.DrawForShadow(cb,m_shadowPipeline,ubo,shadowUpdateBatch);
@@ -710,7 +715,7 @@ void HelloWindow::initShadowMapResources(QRhi *rhi) {
 
     case QRhi::D3D11:
     case QRhi::D3D12:
-        m_shadowPipeline->setDepthBias(1000);   // D3D constant bias
+        m_shadowPipeline->setDepthBias(5);   // D3D constant bias
         m_shadowPipeline->setSlopeScaledDepthBias(1.0f);
         break;
 
