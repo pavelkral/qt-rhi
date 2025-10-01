@@ -344,7 +344,7 @@ void HelloWindow::customInit()
     cubeModel1.transform.scale = QVector3D(2, 2, 2);
 
     cubeModel.addVertAndInd(planeVertices, planeIndices);
-    cubeModel.init(m_rhi.get(), m_rp.get(), vs1, fs1, m_initialUpdateBatch,m_shadowMapTexture,m_shadowMapSampler,set);
+    cubeModel.init(m_rhi.get(), m_rp.get(), vs2, fs2, m_initialUpdateBatch,m_shadowMapTexture,m_shadowMapSampler,set1);
     cubeModel.transform.position = QVector3D(6, 1.0, 0);
     cubeModel.transform.scale = QVector3D(2, 2, 2);
 
@@ -416,12 +416,12 @@ void HelloWindow::customRender()
     // lightPos.setX(0.0f);
     //lightPos.setZ(0.0f);
     lightSphere.transform.position = lightPosition;
-    // QVector3D lightColor(1.0f, 0.98f, 0.95f);
-    QVector3D lightColor(
-        0.5f + 0.5f * sin(lightTime * 2.0f),
-        0.5f + 0.5f * sin(lightTime * 0.7f + 2.0f),
-        0.5f + 0.5f * sin(lightTime * 1.3f + 4.0f)
-        );
+     QVector3D lightColor(1.0f, 0.98f, 0.95f);
+    // QVector3D lightColor(
+    //     0.5f + 0.5f * sin(lightTime * 2.0f),
+    //     0.5f + 0.5f * sin(lightTime * 0.7f + 2.0f),
+    //     0.5f + 0.5f * sin(lightTime * 1.3f + 4.0f)
+    //     );
 
     sphereModel1.transform.rotation.setY( sphereModel1.transform.rotation.y() + 0.5f);
     cubeModel1.transform.rotation.setY(cubeModel1.transform.rotation.y() + 0.5f);
@@ -447,9 +447,11 @@ void HelloWindow::customRender()
          lightSpaceMatrix= lightProjection * lightView;
     }
 
+    QMatrix4x4 view = mainCamera.GetViewMatrix();
     float debug = 0.0F;
     float lightIntensity = 1.0f;
-    QMatrix4x4 view = mainCamera.GetViewMatrix();
+    float ambientStrange = 1.0f;
+    float backendId = 1.0f;
 
     Ubo ubo;
     ubo.view        = view;
@@ -459,7 +461,7 @@ void HelloWindow::customRender()
     ubo.lightColor  = QVector4D(lightColor, 1.0f);
     ubo.camPos      = QVector4D(camPos, 1.0f);
     ubo.opacity     = QVector4D(0.0f,0.0f,0.0f, m_opacity);
-    ubo.misc       = QVector4D(debug,lightIntensity,0.0f, 1.0f);
+    ubo.misc       = QVector4D(debug,lightIntensity,ambientStrange,backendId);
 
    // qDebug() << "lightprojection = " << lightProjection << "\n";
   //  qDebug() << "lightview = " << lightView << "\n";

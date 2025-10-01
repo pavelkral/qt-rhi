@@ -136,8 +136,8 @@ void Model::updateUbo(Ubo ubo,QRhiResourceUpdateBatch *u)
 
     gpuUbo.misc[0] = ubo.misc.x();
     gpuUbo.misc[1] = ubo.misc.y();
-    gpuUbo.misc[2] = 0.0f;
-    gpuUbo.misc[3] = 0.0f;
+    gpuUbo.misc[2] = ubo.misc.z();
+    gpuUbo.misc[3] = ubo.misc.w();
 
     u->updateDynamicBuffer(m_ubuf.get(), 0, sizeof(GpuUbo), &gpuUbo);
 

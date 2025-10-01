@@ -80,6 +80,8 @@ float shadowCalculationVulkan(vec3 normal, vec3 fragPos)
 
     // pro Vulkan/D3D: XY je v [-1,1], Z už v [0,1] → posunout jen XY
     projCoords.xy = projCoords.xy * 0.5 + 0.5;
+
+
     if (projCoords.z > 1.0) {
         return 0.0; // mimo světelný rozsah
     }
@@ -113,9 +115,20 @@ void main()
     vec3 N = normalize(frag_normal);
     mat3 TBN = mat3(T, B, N);
 
-    // --- normála v world space ---
-    vec3 N_world = normalize(TBN * (texture(tex_normal, frag_uv).xyz * 2.0 - 1.0));
 
+    vec3 N_local = texture(tex_normal, frag_uv).xyz * 2.0 - 1.0;
+    float normalStrength = 2.0; // Experimentální hodnota, 1.0 = původní síla
+
+
+    N_local.xy *= normalStrength;
+
+    // Nutná renormalizace po zesílení, protože Z složka má větší váhu
+    N_local = normalize(N_local);
+
+    vec3 N_world = normalize(TBN * N_local);
+    // --- normála v world space ---
+    //vec3 N_world = normalize(TBN * (texture(tex_normal, frag_uv).xyz * 2.0 - 1.0));
+    // Zesílení XY komponent (které určují detail)
     // --- stíny ---
     float shadowFactor = shadowCalculationVulkan(N_world, frag_pos);
 
@@ -127,7 +140,8 @@ void main()
     // --- textury ---
     vec3 albedo = texture(tex_albedo, frag_uv).rgb;
     float metallic = texture(tex_metallic, frag_uv).r;
-    float roughness = texture(tex_roughness, frag_uv).r;
+    //float roughness = texture(tex_roughness, frag_uv).r;
+    float roughness = max(texture(tex_roughness, frag_uv).r, 0.04);
     float ao = texture(tex_ao, frag_uv).r;
 
     // --- PBR výpočty ---
@@ -152,7 +166,6 @@ void main()
 
     // ZDE JE KLÍČOVÁ OPRAVA: (1.0 - shadowFactor)
     vec3 color = ambient + (1.0 - shadowFactor) * Lo;
-
     // gamma korekce
     color = pow(color, vec3(1.0/2.2));
 
