@@ -55,8 +55,6 @@ class HelloWindow : public RhiWindow
 {
 public:
 
-    float lightTime = 0.0f;
-
     HelloWindow(QRhi::Implementation graphicsApi);
     ~HelloWindow();
     void customInit() override;
@@ -69,7 +67,6 @@ protected:
     void mouseMoveEvent(QMouseEvent *e) override;
 private:
     void updateCamera(float dt);
-    QVector3D computeSceneCenterAndExtents(const QVector<Model*> &objects, QVector3D &extents);
     void updateFullscreenTexture(const QSize &pixelSize, QRhiResourceUpdateBatch *u);
 
     QSet<int> m_pressedKeys;
@@ -94,22 +91,20 @@ private:
     std::unique_ptr<QRhiTexture> m_fullscreenTexture;
     std::unique_ptr<QRhiSampler> m_fullScreenSampler;
 
+public:
+    float lightTime = 0.0f;
     QVector3D lightPosition;
     float m_rotation = 0;
     float m_opacity = 1;
     int m_opacityDir = -1;
 
     Camera mainCamera;
-
     Model cubeModel1;
     Model cubeModel;
     Model sphereModel;
     Model sphereModel1;
     Model lightSphere;
     Model floor;
-
-  //  Model frustumModel;
-
     QVector<Model*> models;
 };
 

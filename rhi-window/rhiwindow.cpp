@@ -284,17 +284,17 @@ void HelloWindow::customInit()
     set1.height = ":/assets/textures/panel/sci-fi-panel1-height.png";
     set1.ao = ":/assets/textures/panel/sci-fi-panel1-ao.png";
 
-
+    QShader vsWire = getShader(":/mcolor.vert.qsb");
+    QShader fsWire = getShader(":/mcolor.frag.qsb");
     QShader vs = getShader(":/texture.vert.qsb");
     QShader fs = getShader(":/texture.frag.qsb");
     QShader vs1 = getShader(":/light.vert.qsb");
     QShader fs1 = getShader(":/light.frag.qsb");
     QShader vs2 ;
     QShader fs2 ;
-    QShader vsWire = getShader(":/mcolor.vert.qsb");
-    QShader fsWire = getShader(":/mcolor.frag.qsb");
 
-    QRhi::Implementation impl = m_rhi->backend();   //  enum QRhi::Implementation
+
+  //  enum QRhi::Implementation
 
     switch (m_rhi->backend()) {
     case QRhi::Vulkan:
@@ -322,31 +322,28 @@ void HelloWindow::customInit()
     default:               qDebug() << "Null / Unknown"; break;
     }
 
-
     QVector<float> sphereVertices;
     QVector<quint16> sphereIndices;
     generateSphere(0.5f, 32, 64, sphereVertices, sphereIndices);
+    QVector<float> cVertices;
+    QVector<quint16> cIndices;
+    generateCube(1.0f, cVertices, cIndices);
+    QVector<float> planeVertices;
+    QVector<quint16> planeIndices;
+    generatePlane(3.0f, 3.0f, 10, 10, 1.0f, 1.0f, planeVertices, planeIndices);
 
     floor.addVertAndInd(indexedPlaneVertices ,indexedPlaneIndices );
     floor.init(m_rhi.get(), m_rp.get(), vs2, fs2, m_initialUpdateBatch,m_shadowMapTexture,m_shadowMapSampler,set);
     //floor.transform.position = QVector3D(0, -0.5f, 0);
     //floor.transform.scale = QVector3D(10, 10, 10);
     //floor.transform.rotation.setX( 270.0f);
-    QVector<float> cVertices;
-    QVector<quint16> cIndices;
-    generateCube(1.0f, cVertices, cIndices);
 
     cubeModel1.addVertAndInd(cVertices, cIndices);
     cubeModel1.init(m_rhi.get(), m_rp.get(), vs2, fs2, m_initialUpdateBatch,m_shadowMapTexture,m_shadowMapSampler,set1);
     cubeModel1.transform.position = QVector3D(-6, 1.5, 0);
     cubeModel1.transform.scale = QVector3D(2, 2, 2);
 
-    QVector<float> planeVertices;
-    QVector<quint16> planeIndices;
-
-    generatePlane(3.0f, 3.0f, 10, 10, 1.0f, 1.0f, planeVertices, planeIndices);
-
-    cubeModel.addVertAndInd(cVertices, cIndices);
+    cubeModel.addVertAndInd(planeVertices, planeIndices);
     cubeModel.init(m_rhi.get(), m_rp.get(), vs1, fs1, m_initialUpdateBatch,m_shadowMapTexture,m_shadowMapSampler,set);
     cubeModel.transform.position = QVector3D(6, 1.0, 0);
     cubeModel.transform.scale = QVector3D(2, 2, 2);
@@ -412,24 +409,22 @@ void HelloWindow::customRender()
     float height = 10.0f;
     QVector3D center(0.0f, 0.0f, 0.0f);
 
-     // lightPos = QVector3D(0.0f,4.4f, 0.0f);
+    // lightPos = QVector3D(0.0f,4.4f, 0.0f);
     lightPosition.setX(center.x() + radius * cos(lightTime));
     lightPosition.setZ(center.z() + radius * sin(lightTime));
     lightPosition.setY(height);
-   // lightPos.setX(0.0f);
-    //lightPos.setX(0.0f);
-
-    QVector3D lightColor(1.0f, 0.98f, 0.95f);
+    // lightPos.setX(0.0f);
+    //lightPos.setZ(0.0f);
     lightSphere.transform.position = lightPosition;
+    // QVector3D lightColor(1.0f, 0.98f, 0.95f);
+    QVector3D lightColor(
+        0.5f + 0.5f * sin(lightTime * 2.0f),
+        0.5f + 0.5f * sin(lightTime * 0.7f + 2.0f),
+        0.5f + 0.5f * sin(lightTime * 1.3f + 4.0f)
+        );
 
-    // QVector3D lightColor(
-    //     0.5f + 0.5f * sin(lightTime * 2.0f),
-    //     0.5f + 0.5f * sin(lightTime * 0.7f + 2.0f),
-    //     0.5f + 0.5f * sin(lightTime * 1.3f + 4.0f)
-    //     );
-
-     sphereModel1.transform.rotation.setY( sphereModel1.transform.rotation.y() + 0.5f);
-     cubeModel1.transform.rotation.setY(cubeModel1.transform.rotation.y() + 0.5f);
+    sphereModel1.transform.rotation.setY( sphereModel1.transform.rotation.y() + 0.5f);
+    cubeModel1.transform.rotation.setY(cubeModel1.transform.rotation.y() + 0.5f);
 
     QMatrix4x4 lightView;
     QMatrix4x4 lightSpaceMatrix;
@@ -452,23 +447,11 @@ void HelloWindow::customRender()
          lightSpaceMatrix= lightProjection * lightView;
     }
 
-    // QVector<Model*> sceneObjects = { &floor, &m_cube1, &m_cube2 };
-    // QVector3D sceneExtents;
-    // QVector3D sceneCenter = computeSceneCenterAndExtents(sceneObjects, sceneExtents);
-    // lightView.lookAt(lightPos, sceneCenter, QVector3D(0,1,0));
-    // float orthoX = sceneExtents.x() / 2.0f;
-    // float orthoZ = sceneExtents.z() / 2.0f;
-    // float nearPlane = 0.1f;
-    // float farPlane = sceneExtents.y() + 10.0f; // přidáme buffer
-    // lightProjection.setToIdentity();
-    // lightProjection.ortho(-orthoX, orthoX, -orthoZ, orthoZ, nearPlane, farPlane);
-    // lightSpaceMatrix = lightProjection * lightView;
-
     float debug = 0.0F;
     float lightIntensity = 1.0f;
     QMatrix4x4 view = mainCamera.GetViewMatrix();
+
     Ubo ubo;
-    //ubo.model       = transform.getModelMatrix();
     ubo.view        = view;
     ubo.projection  = m_projection;
     ubo.lightSpace  = lightSpaceMatrix;
@@ -506,15 +489,15 @@ void HelloWindow::customRender()
     cb->setGraphicsPipeline(m_shadowPipeline);
     cb->setViewport(QRhiViewport(0, 0, SHADOW_MAP_SIZE.width(), SHADOW_MAP_SIZE.height()));
 
-        for (auto m : std::as_const(models)) {
-          //  m->DrawForShadow(cb,m_shadowPipeline,ubo,shadowUpdateBatch);
-        }
-       floor.DrawForShadow(cb,m_shadowPipeline,ubo,shadowUpdateBatch);
+    for (auto m : std::as_const(models)) {
+        //  m->DrawForShadow(cb,m_shadowPipeline,ubo,shadowUpdateBatch);
+    }
 
-        cubeModel.DrawForShadow(cb,m_shadowPipeline,ubo,shadowUpdateBatch);
-        cubeModel1.DrawForShadow(cb,m_shadowPipeline,ubo,shadowUpdateBatch);
-        sphereModel1.DrawForShadow(cb,m_shadowPipeline,ubo,shadowUpdateBatch);
-        sphereModel.DrawForShadow(cb,m_shadowPipeline,ubo,shadowUpdateBatch);
+    floor.DrawForShadow(cb,m_shadowPipeline,ubo,shadowUpdateBatch);
+    cubeModel.DrawForShadow(cb,m_shadowPipeline,ubo,shadowUpdateBatch);
+    cubeModel1.DrawForShadow(cb,m_shadowPipeline,ubo,shadowUpdateBatch);
+    sphereModel1.DrawForShadow(cb,m_shadowPipeline,ubo,shadowUpdateBatch);
+    sphereModel.DrawForShadow(cb,m_shadowPipeline,ubo,shadowUpdateBatch);
 
     cb->endPass();
 
@@ -522,7 +505,6 @@ void HelloWindow::customRender()
     cb->setViewport({ 0, 0, float(outputSizeInPixels.width()), float(outputSizeInPixels.height()) });
 
         cb->setGraphicsPipeline(m_fullscreenQuadPipeline.get());
-       // cb->setShaderResources();
         cb->setShaderResources(m_fullscreenQuadSrb.get());
         cb->draw(3);
 
@@ -537,7 +519,7 @@ void HelloWindow::customRender()
 
 void HelloWindow::keyPressEvent(QKeyEvent *e)
 {
-    // switch
+    // switch fps
     if (e->key() == Qt::Key_Q) {
         m_cameraMovementEnabled = !m_cameraMovementEnabled; // true/false
 
@@ -603,11 +585,13 @@ void HelloWindow::updateCamera(float dt)
 
 void HelloWindow::initShadowMapResources(QRhi *rhi) {
 
+    //=======================================shadowpipeline=======================================
+
     m_shadowMapTexture = rhi->newTexture(
         QRhiTexture::D32F,                  //only depth
         SHADOW_MAP_SIZE,
         1,
-        QRhiTexture::RenderTarget    // deprecated UsedAsSampled v Qt 6.9.2
+        QRhiTexture::RenderTarget
         );
     m_shadowMapTexture->create();
 
@@ -631,14 +615,13 @@ void HelloWindow::initShadowMapResources(QRhi *rhi) {
         QRhiShaderResourceBinding::uniformBuffer(0, QRhiShaderResourceBinding::VertexStage, m_shadowUbo)
     });
     m_shadowSRB->create();
-    //  Render target description s depth attachmentem
+
+    //  Render target description with depth attachment
     QRhiTextureRenderTargetDescription shadowRtDesc;
     shadowRtDesc.setDepthTexture(m_shadowMapTexture);
-
     //  Render target + render pass descriptor
     m_shadowMapRenderTarget = rhi->newTextureRenderTarget(shadowRtDesc);
     m_shadowMapRenderPassDesc = m_shadowMapRenderTarget->newCompatibleRenderPassDescriptor();
-
     m_shadowMapRenderTarget->setRenderPassDescriptor(m_shadowMapRenderPassDesc);
     m_shadowMapRenderTarget->create();
 
@@ -668,32 +651,23 @@ void HelloWindow::initShadowMapResources(QRhi *rhi) {
     });
 
     m_shadowPipeline->setShaderResourceBindings(m_shadowSRB);
-    if (graphicsApiName() == "Vulkan") {
 
-
-    }
-    QRhi::Implementation impl = rhi->backend();   //  enum QRhi::Implementation
-
-    switch (impl) {
+    switch (rhi->backend()) {
     case QRhi::Vulkan:
         qDebug() << "Vulkan";
-        // m_shadowPipeline->setCullMode(QRhiGraphicsPipeline::Front);
         m_shadowPipeline->setCullMode(QRhiGraphicsPipeline::None);
         break;
     case QRhi::OpenGLES2:
         qDebug() << "OpenGL / OpenGLES";
-        // m_shadowPipeline->setCullMode(QRhiGraphicsPipeline::Front);
         m_shadowPipeline->setCullMode(QRhiGraphicsPipeline::None);
         break;
     case QRhi::D3D11:
         qDebug() << "Direct3D11";
          m_shadowPipeline->setCullMode(QRhiGraphicsPipeline::None);
-        //m_shadowPipeline->setCullMode(QRhiGraphicsPipeline::Back);
         break;
     case QRhi::D3D12:
         qDebug() << "Direct3D12";
          m_shadowPipeline->setCullMode(QRhiGraphicsPipeline::None);
-       // m_shadowPipeline->setCullMode(QRhiGraphicsPipeline::Back);
         break;
     case QRhi::Metal:      qDebug() << "Metal";
         break;
@@ -706,7 +680,7 @@ void HelloWindow::initShadowMapResources(QRhi *rhi) {
     m_shadowPipeline->setDepthTest(true);
     m_shadowPipeline->setDepthWrite(true);
 
-    switch (impl) {
+    switch (rhi->backend()) {
     case QRhi::Vulkan:
     case QRhi::OpenGLES2:
         m_shadowPipeline->setDepthBias(5);
@@ -728,10 +702,10 @@ void HelloWindow::initShadowMapResources(QRhi *rhi) {
         break;
     }
     m_shadowPipeline->setDepthOp(QRhiGraphicsPipeline::LessOrEqual);
-  //  m_shadowPipeline->setCullMode(QRhiGraphicsPipeline::None);
-
     m_shadowPipeline->create();
-    //=======================================================================================
+
+
+    //=======================================full screen pipeline=======================================
 
     updateFullscreenTexture(m_sc->surfacePixelSize(), m_initialUpdateBatch);
 
@@ -801,7 +775,7 @@ void HelloWindow::updateFullscreenTexture(const QSize &pixelSize, QRhiResourceUp
     font.setPixelSize(0.03 * qMin(width(), height()));
     painter.setFont(font);
     //painter.drawText(QRectF(QPointF(10, 10), size() - QSize(20, 20)), 0,QLatin1String("QRhi %1 API").arg(graphicsApiName()));
-    painter.drawText(QRectF(QPointF(10, 10), size() - QSize(20, 20)), 0,QLatin1String("QRhi %1 API").arg(graphicsApiName()));
+    painter.drawText(QRectF(QPointF(10, 10), size() - QSize(20, 20)), 0,QLatin1String("QRhi - %1").arg(graphicsApiName()));
 
     painter.end();
 
@@ -809,34 +783,6 @@ void HelloWindow::updateFullscreenTexture(const QSize &pixelSize, QRhiResourceUp
         image = image.mirrored();
 
     u->uploadTexture(m_fullscreenTexture.get(), image);
-}
-
-
-QVector3D HelloWindow::computeSceneCenterAndExtents(const QVector<Model*> &objects, QVector3D &extents)
-{
-    if (objects.isEmpty()) return QVector3D(0,0,0);
-
-    QVector3D minPt(FLT_MAX, FLT_MAX, FLT_MAX);
-    QVector3D maxPt(-FLT_MAX, -FLT_MAX, -FLT_MAX);
-
-    for (Model* obj : objects) {
-        const QMatrix4x4 &model = obj->transform.getModelMatrix();
-        const QVector<float> &verts = obj->m_vert;
-
-        for (int i = 0; i < verts.size(); i += 14) { // stride = 14 floats
-            QVector3D v(verts[i], verts[i+1], verts[i+2]);
-            v = model * v;
-            minPt.setX(qMin(minPt.x(), v.x()));
-            minPt.setY(qMin(minPt.y(), v.y()));
-            minPt.setZ(qMin(minPt.z(), v.z()));
-            maxPt.setX(qMax(maxPt.x(), v.x()));
-            maxPt.setY(qMax(maxPt.y(), v.y()));
-            maxPt.setZ(qMax(maxPt.z(), v.z()));
-        }
-    }
-
-    extents = maxPt - minPt;
-    return (minPt + maxPt) * 0.5f; // center
 }
 
 //=========================================================================================================
