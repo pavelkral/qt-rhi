@@ -325,9 +325,11 @@ void HelloWindow::customInit()
     QVector<float> sphereVertices;
     QVector<quint16> sphereIndices;
     generateSphere(0.5f, 32, 64, sphereVertices, sphereIndices);
+
     QVector<float> cVertices;
     QVector<quint16> cIndices;
     generateCube(1.0f, cVertices, cIndices);
+
     QVector<float> planeVertices;
     QVector<quint16> planeIndices;
     generatePlane(3.0f, 3.0f, 10, 10, 1.0f, 1.0f, planeVertices, planeIndices);
@@ -377,8 +379,8 @@ void HelloWindow::customInit()
 
 void HelloWindow::customRender()
 {
-    m_dt = m_timer.restart() / 1000.0f;
 
+    m_dt = m_timer.restart() / 1000.0f;
     lightTime += m_dt;
 
     QRhiResourceUpdateBatch *resourceUpdateBatch = m_rhi->nextResourceUpdateBatch();
@@ -391,6 +393,12 @@ void HelloWindow::customRender()
         m_initialUpdateBatch = nullptr;
     }
 
+    QRhiCommandBuffer *cb = m_sc->currentFrameCommandBuffer();
+
+
+    updateCamera(m_dt);
+
+   // QMatrix4x4 projection = m_projection;
     m_opacity += m_opacityDir * 0.005f;
     if (m_opacity < 0.0f || m_opacity > 1.0f) {
         m_opacityDir *= -1;
@@ -399,10 +407,6 @@ void HelloWindow::customRender()
 
     m_rotation += 30.0f * m_dt;
 
-    QRhiCommandBuffer *cb = m_sc->currentFrameCommandBuffer();
-    updateCamera(m_dt);
-
-   // QMatrix4x4 projection = m_projection;
     QVector3D camPos = mainCamera.Position;
     float objectOpacity = 1.0f;
     float radius = 10.0f;
@@ -463,10 +467,7 @@ void HelloWindow::customRender()
     ubo.opacity     = QVector4D(0.0f,0.0f,0.0f, m_opacity);
     ubo.misc       = QVector4D(debug,lightIntensity,ambientStrange,backendId);
 
-   // qDebug() << "lightprojection = " << lightProjection << "\n";
-  //  qDebug() << "lightview = " << lightView << "\n";
-   // qDebug() << "lightspace = " << ubo.lightSpace << "\n";
-
+    //========================================update uniform====================================================
     for (auto m : std::as_const(models)) {
         m->updateUbo(ubo,resourceUpdateBatch);
     }
@@ -483,9 +484,9 @@ void HelloWindow::customRender()
     const QSize outputSizeInPixels = m_sc->currentPixelSize();
     const QColor clearColor = QColor::fromRgbF(0.0f, 0.0f, 0.0f, 1.0f);
     const QColor clearColorDepth = QColor::fromRgbF(1.0f, 1,1,1);
-
     updateFullscreenTexture(outputSizeInPixels, resourceUpdateBatch);
-//===============================================================================================
+
+    //========================================draw====================================================
 
     cb->beginPass(m_shadowMapRenderTarget, Qt::black, { 1.0f, 0 }, shadowUpdateBatch);
     cb->setGraphicsPipeline(m_shadowPipeline);
@@ -787,4 +788,7 @@ void HelloWindow::updateFullscreenTexture(const QSize &pixelSize, QRhiResourceUp
     u->uploadTexture(m_fullscreenTexture.get(), image);
 }
 
+// qDebug() << "lightprojection = " << lightProjection << "\n";
+//  qDebug() << "lightview = " << lightView << "\n";
+// qDebug() << "lightspace = " << ubo.lightSpace << "\n";
 //=========================================================================================================

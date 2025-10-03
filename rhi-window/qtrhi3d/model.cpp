@@ -28,6 +28,7 @@ void Model::init(QRhi *rhi,QRhiRenderPassDescriptor *rp,const QShader &vs,const 
     const quint32 UBUF_SIZE = 512;
     m_ubuf.reset(rhi->newBuffer(QRhiBuffer::Dynamic, QRhiBuffer::UniformBuffer,UBUF_SIZE ));
     m_ubuf->create();
+
     m_shadowUbo.reset(rhi->newBuffer(QRhiBuffer::Dynamic, QRhiBuffer::UniformBuffer, sizeof(GpuUbo)));
     m_shadowUbo->create();
 
@@ -317,92 +318,4 @@ QVector<float> Model::computeTangents(const QVector<float>& vertices, const QVec
     return out;
 }
 // Minimal Shadow Pass Test - QRhi D3D12
-static QShader getShader(const QString &name)
-{
-    QFile f(name);
-    if (f.open(QIODevice::ReadOnly))
-        return QShader::fromSerialized(f.readAll());
-    return QShader();
-}
-void testShadowPass(QRhi *rhi, QRhiCommandBuffer *cb, QRhiRenderPassDescriptor *rp)
-{
-    // 1️⃣ Depth texture
-    const int shadowRes = 512;
-    QRhiTexture *depthTex = rhi->newTexture(
-        QRhiTexture::D32F,        // formát depth
-        QSize(1024, 1024),       // velikost
-        1,                       // mip levels
-        QRhiTexture::RenderTarget
-        );
-    depthTex->create();
-    // 2️⃣ Simple quad vertex buffer (pos only)
-    float quadVertices[] = {
-        -1.f, -1.f, 0.f,
-        1.f, -1.f, 0.f,
-        1.f,  1.f, 0.f,
-        -1.f,  1.f, 0.f
-    };
-    quint16 quadIndices[] = {0, 1, 2, 0, 2, 3};
 
-    std::unique_ptr<QRhiBuffer> vbuf(rhi->newBuffer(QRhiBuffer::Immutable, QRhiBuffer::VertexBuffer, sizeof(quadVertices)));
-    vbuf->create();
-    std::unique_ptr<QRhiBuffer> ibuf(rhi->newBuffer(QRhiBuffer::Immutable, QRhiBuffer::IndexBuffer, sizeof(quadIndices)));
-    ibuf->create();
-
-    QRhiResourceUpdateBatch *u = rhi->nextResourceUpdateBatch();
-    u->uploadStaticBuffer(vbuf.get(), quadVertices);
-    u->uploadStaticBuffer(ibuf.get(), quadIndices);
-
-    // 3️⃣ Simple vertex shader (depth only)
-    const char *vsSrc = R"(
-    #version 450
-    layout(location=0) in vec3 pos;
-    layout(set=0, binding=0) uniform Ubo { mat4 mvp; } ubo;
-    void main() {
-        gl_Position = ubo.mvp * vec4(pos, 1.0);
-    })";
-
-    // 4️⃣ Empty fragment shader
-    const char *fsSrc = R"(
-    #version 450
-    void main() {}
-    )";
-
-   // QShader vs(QShader::Hlsl, vsSrc);
-  //  QShader fs(QShader::Hlsl, fsSrc);
-    QShader vs = getShader(":/shaders/prebuild/depth.vert.qsb");
-    QShader fs = getShader(":/shaders/prebuild/depth.frag.qsb");
-    // 5️⃣ Uniform buffer (MVP identity)
-    QMatrix4x4 mvp; // identity for test
-    std::unique_ptr<QRhiBuffer> ubuf(rhi->newBuffer(QRhiBuffer::Dynamic, QRhiBuffer::UniformBuffer, sizeof(QMatrix4x4)));
-    ubuf->create();
-    u->updateDynamicBuffer(ubuf.get(), 0, sizeof(QMatrix4x4), mvp.constData());
-
-    // 6️⃣ SRB
-    std::unique_ptr<QRhiShaderResourceBindings> srb(rhi->newShaderResourceBindings());
-    srb->setBindings({QRhiShaderResourceBinding::uniformBuffer(0, QRhiShaderResourceBinding::VertexStage, ubuf.get())});
-    srb->create();
-
-    // 7️⃣ Vertex input
-    QRhiVertexInputLayout inputLayout;
-    inputLayout.setBindings({{3 * sizeof(float)}});
-    inputLayout.setAttributes({{0, 0, QRhiVertexInputAttribute::Float3, 0}});
-
-    // 8️⃣ Pipeline
-    std::unique_ptr<QRhiGraphicsPipeline> pipeline(rhi->newGraphicsPipeline());
-    pipeline->setShaderStages({{QRhiShaderStage::Vertex, vs}, {QRhiShaderStage::Fragment, fs}});
-    pipeline->setVertexInputLayout(inputLayout);
-    pipeline->setShaderResourceBindings(srb.get());
-    pipeline->setRenderPassDescriptor(rp);
-    pipeline->setDepthTest(true);
-    pipeline->setDepthWrite(true);
-    pipeline->setTopology(QRhiGraphicsPipeline::Triangles);
-    pipeline->create();
-
-    // 9️⃣ Draw
-    cb->setGraphicsPipeline(pipeline.get());
-    cb->setShaderResources(srb.get());
-    const QRhiCommandBuffer::VertexInput vbufBinding(vbuf.get(), 0);
-    cb->setVertexInput(0, 1, &vbufBinding, ibuf.get(), 0, QRhiCommandBuffer::IndexUInt16);
-    cb->drawIndexed(6);
-}
