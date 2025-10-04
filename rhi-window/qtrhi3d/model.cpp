@@ -181,7 +181,8 @@ void Model::updateShadowUbo(Ubo ubo, QRhiResourceUpdateBatch *u) {
     u->updateDynamicBuffer(m_shadowUbo.get(), 0, sizeof(GpuUbo), &gpuUbo);
 }
 
-void Model::DrawForShadow(QRhiCommandBuffer *cb,QRhiGraphicsPipeline *shadowPipeline,
+void Model::DrawForShadow(QRhiCommandBuffer *cb,
+                            QRhiGraphicsPipeline *shadowPipeline,
                             Ubo ubo,
                             QRhiResourceUpdateBatch *u)
 {

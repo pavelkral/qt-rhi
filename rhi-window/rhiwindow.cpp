@@ -9,6 +9,8 @@
 #include <QRandomGenerator>
 #include <rhi/qshader.h>
 #include "qtrhi3d/geometry.h"
+#include <rhi/qrhi_platform.h>
+
 
 //================================== RhiWindow ==================================
 
@@ -231,6 +233,24 @@ HelloWindow::HelloWindow(QRhi::Implementation graphicsApi)
   //  setFocusPolicy(Qt::StrongFocus);
 
     setCursor(Qt::BlankCursor);
+
+      qDebug() << "--- QRhi Configuration ---";
+
+      // 1. Backend
+      QString backendName;
+      switch (graphicsApi) {
+          case QRhi::Null:       backendName = "Null"; break;
+          case QRhi::Vulkan:     backendName = "Vulkan"; break;
+          case QRhi::D3D11:      backendName = "Direct3D 11"; break;
+          case QRhi::D3D12:      backendName = "Direct3D 12"; break;
+          case QRhi::OpenGLES2:   backendName = "OpenGL ES / OpenGL"; break;
+          case QRhi::Metal:      backendName = "Metal"; break;
+          default:               backendName = "Neznamy"; break;
+      }
+      qDebug() << " Backend API:" << backendName;
+
+
+
 }
 HelloWindow::~HelloWindow()
 {
@@ -265,6 +285,13 @@ void HelloWindow::customInit()
 
     initShadowMapResources(m_rhi.get());
 
+    QRhiDriverInfo info = m_rhi->driverInfo();
+    qDebug() << "GPU / Driver name:" << info.deviceName;
+    qDebug() << "Driver version:" << info.CpuDevice;
+    qDebug() << "Vendor ID:" << QString("0x%1").arg(info.vendorId, 4, 16, QChar('0'));
+    qDebug() << "Device ID:" << QString("0x%1").arg(info.deviceId, 4, 16, QChar('0'));
+
+
     const QSize outputSize = m_sc->currentPixelSize();
     m_projection = createProjection(m_rhi.get(), 45.0f, outputSize.width() / (float)outputSize.height(), 0.1f, 1000.0f);
 
@@ -298,22 +325,22 @@ void HelloWindow::customInit()
 
     switch (m_rhi->backend()) {
     case QRhi::Vulkan:
-        qDebug() << "Vulkan";
+     //   qDebug() << "Vulkan";
         vs2 = getShader(":/shaders/prebuild/pbrvk.vert.qsb");
         fs2 = getShader(":/shaders/prebuild/pbrvk.frag.qsb");
         break;
     case QRhi::OpenGLES2:
-        qDebug() << "OpenGL / OpenGLES";
+     //   qDebug() << "OpenGL / OpenGLES";
          vs2 = getShader(":/pbr.vert.qsb");
          fs2 = getShader(":/pbr.frag.qsb");
         break;
     case QRhi::D3D11:
-        qDebug() << "Direct3D11";
+     //   qDebug() << "Direct3D11";
         vs2 = getShader(":/shaders/prebuild/pbrd3d.vert.qsb");
         fs2 = getShader(":/shaders/prebuild/pbrd3d.frag.qsb");
         break;
     case QRhi::D3D12:
-        qDebug() << "Direct3D12";
+       // qDebug() << "Direct3D12";
         vs2 = getShader(":/shaders/prebuild/pbrd3d.vert.qsb");
         fs2 = getShader(":/shaders/prebuild/pbrd3d.frag.qsb");
         break;
@@ -657,24 +684,25 @@ void HelloWindow::initShadowMapResources(QRhi *rhi) {
 
     switch (rhi->backend()) {
     case QRhi::Vulkan:
-        qDebug() << "Vulkan";
+      //  qDebug() << "Vulkan";
         m_shadowPipeline->setCullMode(QRhiGraphicsPipeline::None);
         break;
     case QRhi::OpenGLES2:
-        qDebug() << "OpenGL / OpenGLES";
+      //  qDebug() << "OpenGL / OpenGLES";
         m_shadowPipeline->setCullMode(QRhiGraphicsPipeline::None);
         break;
     case QRhi::D3D11:
-        qDebug() << "Direct3D11";
+     //   qDebug() << "Direct3D11";
          m_shadowPipeline->setCullMode(QRhiGraphicsPipeline::None);
         break;
     case QRhi::D3D12:
-        qDebug() << "Direct3D12";
+      //  qDebug() << "Direct3D12";
          m_shadowPipeline->setCullMode(QRhiGraphicsPipeline::None);
         break;
     case QRhi::Metal:      qDebug() << "Metal";
         break;
-    default:               qDebug() << "Null / Unknown"; break;
+    default:               qDebug() << "Null / Unknown";
+        break;
     }
 
     //Q_ASSERT(m_shadowMapRenderPassDesc); // sanity
