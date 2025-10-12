@@ -1,8 +1,6 @@
 #ifndef RHIFBXMODEL_H
 #define RHIFBXMODEL_H
 
-
-
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
@@ -70,6 +68,25 @@ struct RhiMesh {
 };
 
 class RhiFBXModel {
+
+private:
+    QRhi* m_rhi;
+    std::string m_path;
+    std::vector<RhiMesh> m_meshes;
+
+    std::unique_ptr<QRhiBuffer> m_ubuf;
+    QRhiSampler* m_sampler = nullptr;
+
+    QVector3D m_fallbackAlbedo = {0.8f,0.8f,0.8f};
+    float m_fallbackMetallic = 0.0f;
+    float m_fallbackSmoothness = 0.2f;
+
+    // dummy 1x1 texture used where mesh has no texture
+    std::unique_ptr<QRhiTexture> m_dummyTex;
+
+    // pending initial uploads (e.g. dummy texture) — transferred to GPU on first draw via cb->resourceUpdate()
+    std::vector<std::unique_ptr<QRhiResourceUpdateBatch>> m_pendingInitialUploads;
+
 public:
     RhiFBXModel(QRhi* rhi, const std::string& path)
         : m_rhi(rhi), m_path(path)
@@ -348,23 +365,7 @@ private:
         }
     }
 
-private:
-    QRhi* m_rhi;
-    std::string m_path;
-    std::vector<RhiMesh> m_meshes;
 
-    std::unique_ptr<QRhiBuffer> m_ubuf;
-    QRhiSampler* m_sampler = nullptr;
-
-    QVector3D m_fallbackAlbedo = {0.8f,0.8f,0.8f};
-    float m_fallbackMetallic = 0.0f;
-    float m_fallbackSmoothness = 0.2f;
-
-    // dummy 1x1 texture used where mesh has no texture
-    std::unique_ptr<QRhiTexture> m_dummyTex;
-
-    // pending initial uploads (e.g. dummy texture) — transferred to GPU on first draw via cb->resourceUpdate()
-    std::vector<std::unique_ptr<QRhiResourceUpdateBatch>> m_pendingInitialUploads;
 };
 
 #endif // RHIFBXMODEL_H

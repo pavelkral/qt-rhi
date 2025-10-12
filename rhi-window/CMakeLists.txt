@@ -32,7 +32,6 @@ target_link_libraries(rhi-window PRIVATE
     Qt6::Widgets
 )
 
-
 set_source_files_properties("shaders/prebuild/texture.vert.qsb"
     PROPERTIES QT_RESOURCE_ALIAS "texture.vert.qsb"
 )
