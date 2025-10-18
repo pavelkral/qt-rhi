@@ -539,16 +539,16 @@ void HelloWindow::customRender()
     cb->beginPass(m_sc->currentFrameRenderTarget(), clearColor, { 1.0f, 0 }, resourceUpdateBatch);
     cb->setViewport({ 0, 0, float(outputSizeInPixels.width()), float(outputSizeInPixels.height()) });
 
-        cb->setGraphicsPipeline(m_fullscreenQuadPipeline.get());
-        cb->setShaderResources(m_fullscreenQuadSrb.get());
-        cb->draw(3);
 
-       //sky->draw(cb);
+
+       sky->draw(cb);
 
         for (auto m : std::as_const(models)) {
             m->draw(cb);
         }
-
+        cb->setGraphicsPipeline(m_fullscreenQuadPipeline.get());
+        cb->setShaderResources(m_fullscreenQuadSrb.get());
+        cb->draw(3);
     cb->endPass();
 
 }
@@ -763,6 +763,18 @@ void HelloWindow::initShadowMapResources(QRhi *rhi) {
         { QRhiShaderStage::Vertex, getShader(QLatin1String(":/shaders/prebuild/quad.vert.qsb")) },
         { QRhiShaderStage::Fragment, getShader(QLatin1String(":/shaders/prebuild/quad.frag.qsb")) }
     });
+    QRhiGraphicsPipeline::TargetBlend blend;
+    blend.enable = true;
+    blend.srcColor = QRhiGraphicsPipeline::SrcAlpha;
+    blend.dstColor = QRhiGraphicsPipeline::OneMinusSrcAlpha;
+    blend.opColor = QRhiGraphicsPipeline::Add;
+    blend.srcAlpha = QRhiGraphicsPipeline::One;
+    blend.dstAlpha = QRhiGraphicsPipeline::OneMinusSrcAlpha;
+    blend.opAlpha = QRhiGraphicsPipeline::Add;
+
+    m_fullscreenQuadPipeline->setTargetBlends({ blend });
+    m_fullscreenQuadPipeline->setDepthTest(false);
+    m_fullscreenQuadPipeline->setDepthWrite(false);
     m_fullscreenQuadPipeline->setVertexInputLayout({});
     m_fullscreenQuadPipeline->setShaderResourceBindings(m_fullscreenQuadSrb.get());
     m_fullscreenQuadPipeline->setRenderPassDescriptor(m_rp.get());
@@ -783,7 +795,7 @@ void HelloWindow::updateFullscreenTexture(const QSize &pixelSize, QRhiResourceUp
 
      QImage image(pixelSize, QImage::Format_RGBA8888_Premultiplied);
      image.setDevicePixelRatio(devicePixelRatio());
-
+     image.fill(Qt::transparent );
      QPainter painter(&image);
     // painter.setRenderHint(QPainter::Antialiasing, true);
 
