@@ -311,12 +311,12 @@ void HelloWindow::customInit()
     set1.height = ":/assets/textures/panel/sci-fi-panel1-height.png";
     set1.ao = ":/assets/textures/panel/sci-fi-panel1-ao.png";
 
-    QShader vsWire = getShader(":/mcolor.vert.qsb");
-    QShader fsWire = getShader(":/mcolor.frag.qsb");
-    QShader vs = getShader(":/texture.vert.qsb");
-    QShader fs = getShader(":/texture.frag.qsb");
-    QShader vs1 = getShader(":/light.vert.qsb");
-    QShader fs1 = getShader(":/light.frag.qsb");
+    QShader vsWire = getShader(":/shaders/prebuild/mcolor.vert.qsb");
+    QShader fsWire = getShader(":/shaders/prebuild/mcolor.frag.qsb");
+    QShader vs = getShader(":/shaders/prebuild/texture.vert.qsb");
+    QShader fs = getShader(":/shaders/prebuild/texture.frag.qsb");
+    QShader vs1 = getShader(":/shaders/prebuild/light.vert.qsb");
+    QShader fs1 = getShader(":/shaders/prebuild/light.frag.qsb");
     QShader vs2 ;
     QShader fs2 ;
 
@@ -331,8 +331,8 @@ void HelloWindow::customInit()
         break;
     case QRhi::OpenGLES2:
      //   qDebug() << "OpenGL / OpenGLES";
-         vs2 = getShader(":/pbr.vert.qsb");
-         fs2 = getShader(":/pbr.frag.qsb");
+         vs2 = getShader(":/shaders/prebuild/pbr.vert.qsb");
+         fs2 = getShader("://shaders/prebuild/pbr.frag.qsb");
         break;
     case QRhi::D3D11:
      //   qDebug() << "Direct3D11";
@@ -407,7 +407,7 @@ void HelloWindow::customInit()
 void HelloWindow::customRender()
 {
 
-    m_dt = m_timer.restart() / 1000.0f;
+    m_dt = m_timer.restart() / 5000.0f;
     lightTime += m_dt;
 
     QRhiResourceUpdateBatch *resourceUpdateBatch = m_rhi->nextResourceUpdateBatch();
@@ -433,13 +433,11 @@ void HelloWindow::customRender()
     }
 
     m_rotation += 30.0f * m_dt;
-
-    QVector3D camPos = mainCamera.Position;
+   // QVector3D camPos = mainCamera.Position;
     float objectOpacity = 1.0f;
-    float radius = 10.0f;
+    float radius = 30.0f;
     float height = 10.0f;
     QVector3D center(0.0f, 0.0f, 0.0f);
-
     // lightPos = QVector3D(0.0f,4.4f, 0.0f);
     lightPosition.setX(center.x() + radius * cos(lightTime));
     lightPosition.setZ(center.z() + radius * sin(lightTime));
@@ -456,7 +454,6 @@ void HelloWindow::customRender()
 
     sphereModel1.transform.rotation.setY( sphereModel1.transform.rotation.y() + 0.5f);
     cubeModel1.transform.rotation.setY(cubeModel1.transform.rotation.y() + 0.5f);
-
     QMatrix4x4 lightView;
     QMatrix4x4 lightSpaceMatrix;
     QMatrix4x4 lightProjection;
@@ -490,7 +487,7 @@ void HelloWindow::customRender()
     ubo.lightSpace  = lightSpaceMatrix;
     ubo.lightPos    = QVector4D(lightPosition, 1.0f);
     ubo.lightColor  = QVector4D(lightColor, 1.0f);
-    ubo.camPos      = QVector4D(camPos, 1.0f);
+    ubo.camPos      = QVector4D(mainCamera.Position, 1.0f);
     ubo.opacity     = QVector4D(0.0f,0.0f,0.0f, m_opacity);
     ubo.misc       = QVector4D(debug,lightIntensity,ambientStrange,backendId);
 
@@ -528,14 +525,14 @@ void HelloWindow::customRender()
     cb->setViewport(QRhiViewport(0, 0, SHADOW_MAP_SIZE.width(), SHADOW_MAP_SIZE.height()));
 
     for (auto m : std::as_const(models)) {
-        //  m->DrawForShadow(cb,m_shadowPipeline,ubo,shadowUpdateBatch);
+          m->DrawForShadow(cb,m_shadowPipeline,ubo,shadowUpdateBatch);
     }
 
-    floor.DrawForShadow(cb,m_shadowPipeline,ubo,shadowUpdateBatch);
-    cubeModel.DrawForShadow(cb,m_shadowPipeline,ubo,shadowUpdateBatch);
-    cubeModel1.DrawForShadow(cb,m_shadowPipeline,ubo,shadowUpdateBatch);
-    sphereModel1.DrawForShadow(cb,m_shadowPipeline,ubo,shadowUpdateBatch);
-    sphereModel.DrawForShadow(cb,m_shadowPipeline,ubo,shadowUpdateBatch);
+    // floor.DrawForShadow(cb,m_shadowPipeline,ubo,shadowUpdateBatch);
+    // cubeModel.DrawForShadow(cb,m_shadowPipeline,ubo,shadowUpdateBatch);
+    // cubeModel1.DrawForShadow(cb,m_shadowPipeline,ubo,shadowUpdateBatch);
+    // sphereModel1.DrawForShadow(cb,m_shadowPipeline,ubo,shadowUpdateBatch);
+    // sphereModel.DrawForShadow(cb,m_shadowPipeline,ubo,shadowUpdateBatch);
 
     cb->endPass();
 
@@ -546,7 +543,7 @@ void HelloWindow::customRender()
         cb->setShaderResources(m_fullscreenQuadSrb.get());
         cb->draw(3);
 
-        sky->draw(cb);
+       //sky->draw(cb);
 
         for (auto m : std::as_const(models)) {
             m->draw(cb);
@@ -784,17 +781,17 @@ void HelloWindow::updateFullscreenTexture(const QSize &pixelSize, QRhiResourceUp
 
     m_fullscreenTexture->create();
 
-    QImage image(pixelSize, QImage::Format_RGBA8888_Premultiplied);
-    image.setDevicePixelRatio(devicePixelRatio());
+     QImage image(pixelSize, QImage::Format_RGBA8888_Premultiplied);
+     image.setDevicePixelRatio(devicePixelRatio());
 
-    QPainter painter(&image);
-    painter.setRenderHint(QPainter::Antialiasing, true);
+     QPainter painter(&image);
+    // painter.setRenderHint(QPainter::Antialiasing, true);
 
-    // --- sky ---
-    QLinearGradient skyGradient(QPointF(0, 0), QPointF(0, pixelSize.height()));
-    skyGradient.setColorAt(0.0, QColor::fromRgbF(0.53f, 0.81f, 0.98f, 1.0f)); // light blue
-    skyGradient.setColorAt(1.0, QColor::fromRgbF(0.0f, 0.4f, 0.8f, 1.0f));   // dark blue
-    painter.fillRect(QRectF(QPointF(0, 0), pixelSize), skyGradient);
+    // // --- sky ---
+    // QLinearGradient skyGradient(QPointF(0, 0), QPointF(0, pixelSize.height()));
+    // skyGradient.setColorAt(0.0, QColor::fromRgbF(0.53f, 0.81f, 0.98f, 1.0f)); // light blue
+    // skyGradient.setColorAt(1.0, QColor::fromRgbF(0.0f, 0.4f, 0.8f, 1.0f));   // dark blue
+    // painter.fillRect(QRectF(QPointF(0, 0), pixelSize), skyGradient);
 
     // --- clouds ---
     // painter.setPen(Qt::NoPen);
@@ -811,7 +808,7 @@ void HelloWindow::updateFullscreenTexture(const QSize &pixelSize, QRhiResourceUp
     // }
 
 
-    painter.setPen(Qt::black);
+    painter.setPen(Qt::white);
     QFont font;
     font.setPixelSize(0.03 * qMin(width(), height()));
     painter.setFont(font);

@@ -33,30 +33,7 @@ target_link_libraries(rhi-window PRIVATE
     Qt6::Widgets
 )
 
-set_source_files_properties("shaders/prebuild/texture.vert.qsb"
-    PROPERTIES QT_RESOURCE_ALIAS "texture.vert.qsb"
-)
-set_source_files_properties("shaders/prebuild/texture.frag.qsb"
-    PROPERTIES QT_RESOURCE_ALIAS "texture.frag.qsb"
-)
-set_source_files_properties("shaders/prebuild/mcolor.vert.qsb"
-    PROPERTIES QT_RESOURCE_ALIAS "mcolor.vert.qsb"
-)
-set_source_files_properties("shaders/prebuild/mcolor.frag.qsb"
-    PROPERTIES QT_RESOURCE_ALIAS "mcolor.frag.qsb"
-)
-set_source_files_properties("shaders/prebuild/light.vert.qsb"
-    PROPERTIES QT_RESOURCE_ALIAS "light.vert.qsb"
-)
-set_source_files_properties("shaders/prebuild/light.frag.qsb"
-    PROPERTIES QT_RESOURCE_ALIAS "light.frag.qsb"
-)
-set_source_files_properties("shaders/prebuild/pbr.vert.qsb"
-    PROPERTIES QT_RESOURCE_ALIAS "pbr.vert.qsb"
-)
-set_source_files_properties("shaders/prebuild/pbr.frag.qsb"
-    PROPERTIES QT_RESOURCE_ALIAS "pbr.frag.qsb"
-)
+
 qt_add_resources(rhi-window "rhi-window"
     PREFIX
         "/"
