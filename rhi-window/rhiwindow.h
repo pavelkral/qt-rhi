@@ -6,6 +6,7 @@
 
 #include "qtrhi3d/camera.h"
 #include "qtrhi3d/model.h"
+#include "qtrhi3d/proceduralsky.h"
 
 #include <QWindow>
 #include <QOffscreenSurface>
@@ -105,6 +106,7 @@ public:
     Model sphereModel1;
     Model lightSphere;
     Model floor;
+    std::unique_ptr<ProceduralSkyRHI> sky;
     QVector<Model*> models;
 };
 

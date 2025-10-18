@@ -290,7 +290,7 @@ void HelloWindow::customInit()
     qDebug() << "Driver version:" << info.CpuDevice;
     qDebug() << "Vendor ID:" << QString("0x%1").arg(info.vendorId, 4, 16, QChar('0'));
     qDebug() << "Device ID:" << QString("0x%1").arg(info.deviceId, 4, 16, QChar('0'));
-
+    sky = std::make_unique<ProceduralSkyRHI>(m_rhi.get(), m_rp.get());
 
     const QSize outputSize = m_sc->currentPixelSize();
     m_projection = createProjection(m_rhi.get(), 45.0f, outputSize.width() / (float)outputSize.height(), 0.1f, 1000.0f);
@@ -503,6 +503,13 @@ void HelloWindow::customRender()
         m->updateShadowUbo(ubo,shadowUpdateBatch);
     }
 
+    QMatrix4x4 invView = view.inverted();
+    QMatrix4x4 invProj =m_projection.inverted();
+    QVector3D sunDir = lightPosition.normalized();
+    //float time = m_casovac->elapsedSeconds();
+
+    sky->update(resourceUpdateBatch, invView, invProj, sunDir, lightTime);
+
     Q_ASSERT(m_shadowMapRenderTarget);
     Q_ASSERT(m_shadowPipeline);
     Q_ASSERT(m_shadowSRB);
@@ -511,6 +518,7 @@ void HelloWindow::customRender()
     const QSize outputSizeInPixels = m_sc->currentPixelSize();
     const QColor clearColor = QColor::fromRgbF(0.0f, 0.0f, 0.0f, 1.0f);
     const QColor clearColorDepth = QColor::fromRgbF(1.0f, 1,1,1);
+
     updateFullscreenTexture(outputSizeInPixels, resourceUpdateBatch);
 
     //========================================draw====================================================
@@ -537,6 +545,8 @@ void HelloWindow::customRender()
         cb->setGraphicsPipeline(m_fullscreenQuadPipeline.get());
         cb->setShaderResources(m_fullscreenQuadSrb.get());
         cb->draw(3);
+
+        sky->draw(cb);
 
         for (auto m : std::as_const(models)) {
             m->draw(cb);
