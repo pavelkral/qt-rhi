@@ -20,7 +20,7 @@ public:
     QString graphicsApiName() const;
     void releaseSwapChain();
     QMatrix4x4 m_projection;
-     bool m_cameraMovementEnabled = true;
+
 protected:
     virtual void customInit() = 0;
     virtual void customRender() = 0;
@@ -70,34 +70,34 @@ private:
     void updateCamera(float dt);
     void updateFullscreenTexture(const QSize &pixelSize, QRhiResourceUpdateBatch *u);
 
-    QSet<int> m_pressedKeys;
-    QPointF m_lastMousePos;
-    QElapsedTimer m_timer;
-
-    float m_dt = 0;
+    QSet<int> pressedKeys;
+    QPointF lastMousePosition;
+    QElapsedTimer mainTimer;
+    bool cameraMovementEnabled = true;
+    float deltaTime = 0;
     const QSize SHADOW_MAP_SIZE = QSize(2048, 2048);
-    QRhiResourceUpdateBatch *m_initialUpdateBatch = nullptr;
+    QRhiResourceUpdateBatch *initialUpdateBatch = nullptr;
 
-    QRhiTexture *m_shadowMapTexture = nullptr;
-    QRhiSampler *m_shadowMapSampler = nullptr;
-    QRhiTextureRenderTarget *m_shadowMapRenderTarget = nullptr;
-    QRhiRenderPassDescriptor * m_shadowMapRenderPassDesc = nullptr;
+    QRhiTexture *shadowMapTexture = nullptr;
+    QRhiSampler *shadowMapSampler = nullptr;
+    QRhiTextureRenderTarget *shadowMapRenderTarget = nullptr;
+    QRhiRenderPassDescriptor * shadowMapRenderPassDesc = nullptr;
 
-    QRhiBuffer* m_shadowUbo = nullptr;
-    QRhiShaderResourceBindings *m_shadowSRB = nullptr;
-    QRhiGraphicsPipeline *m_shadowPipeline = nullptr;
+    QRhiBuffer* shadowUbo = nullptr;
+    QRhiShaderResourceBindings *shadowSRB = nullptr;
+    QRhiGraphicsPipeline *shadowPipeline = nullptr;
 
-    std::unique_ptr<QRhiShaderResourceBindings> m_fullscreenQuadSrb;
-    std::unique_ptr<QRhiGraphicsPipeline> m_fullscreenQuadPipeline;
-    std::unique_ptr<QRhiTexture> m_fullscreenTexture;
-    std::unique_ptr<QRhiSampler> m_fullScreenSampler;
+    std::unique_ptr<QRhiShaderResourceBindings> uiSRB= nullptr;
+    std::unique_ptr<QRhiGraphicsPipeline> uiPipeline = nullptr;
+    std::unique_ptr<QRhiTexture> uiTexture = nullptr;
+    std::unique_ptr<QRhiSampler> uiSampler = nullptr;
 
 public:
     float lightTime = 0.0f;
     QVector3D lightPosition;
-    float m_rotation = 0;
-    float m_opacity = 1;
-    int m_opacityDir = -1;
+    float modelRotation = 0;
+    float objectOpacity = 1;
+    int objectOpacityDir = -1;
 
     Camera mainCamera;
     Model cubeModel1;
@@ -106,7 +106,7 @@ public:
     Model sphereModel1;
     Model lightSphere;
     Model floor;
-    std::unique_ptr<ProceduralSkyRHI> sky;
+    std::unique_ptr<ProceduralSkyRHI> sky = nullptr;
     QVector<Model*> models;
 };
 

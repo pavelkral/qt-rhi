@@ -254,34 +254,34 @@ HelloWindow::HelloWindow(QRhi::Implementation graphicsApi)
 }
 HelloWindow::~HelloWindow()
 {
-    if (m_shadowPipeline) {
+    if (shadowPipeline) {
        // m_shadowPipeline->release();
-        delete m_shadowPipeline;
-        m_shadowPipeline = nullptr;
+        delete shadowPipeline;
+        shadowPipeline = nullptr;
     }
 
-    if (m_shadowSRB) {
+    if (shadowSRB) {
        // m_shadowSRB->release();
-        delete m_shadowSRB;
-        m_shadowSRB = nullptr;
+        delete shadowSRB;
+        shadowSRB = nullptr;
     }
 
-    if (m_shadowUbo) {
+    if (shadowUbo) {
     //    m_shadowUbo->release();
-        delete m_shadowUbo;
-        m_shadowUbo = nullptr;
+        delete shadowUbo;
+        shadowUbo = nullptr;
     }
 
-    delete m_shadowMapTexture;
-    delete m_shadowMapSampler;
-    delete m_shadowMapRenderTarget;
-    delete m_shadowMapRenderPassDesc;
+    delete shadowMapTexture;
+    delete shadowMapSampler;
+    delete shadowMapRenderTarget;
+    delete shadowMapRenderPassDesc;
 
 
 }
 void HelloWindow::customInit()
 {
-    m_initialUpdateBatch = m_rhi->nextResourceUpdateBatch();
+    initialUpdateBatch = m_rhi->nextResourceUpdateBatch();
 
     initShadowMapResources(m_rhi.get());
 
@@ -304,9 +304,9 @@ void HelloWindow::customInit()
     set.ao = ":/assets/textures/brick/victorian-brick_ao.png";
 
     TextureSet set1;
-    set1.albedo = ":/assets/textures/panel/sci-fi-panel1-albedo.png";
-    set1.normal = ":/assets/textures/panel/sci-fi-panel1-normal-ogl.png";
-    set1.metallic = ":/assets/textures/panel/sci-fi-panel1-metallic.png";
+    set1.albedo = ":/assets/textures/floor.png";
+    set1.normal = ":/assets/textures/floorN.png";
+    set1.metallic = ":/assets/textures/floorM.png";
     set1.rougness = ":/assets/textures/panel/sci-fi-panel1-roughness.png";
     set1.height = ":/assets/textures/panel/sci-fi-panel1-height.png";
     set1.ao = ":/assets/textures/panel/sci-fi-panel1-ao.png";
@@ -362,33 +362,33 @@ void HelloWindow::customInit()
     generatePlane(3.0f, 3.0f, 10, 10, 1.0f, 1.0f, planeVertices, planeIndices);
 
     floor.addVertAndInd(indexedPlaneVertices ,indexedPlaneIndices );
-    floor.init(m_rhi.get(), m_rp.get(), vs2, fs2, m_initialUpdateBatch,m_shadowMapTexture,m_shadowMapSampler,set);
+    floor.init(m_rhi.get(), m_rp.get(), vs2, fs2, initialUpdateBatch,shadowMapTexture,shadowMapSampler,set);
     //floor.transform.position = QVector3D(0, -0.5f, 0);
     //floor.transform.scale = QVector3D(10, 10, 10);
     //floor.transform.rotation.setX( 270.0f);
 
     cubeModel1.addVertAndInd(cVertices, cIndices);
-    cubeModel1.init(m_rhi.get(), m_rp.get(), vs2, fs2, m_initialUpdateBatch,m_shadowMapTexture,m_shadowMapSampler,set1);
+    cubeModel1.init(m_rhi.get(), m_rp.get(), vs2, fs2, initialUpdateBatch,shadowMapTexture,shadowMapSampler,set1);
     cubeModel1.transform.position = QVector3D(-6, 1.5, 0);
     cubeModel1.transform.scale = QVector3D(2, 2, 2);
 
     cubeModel.addVertAndInd(planeVertices, planeIndices);
-    cubeModel.init(m_rhi.get(), m_rp.get(), vs2, fs2, m_initialUpdateBatch,m_shadowMapTexture,m_shadowMapSampler,set1);
+    cubeModel.init(m_rhi.get(), m_rp.get(), vs2, fs2, initialUpdateBatch,shadowMapTexture,shadowMapSampler,set1);
     cubeModel.transform.position = QVector3D(6, 1.0, 0);
     cubeModel.transform.scale = QVector3D(2, 2, 2);
 
     lightSphere.addVertAndInd(sphereVertices, sphereIndices);
-    lightSphere.init(m_rhi.get(),m_rp.get(), vsWire, fsWire, m_initialUpdateBatch,m_shadowMapTexture,m_shadowMapSampler,set);
+    lightSphere.init(m_rhi.get(),m_rp.get(), vsWire, fsWire, initialUpdateBatch,shadowMapTexture,shadowMapSampler,set);
     lightSphere.transform.position = QVector3D(6.0f,10.4f, 15.4f);
     lightSphere.transform.scale = QVector3D(0.2f,0.2f, 0.2f);
 
     sphereModel.addVertAndInd(sphereVertices, sphereIndices);
-    sphereModel.init(m_rhi.get(),m_rp.get(), vs2, fs2, m_initialUpdateBatch,m_shadowMapTexture,m_shadowMapSampler,set);
+    sphereModel.init(m_rhi.get(),m_rp.get(), vs2, fs2, initialUpdateBatch,shadowMapTexture,shadowMapSampler,set);
     sphereModel.transform.position = QVector3D(2.0f,2.0f, -6.0f);
     sphereModel.transform.scale = QVector3D(3.0f,3.0f, 3.0f);
 
     sphereModel1.addVertAndInd(sphereVertices, sphereIndices);
-    sphereModel1.init(m_rhi.get(),m_rp.get(), vs2, fs2, m_initialUpdateBatch,m_shadowMapTexture,m_shadowMapSampler,set1);
+    sphereModel1.init(m_rhi.get(),m_rp.get(), vs2, fs2, initialUpdateBatch,shadowMapTexture,shadowMapSampler,set1);
     sphereModel1.transform.position = QVector3D(-2.0f,1.0f, -6.0f);
     sphereModel1.transform.scale = QVector3D(3.0f,3.0f, 3.0f);
 
@@ -400,39 +400,39 @@ void HelloWindow::customInit()
     models.append(&sphereModel1);
 
     mainCamera.Position = QVector3D(-0.5f,5.5f, 15.5f);
-    m_timer.start();
+    mainTimer.start();
 }
 
 
 void HelloWindow::customRender()
 {
 
-    m_dt = m_timer.restart() / 5000.0f;
-    lightTime += m_dt;
+    deltaTime = mainTimer.restart() / 5000.0f;
+    lightTime += deltaTime;
 
     QRhiResourceUpdateBatch *resourceUpdateBatch = m_rhi->nextResourceUpdateBatch();
     QRhiResourceUpdateBatch *shadowUpdateBatch = m_rhi->nextResourceUpdateBatch();
 
-    if (m_initialUpdateBatch) {
-        resourceUpdateBatch->merge(m_initialUpdateBatch);
-        shadowUpdateBatch->merge(m_initialUpdateBatch);
-        m_initialUpdateBatch->release();
-        m_initialUpdateBatch = nullptr;
+    if (initialUpdateBatch) {
+        resourceUpdateBatch->merge(initialUpdateBatch);
+        shadowUpdateBatch->merge(initialUpdateBatch);
+        initialUpdateBatch->release();
+        initialUpdateBatch = nullptr;
     }
 
     QRhiCommandBuffer *cb = m_sc->currentFrameCommandBuffer();
 
 
-    updateCamera(m_dt);
+    updateCamera(deltaTime);
 
    // QMatrix4x4 projection = m_projection;
-    m_opacity += m_opacityDir * 0.005f;
-    if (m_opacity < 0.0f || m_opacity > 1.0f) {
-        m_opacityDir *= -1;
-        m_opacity = qBound(0.0f, m_opacity, 1.0f);
+    objectOpacity += objectOpacityDir * 0.005f;
+    if (objectOpacity < 0.0f || objectOpacity > 1.0f) {
+        objectOpacityDir *= -1;
+        objectOpacity = qBound(0.0f, objectOpacity, 1.0f);
     }
 
-    m_rotation += 30.0f * m_dt;
+    modelRotation += 30.0f * deltaTime;
    // QVector3D camPos = mainCamera.Position;
     float objectOpacity = 1.0f;
     float radius = 30.0f;
@@ -488,7 +488,7 @@ void HelloWindow::customRender()
     ubo.lightPos    = QVector4D(lightPosition, 1.0f);
     ubo.lightColor  = QVector4D(lightColor, 1.0f);
     ubo.camPos      = QVector4D(mainCamera.Position, 1.0f);
-    ubo.opacity     = QVector4D(0.0f,0.0f,0.0f, m_opacity);
+    ubo.opacity     = QVector4D(0.0f,0.0f,0.0f, objectOpacity);
     ubo.misc       = QVector4D(debug,lightIntensity,ambientStrange,backendId);
 
     //========================================update uniform====================================================
@@ -507,10 +507,10 @@ void HelloWindow::customRender()
 
     sky->update(resourceUpdateBatch, invView, invProj, sunDir, lightTime);
 
-    Q_ASSERT(m_shadowMapRenderTarget);
-    Q_ASSERT(m_shadowPipeline);
-    Q_ASSERT(m_shadowSRB);
-    Q_ASSERT(m_shadowUbo);
+    Q_ASSERT(shadowMapRenderTarget);
+    Q_ASSERT(shadowPipeline);
+    Q_ASSERT(shadowSRB);
+    Q_ASSERT(shadowUbo);
 
     const QSize outputSizeInPixels = m_sc->currentPixelSize();
     const QColor clearColor = QColor::fromRgbF(0.0f, 0.0f, 0.0f, 1.0f);
@@ -520,12 +520,12 @@ void HelloWindow::customRender()
 
     //========================================draw====================================================
 
-    cb->beginPass(m_shadowMapRenderTarget, Qt::black, { 1.0f, 0 }, shadowUpdateBatch);
-    cb->setGraphicsPipeline(m_shadowPipeline);
+    cb->beginPass(shadowMapRenderTarget, Qt::black, { 1.0f, 0 }, shadowUpdateBatch);
+    cb->setGraphicsPipeline(shadowPipeline);
     cb->setViewport(QRhiViewport(0, 0, SHADOW_MAP_SIZE.width(), SHADOW_MAP_SIZE.height()));
 
     for (auto m : std::as_const(models)) {
-          m->DrawForShadow(cb,m_shadowPipeline,ubo,shadowUpdateBatch);
+          m->DrawForShadow(cb,shadowPipeline,ubo,shadowUpdateBatch);
     }
 
     // floor.DrawForShadow(cb,m_shadowPipeline,ubo,shadowUpdateBatch);
@@ -546,8 +546,8 @@ void HelloWindow::customRender()
         for (auto m : std::as_const(models)) {
             m->draw(cb);
         }
-        cb->setGraphicsPipeline(m_fullscreenQuadPipeline.get());
-        cb->setShaderResources(m_fullscreenQuadSrb.get());
+        cb->setGraphicsPipeline(uiPipeline.get());
+        cb->setShaderResources(uiSRB.get());
         cb->draw(3);
     cb->endPass();
 
@@ -558,11 +558,11 @@ void HelloWindow::keyPressEvent(QKeyEvent *e)
 {
     // switch fps
     if (e->key() == Qt::Key_Q) {
-        m_cameraMovementEnabled = !m_cameraMovementEnabled; // true/false
+        cameraMovementEnabled = !cameraMovementEnabled; // true/false
 
-        if (m_cameraMovementEnabled) {
+        if (cameraMovementEnabled) {
             setCursor(Qt::BlankCursor);
-            m_lastMousePos = mapFromGlobal(QCursor::pos());
+            lastMousePosition = mapFromGlobal(QCursor::pos());
         } else {
             setCursor(Qt::ArrowCursor);
         }
@@ -570,51 +570,51 @@ void HelloWindow::keyPressEvent(QKeyEvent *e)
     }
 
 
-    m_pressedKeys.insert(e->key());
+    pressedKeys.insert(e->key());
 }
 
 void HelloWindow::keyReleaseEvent(QKeyEvent *e)
 {
-    m_pressedKeys.remove(e->key());
+    pressedKeys.remove(e->key());
 }
 
 void HelloWindow::mouseMoveEvent(QMouseEvent *e)
 {
 
-    if (!m_cameraMovementEnabled) {
+    if (!cameraMovementEnabled) {
         return;
     }
 
-    if (m_lastMousePos.isNull()) {
-        m_lastMousePos = e->position();
+    if (lastMousePosition.isNull()) {
+        lastMousePosition = e->position();
         return;
     }
 
-    float xoffset = e->position().x() - m_lastMousePos.x();
-    float yoffset = m_lastMousePos.y() - e->position().y();
+    float xoffset = e->position().x() - lastMousePosition.x();
+    float yoffset = lastMousePosition.y() - e->position().y();
 
-    m_lastMousePos = e->position();
+    lastMousePosition = e->position();
     mainCamera.ProcessMouseMovement(xoffset, yoffset);
     // center cursor
     QPoint center = mapToGlobal(geometry().center());
     QCursor::setPos(center);
-    m_lastMousePos = mapFromGlobal(center);
+    lastMousePosition = mapFromGlobal(center);
 }
 
 void HelloWindow::updateCamera(float dt)
 {
-    if (!m_cameraMovementEnabled) {
+    if (!cameraMovementEnabled) {
         return;
     }
-    if (m_pressedKeys.contains(Qt::Key_W))
+    if (pressedKeys.contains(Qt::Key_W))
         mainCamera.ProcessKeyboard(FORWARD, dt);
-    if (m_pressedKeys.contains(Qt::Key_S))
+    if (pressedKeys.contains(Qt::Key_S))
         mainCamera.ProcessKeyboard(BACKWARD, dt);
-    if (m_pressedKeys.contains(Qt::Key_A))
+    if (pressedKeys.contains(Qt::Key_A))
         mainCamera.ProcessKeyboard(LEFT, dt);
-    if (m_pressedKeys.contains(Qt::Key_D))
+    if (pressedKeys.contains(Qt::Key_D))
         mainCamera.ProcessKeyboard(RIGHT, dt);
-    if (m_pressedKeys.contains(Qt::Key_Escape))
+    if (pressedKeys.contains(Qt::Key_Escape))
         qApp->quit();
 }
 
@@ -624,15 +624,15 @@ void HelloWindow::initShadowMapResources(QRhi *rhi) {
 
     //=======================================shadowpipeline=======================================
 
-    m_shadowMapTexture = rhi->newTexture(
+    shadowMapTexture = rhi->newTexture(
         QRhiTexture::D32F,                  //only depth
         SHADOW_MAP_SIZE,
         1,
         QRhiTexture::RenderTarget
         );
-    m_shadowMapTexture->create();
+    shadowMapTexture->create();
 
-    m_shadowMapSampler = rhi->newSampler(
+    shadowMapSampler = rhi->newSampler(
         QRhiSampler::Nearest,
         QRhiSampler::Nearest,
         QRhiSampler::None,
@@ -641,28 +641,28 @@ void HelloWindow::initShadowMapResources(QRhi *rhi) {
         QRhiSampler::ClampToEdge
         );
 
-    m_shadowMapSampler->create();
+    shadowMapSampler->create();
     const quint32 UBUF_SIZE = 512;
 
-    m_shadowUbo = rhi->newBuffer(QRhiBuffer::Dynamic, QRhiBuffer::UniformBuffer, UBUF_SIZE);
-    m_shadowUbo->create();
+    shadowUbo = rhi->newBuffer(QRhiBuffer::Dynamic, QRhiBuffer::UniformBuffer, UBUF_SIZE);
+    shadowUbo->create();
 
-    m_shadowSRB = rhi->newShaderResourceBindings();
-    m_shadowSRB->setBindings({
-        QRhiShaderResourceBinding::uniformBuffer(0, QRhiShaderResourceBinding::VertexStage, m_shadowUbo)
+    shadowSRB = rhi->newShaderResourceBindings();
+    shadowSRB->setBindings({
+        QRhiShaderResourceBinding::uniformBuffer(0, QRhiShaderResourceBinding::VertexStage, shadowUbo)
     });
-    m_shadowSRB->create();
+    shadowSRB->create();
 
     //  Render target description with depth attachment
     QRhiTextureRenderTargetDescription shadowRtDesc;
-    shadowRtDesc.setDepthTexture(m_shadowMapTexture);
+    shadowRtDesc.setDepthTexture(shadowMapTexture);
     //  Render target + render pass descriptor
-    m_shadowMapRenderTarget = rhi->newTextureRenderTarget(shadowRtDesc);
-    m_shadowMapRenderPassDesc = m_shadowMapRenderTarget->newCompatibleRenderPassDescriptor();
-    m_shadowMapRenderTarget->setRenderPassDescriptor(m_shadowMapRenderPassDesc);
-    m_shadowMapRenderTarget->create();
+    shadowMapRenderTarget = rhi->newTextureRenderTarget(shadowRtDesc);
+    shadowMapRenderPassDesc = shadowMapRenderTarget->newCompatibleRenderPassDescriptor();
+    shadowMapRenderTarget->setRenderPassDescriptor(shadowMapRenderPassDesc);
+    shadowMapRenderTarget->create();
 
-    m_shadowPipeline = rhi->newGraphicsPipeline();
+    shadowPipeline = rhi->newGraphicsPipeline();
 
     QRhiVertexInputLayout inputLayout;
     inputLayout.setBindings({
@@ -677,34 +677,34 @@ void HelloWindow::initShadowMapResources(QRhi *rhi) {
         { 0, 4, QRhiVertexInputAttribute::Float3, 11 * sizeof(float) }    // bitangent
     });
 
-    m_shadowPipeline->setVertexInputLayout(inputLayout);
+    shadowPipeline->setVertexInputLayout(inputLayout);
 
     QShader vs = getShader(":/shaders/prebuild/depth.vert.qsb");
     QShader fs = getShader(":/shaders/prebuild/depth.frag.qsb"); // depth-only shader
 
-    m_shadowPipeline->setShaderStages({
+    shadowPipeline->setShaderStages({
         { QRhiShaderStage::Vertex, vs },
         { QRhiShaderStage::Fragment, fs }
     });
 
-    m_shadowPipeline->setShaderResourceBindings(m_shadowSRB);
+    shadowPipeline->setShaderResourceBindings(shadowSRB);
 
     switch (rhi->backend()) {
     case QRhi::Vulkan:
       //  qDebug() << "Vulkan";
-        m_shadowPipeline->setCullMode(QRhiGraphicsPipeline::None);
+        shadowPipeline->setCullMode(QRhiGraphicsPipeline::None);
         break;
     case QRhi::OpenGLES2:
       //  qDebug() << "OpenGL / OpenGLES";
-        m_shadowPipeline->setCullMode(QRhiGraphicsPipeline::None);
+        shadowPipeline->setCullMode(QRhiGraphicsPipeline::None);
         break;
     case QRhi::D3D11:
      //   qDebug() << "Direct3D11";
-         m_shadowPipeline->setCullMode(QRhiGraphicsPipeline::None);
+         shadowPipeline->setCullMode(QRhiGraphicsPipeline::None);
         break;
     case QRhi::D3D12:
       //  qDebug() << "Direct3D12";
-         m_shadowPipeline->setCullMode(QRhiGraphicsPipeline::None);
+         shadowPipeline->setCullMode(QRhiGraphicsPipeline::None);
         break;
     case QRhi::Metal:      qDebug() << "Metal";
         break;
@@ -713,53 +713,53 @@ void HelloWindow::initShadowMapResources(QRhi *rhi) {
     }
 
     //Q_ASSERT(m_shadowMapRenderPassDesc); // sanity
-    m_shadowPipeline->setRenderPassDescriptor(m_shadowMapRenderPassDesc);
-    m_shadowPipeline->setTopology(QRhiGraphicsPipeline::Triangles);
-    m_shadowPipeline->setDepthTest(true);
-    m_shadowPipeline->setDepthWrite(true);
+    shadowPipeline->setRenderPassDescriptor(shadowMapRenderPassDesc);
+    shadowPipeline->setTopology(QRhiGraphicsPipeline::Triangles);
+    shadowPipeline->setDepthTest(true);
+    shadowPipeline->setDepthWrite(true);
 
     switch (rhi->backend()) {
     case QRhi::Vulkan:
     case QRhi::OpenGLES2:
-        m_shadowPipeline->setDepthBias(5);
-        m_shadowPipeline->setSlopeScaledDepthBias(1.1f);
+        shadowPipeline->setDepthBias(5);
+        shadowPipeline->setSlopeScaledDepthBias(1.1f);
         break;
 
     case QRhi::D3D11:
     case QRhi::D3D12:
-        m_shadowPipeline->setDepthBias(5);   // D3D constant bias
-        m_shadowPipeline->setSlopeScaledDepthBias(1.0f);
+        shadowPipeline->setDepthBias(5);   // D3D constant bias
+        shadowPipeline->setSlopeScaledDepthBias(1.0f);
         break;
 
     case QRhi::Metal:
-        m_shadowPipeline->setDepthBias(5);
-        m_shadowPipeline->setSlopeScaledDepthBias(1.0f);
+        shadowPipeline->setDepthBias(5);
+        shadowPipeline->setSlopeScaledDepthBias(1.0f);
         break;
 
     default:
         break;
     }
-    m_shadowPipeline->setDepthOp(QRhiGraphicsPipeline::LessOrEqual);
-    m_shadowPipeline->create();
+    shadowPipeline->setDepthOp(QRhiGraphicsPipeline::LessOrEqual);
+    shadowPipeline->create();
 
 
     //=======================================full screen pipeline=======================================
 
-    updateFullscreenTexture(m_sc->surfacePixelSize(), m_initialUpdateBatch);
+    updateFullscreenTexture(m_sc->surfacePixelSize(), initialUpdateBatch);
 
-    m_fullScreenSampler.reset(m_rhi->newSampler(QRhiSampler::Linear, QRhiSampler::Linear, QRhiSampler::None,
+    uiSampler.reset(m_rhi->newSampler(QRhiSampler::Linear, QRhiSampler::Linear, QRhiSampler::None,
                                       QRhiSampler::ClampToEdge, QRhiSampler::ClampToEdge));
-    m_fullScreenSampler->create();
+    uiSampler->create();
 
-    m_fullscreenQuadSrb.reset(m_rhi->newShaderResourceBindings());
-    m_fullscreenQuadSrb->setBindings({
+    uiSRB.reset(m_rhi->newShaderResourceBindings());
+    uiSRB->setBindings({
         QRhiShaderResourceBinding::sampledTexture(0, QRhiShaderResourceBinding::FragmentStage,
-                                                  m_fullscreenTexture.get(), m_fullScreenSampler.get())
+                                                  uiTexture.get(), uiSampler.get())
     });
-    m_fullscreenQuadSrb->create();
+    uiSRB->create();
 
-    m_fullscreenQuadPipeline.reset(m_rhi->newGraphicsPipeline());
-    m_fullscreenQuadPipeline->setShaderStages({
+    uiPipeline.reset(m_rhi->newGraphicsPipeline());
+    uiPipeline->setShaderStages({
         { QRhiShaderStage::Vertex, getShader(QLatin1String(":/shaders/prebuild/quad.vert.qsb")) },
         { QRhiShaderStage::Fragment, getShader(QLatin1String(":/shaders/prebuild/quad.frag.qsb")) }
     });
@@ -772,26 +772,26 @@ void HelloWindow::initShadowMapResources(QRhi *rhi) {
     blend.dstAlpha = QRhiGraphicsPipeline::OneMinusSrcAlpha;
     blend.opAlpha = QRhiGraphicsPipeline::Add;
 
-    m_fullscreenQuadPipeline->setTargetBlends({ blend });
-    m_fullscreenQuadPipeline->setDepthTest(false);
-    m_fullscreenQuadPipeline->setDepthWrite(false);
-    m_fullscreenQuadPipeline->setVertexInputLayout({});
-    m_fullscreenQuadPipeline->setShaderResourceBindings(m_fullscreenQuadSrb.get());
-    m_fullscreenQuadPipeline->setRenderPassDescriptor(m_rp.get());
-    m_fullscreenQuadPipeline->create();
+    uiPipeline->setTargetBlends({ blend });
+    uiPipeline->setDepthTest(false);
+    uiPipeline->setDepthWrite(false);
+    uiPipeline->setVertexInputLayout({});
+    uiPipeline->setShaderResourceBindings(uiSRB.get());
+    uiPipeline->setRenderPassDescriptor(m_rp.get());
+    uiPipeline->create();
 }
 
 void HelloWindow::updateFullscreenTexture(const QSize &pixelSize, QRhiResourceUpdateBatch *u)
 {
-    if (m_fullscreenTexture && m_fullscreenTexture->pixelSize() == pixelSize)
+    if (uiTexture && uiTexture->pixelSize() == pixelSize)
         return;
 
-    if (!m_fullscreenTexture)
-        m_fullscreenTexture.reset(m_rhi->newTexture(QRhiTexture::RGBA8, pixelSize));
+    if (!uiTexture)
+        uiTexture.reset(m_rhi->newTexture(QRhiTexture::RGBA8, pixelSize));
     else
-        m_fullscreenTexture->setPixelSize(pixelSize);
+        uiTexture->setPixelSize(pixelSize);
 
-    m_fullscreenTexture->create();
+    uiTexture->create();
 
      QImage image(pixelSize, QImage::Format_RGBA8888_Premultiplied);
      image.setDevicePixelRatio(devicePixelRatio());
@@ -822,7 +822,7 @@ void HelloWindow::updateFullscreenTexture(const QSize &pixelSize, QRhiResourceUp
 
     painter.setPen(Qt::white);
     QFont font;
-    font.setPixelSize(0.03 * qMin(width(), height()));
+    font.setPixelSize(0.04 * qMin(width(), height()));
     painter.setFont(font);
     //painter.drawText(QRectF(QPointF(10, 10), size() - QSize(20, 20)), 0,QLatin1String("QRhi %1 API").arg(graphicsApiName()));
     painter.drawText(QRectF(QPointF(10, 10), size() - QSize(20, 20)), 0,QLatin1String("QRhi - %1").arg(graphicsApiName()));
@@ -832,7 +832,7 @@ void HelloWindow::updateFullscreenTexture(const QSize &pixelSize, QRhiResourceUp
     if (m_rhi->isYUpInNDC())
         image = image.mirrored();
 
-    u->uploadTexture(m_fullscreenTexture.get(), image);
+    u->uploadTexture(uiTexture.get(), image);
 }
 
 // qDebug() << "lightprojection = " << lightProjection << "\n";

@@ -18,6 +18,9 @@ qt_add_executable(rhi-window
     qtrhi3d/transform.cpp
     qtrhi3d/types.h
     qtrhi3d/proceduralsky.h
+    qtrhi3d/hdrisky.h
+    qtrhi3d/hdrisky.cpp
+    qtrhi3d/proceduralsky.cpp
 
 )
 
@@ -58,8 +61,8 @@ qt_add_resources(rhi-window "rhi-window"
         "shaders/prebuild/depth.frag.qsb"
         "shaders/prebuild/pcgsky.vert.qsb"
         "shaders/prebuild/pcgsky.frag.qsb"
-        "shaders/color.vert.hlsl"
-        "shaders/color.frag.hlsl"
+        #"shaders/color.vert.hlsl"
+        #"shaders/color.frag.hlsl"
         "shaders/mcolor.vert"
         "shaders/mcolor.frag"
         "shaders/quad.vert"
@@ -78,8 +81,9 @@ qt_add_resources(rhi-window "rhi-window"
         "shaders/depth.vert"
         "shaders/pcgsky.frag"
         "shaders/pcgsky.vert"
-        "../assets/textures/floor.jpg"
         "../assets/textures/floor.png"
+        "../assets/textures/floorN.png"
+        "../assets/textures/floorM.png"
          "../assets/textures/brick/victorian-brick_albedo.png"
          "../assets/textures/brick/victorian-brick_ao.png"
          "../assets/textures/brick/victorian-brick_height.png"
