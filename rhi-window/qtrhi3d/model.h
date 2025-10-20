@@ -27,6 +27,9 @@ public:
     void addVertAndInd(const QVector<float> &vertices, const QVector<quint16> &indices);
     void init(QRhi *rhi,QRhiRenderPassDescriptor *rp,const QShader &vs,const QShader &fs,
               QRhiResourceUpdateBatch *u,QRhiTexture *shadowmap,QRhiSampler *shadowsampler,const TextureSet &set);
+    void updateGeometry(QRhi *rhi, QRhiResourceUpdateBatch *u,
+                        const QVector<float> &vertices,
+                        const QVector<quint16> &indices);
 
     void updateUbo(Ubo ubo,QRhiResourceUpdateBatch *u);
     void updateShadowUbo(Ubo ubo, QRhiResourceUpdateBatch *u);
@@ -75,6 +78,37 @@ inline void Model::addVertAndInd(const QVector<float> &vertices, const QVector<q
     m_ind = indices;
     m_indexCount = indices.size();
 }
+inline void Model::updateGeometry(QRhi *rhi, QRhiResourceUpdateBatch *u,
+                                  const QVector<float> &vertices,
+                                  const QVector<quint16> &indices)
+{
+    if (!rhi || !u)
+        return;
+    m_vert = vertices;
+    m_ind = indices;
+    m_indexCount = indices.size();
+
+    QVector<float> newVerts = computeTangents(vertices, indices);
+
+    size_t vSize = newVerts.size() * sizeof(float);
+    size_t iSize = indices.size() * sizeof(quint16);
+
+    bool recreateVBuf = !m_vbuf || m_vbuf->size() < vSize;
+    bool recreateIBuf = !m_ibuf || m_ibuf->size() < iSize;
+
+    if (recreateVBuf) {
+        m_vbuf.reset(rhi->newBuffer(QRhiBuffer::Dynamic, QRhiBuffer::VertexBuffer, vSize));
+        m_vbuf->create();
+    }
+
+    if (recreateIBuf) {
+        m_ibuf.reset(rhi->newBuffer(QRhiBuffer::Dynamic, QRhiBuffer::IndexBuffer, iSize));
+        m_ibuf->create();
+    }
+
+    u->updateDynamicBuffer(m_vbuf.get(), 0, vSize, newVerts.constData());
+    u->updateDynamicBuffer(m_ibuf.get(), 0, iSize, indices.constData());
+}
 
 inline void Model::init(QRhi *rhi,QRhiRenderPassDescriptor *rp,const QShader &vs,const QShader &fs,
                  QRhiResourceUpdateBatch *u,QRhiTexture *shadowmap,QRhiSampler *shadowsampler,const TextureSet &set)
@@ -82,14 +116,16 @@ inline void Model::init(QRhi *rhi,QRhiRenderPassDescriptor *rp,const QShader &vs
 
     QVector<float>  m_vert1= computeTangents( m_vert,m_ind);
 
-    m_vbuf.reset(rhi->newBuffer(QRhiBuffer::Immutable, QRhiBuffer::VertexBuffer, m_vert1.size() * sizeof(float)));
+    m_vbuf.reset(rhi->newBuffer(QRhiBuffer::Dynamic, QRhiBuffer::VertexBuffer, m_vert1.size() * sizeof(float)));
     m_vbuf->create();
-    u->uploadStaticBuffer(m_vbuf.get(), m_vert1.constData());
 
-    m_ibuf.reset(rhi->newBuffer(QRhiBuffer::Immutable, QRhiBuffer::IndexBuffer, m_ind.size() * sizeof(quint16)));
+    m_ibuf.reset(rhi->newBuffer(QRhiBuffer::Dynamic, QRhiBuffer::IndexBuffer, m_ind.size() * sizeof(quint16)));
     m_ibuf->create();
-    u->uploadStaticBuffer(m_ibuf.get(), m_ind.constData());
+   // u->uploadStaticBuffer(m_ibuf.get(), m_ind.constData());
+    u->updateDynamicBuffer(m_vbuf.get(), 0, m_vert1.size() * sizeof(float), m_vert1.constData());
 
+    // Index buffer
+    u->updateDynamicBuffer(m_ibuf.get(), 0, m_ind.size() * sizeof(quint16), m_ind.constData());
     m_indexCount = m_ind.size();
 
     const quint32 UBUF_SIZE = 512;

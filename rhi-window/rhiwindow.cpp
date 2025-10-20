@@ -9,6 +9,7 @@
 #include <QRandomGenerator>
 #include <rhi/qshader.h>
 #include "qtrhi3d/geometry.h"
+#include "qtrhi3d/rhiinfo.h"
 #include <rhi/qrhi_platform.h>
 
 
@@ -290,6 +291,8 @@ void HelloWindow::customInit()
     qDebug() << "Driver version:" << info.CpuDevice;
     qDebug() << "Vendor ID:" << QString("0x%1").arg(info.vendorId, 4, 16, QChar('0'));
     qDebug() << "Device ID:" << QString("0x%1").arg(info.deviceId, 4, 16, QChar('0'));
+    dumpGpuFeatures(m_rhi.get());
+
     sky = std::make_unique<ProceduralSkyRHI>(m_rhi.get(), m_rp.get());
 
     const QSize outputSize = m_sc->currentPixelSize();
@@ -412,6 +415,7 @@ void HelloWindow::customRender()
 
     QRhiResourceUpdateBatch *resourceUpdateBatch = m_rhi->nextResourceUpdateBatch();
     QRhiResourceUpdateBatch *shadowUpdateBatch = m_rhi->nextResourceUpdateBatch();
+    QRhiResourceUpdateBatch *resourceUpdateBatch1 = m_rhi->nextResourceUpdateBatch();
 
     if (initialUpdateBatch) {
         resourceUpdateBatch->merge(initialUpdateBatch);
@@ -506,6 +510,14 @@ void HelloWindow::customRender()
     //float time = m_casovac->elapsedSeconds();
 
     sky->update(resourceUpdateBatch, invView, invProj, sunDir, lightTime);
+   // QRhiResourceUpdateBatch *u = rhi->nextResourceUpdateBatch();
+
+    QVector<float> cVertices;
+    QVector<quint16> cIndices;
+    generateCube(1.0f, cVertices, cIndices);
+   cubeModel.updateGeometry(m_rhi.get(), resourceUpdateBatch1, cVertices, cIndices);
+   // m_rhi->submitResourceUpdate();
+    cb->resourceUpdate(resourceUpdateBatch1);
 
     Q_ASSERT(shadowMapRenderTarget);
     Q_ASSERT(shadowPipeline);
