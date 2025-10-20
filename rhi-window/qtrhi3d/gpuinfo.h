@@ -1,10 +1,12 @@
 #ifndef GPUINFO_H
 #define GPUINFO_H
+
 #include <QDebug>
 #include <rhi/qrhi.h>
 #include <QDebug>
 #include <QList>
 #include <QPair>
+
 void dumpGpuFeatures(QRhi *rhi)
 {
     if (!rhi) {
@@ -12,8 +14,12 @@ void dumpGpuFeatures(QRhi *rhi)
         return;
     }
 
-    // Seznam všech funkcí a jejich názvů pro výpis.
-    // Použití static const zajistí, že se seznam inicializuje pouze jednou.
+    QRhiDriverInfo info = rhi->driverInfo();
+    qDebug() << "GPU / Driver name:" << info.deviceName;
+    qDebug() << "Driver version:" << info.CpuDevice;
+    qDebug() << "Vendor ID:" << QString("0x%1").arg(info.vendorId, 4, 16, QChar('0'));
+    qDebug() << "Device ID:" << QString("0x%1").arg(info.deviceId, 4, 16, QChar('0'));
+
     static const QList<QPair<QRhi::Feature, const char*>> allFeatures = {
         { QRhi::MultisampleTexture, "MultisampleTexture" },
         { QRhi::MultisampleRenderBuffer, "MultisampleRenderBuffer" },

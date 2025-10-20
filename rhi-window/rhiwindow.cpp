@@ -286,11 +286,7 @@ void HelloWindow::customInit()
 
     initShadowMapResources(m_rhi.get());
 
-    QRhiDriverInfo info = m_rhi->driverInfo();
-    qDebug() << "GPU / Driver name:" << info.deviceName;
-    qDebug() << "Driver version:" << info.CpuDevice;
-    qDebug() << "Vendor ID:" << QString("0x%1").arg(info.vendorId, 4, 16, QChar('0'));
-    qDebug() << "Device ID:" << QString("0x%1").arg(info.deviceId, 4, 16, QChar('0'));
+
     dumpGpuFeatures(m_rhi.get());
 
     sky = std::make_unique<ProceduralSkyRHI>(m_rhi.get(), m_rp.get());
