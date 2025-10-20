@@ -23,6 +23,14 @@ struct alignas(16) GpuUniforms {
 };
 
 class ProceduralSkyRHI {
+
+private:
+    QRhi *m_rhi = nullptr;
+    SkyUniforms m_uboData; // cpu dat
+    std::unique_ptr<QRhiBuffer> m_ubo;
+    std::unique_ptr<QRhiShaderResourceBindings> m_srb;
+    std::unique_ptr<QRhiGraphicsPipeline> m_pipeline;
+
 public:
 
     ProceduralSkyRHI(QRhi *rhi,QRhiRenderPassDescriptor *rp)
@@ -110,12 +118,7 @@ public:
     }
 
 
-private:
-    QRhi *m_rhi = nullptr;
-    SkyUniforms m_uboData; // cpu dat
-    std::unique_ptr<QRhiBuffer> m_ubo;
-    std::unique_ptr<QRhiShaderResourceBindings> m_srb;
-    std::unique_ptr<QRhiGraphicsPipeline> m_pipeline;
+
 };
 
 #endif // PROCEDURALSKYRHI_H

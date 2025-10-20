@@ -9,7 +9,7 @@
 #include <QRandomGenerator>
 #include <rhi/qshader.h>
 #include "qtrhi3d/geometry.h"
-#include "qtrhi3d/rhiinfo.h"
+#include "qtrhi3d/gpuinfo.h"
 #include <rhi/qrhi_platform.h>
 
 
@@ -282,12 +282,12 @@ HelloWindow::~HelloWindow()
 }
 void HelloWindow::customInit()
 {
+   // dumpGpuFeatures(m_rhi.get());
+
     initialUpdateBatch = m_rhi->nextResourceUpdateBatch();
 
     initShadowMapResources(m_rhi.get());
 
-
-    dumpGpuFeatures(m_rhi.get());
 
     sky = std::make_unique<ProceduralSkyRHI>(m_rhi.get(), m_rp.get());
 
@@ -319,29 +319,31 @@ void HelloWindow::customInit()
     QShader vs2 ;
     QShader fs2 ;
 
-
-  //  enum QRhi::Implementation
-
     switch (m_rhi->backend()) {
     case QRhi::Vulkan:
      //   qDebug() << "Vulkan";
         vs2 = getShader(":/shaders/prebuild/pbrvk.vert.qsb");
         fs2 = getShader(":/shaders/prebuild/pbrvk.frag.qsb");
+        shaderapi = 3;
         break;
     case QRhi::OpenGLES2:
      //   qDebug() << "OpenGL / OpenGLES";
+
          vs2 = getShader(":/shaders/prebuild/pbr.vert.qsb");
          fs2 = getShader("://shaders/prebuild/pbr.frag.qsb");
+         shaderapi = 1;
         break;
     case QRhi::D3D11:
      //   qDebug() << "Direct3D11";
         vs2 = getShader(":/shaders/prebuild/pbrd3d.vert.qsb");
         fs2 = getShader(":/shaders/prebuild/pbrd3d.frag.qsb");
         break;
+        shaderapi = 2;
     case QRhi::D3D12:
        // qDebug() << "Direct3D12";
         vs2 = getShader(":/shaders/prebuild/pbrd3d.vert.qsb");
         fs2 = getShader(":/shaders/prebuild/pbrd3d.frag.qsb");
+        shaderapi = 2;
         break;
     case QRhi::Metal:      qDebug() << "Metal";
         break;
@@ -489,7 +491,7 @@ void HelloWindow::customRender()
     ubo.lightColor  = QVector4D(lightColor, 1.0f);
     ubo.camPos      = QVector4D(mainCamera.Position, 1.0f);
     ubo.opacity     = QVector4D(0.0f,0.0f,0.0f, objectOpacity);
-    ubo.misc       = QVector4D(debug,lightIntensity,ambientStrange,backendId);
+    ubo.misc       = QVector4D(debug,lightIntensity,ambientStrange,shaderapi);
 
     //========================================update uniform====================================================
     for (auto m : std::as_const(models)) {

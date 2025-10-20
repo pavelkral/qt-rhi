@@ -98,7 +98,7 @@ public:
     float modelRotation = 0;
     float objectOpacity = 1;
     int objectOpacityDir = -1;
-
+    float shaderapi = 0;
     Camera mainCamera;
     Model cubeModel1;
     Model cubeModel;

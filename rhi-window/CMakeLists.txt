@@ -23,6 +23,7 @@ qt_add_executable(rhi-window
     qtrhi3d/proceduralsky.cpp
     qtrhi3d/gpuinfo.h
 
+
 )
 
 set_target_properties(rhi-window PROPERTIES
@@ -62,6 +63,7 @@ qt_add_resources(rhi-window "rhi-window"
         "shaders/prebuild/depth.frag.qsb"
         "shaders/prebuild/pcgsky.vert.qsb"
         "shaders/prebuild/pcgsky.frag.qsb"
+        "shaders/prebuild/mainpbr.frag.qsb"
         #"shaders/color.vert.hlsl"
         #"shaders/color.frag.hlsl"
         "shaders/mcolor.vert"
@@ -78,6 +80,7 @@ qt_add_resources(rhi-window "rhi-window"
         "shaders/pbrvk.vert"
         "shaders/pbrd3d.frag"
         "shaders/pbrd3d.vert"
+        "shaders/mainpbr.frag"
         "shaders/depth.frag"
         "shaders/depth.vert"
         "shaders/pcgsky.frag"

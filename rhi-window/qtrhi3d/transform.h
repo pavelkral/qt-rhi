@@ -5,7 +5,7 @@
 #include <QVector3D>
 #include <QMatrix4x4>
 
-class Transform
+struct Transform
 {
 public:
     QVector3D position;
