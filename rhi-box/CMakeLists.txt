@@ -1,10 +1,10 @@
-# Copyright (C) 2023 The Qt Company Ltd.
-# SPDX-License-Identifier: LicenseRef-Qt-Commercial OR BSD-3-Clause
 
 cmake_minimum_required(VERSION 3.16)
 project(rhibox LANGUAGES CXX)
 
-find_package(Qt6 REQUIRED COMPONENTS Core GuiPrivate Widgets)
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+find_package(Qt6 REQUIRED COMPONENTS Core GuiPrivate Widgets ShaderTools)
 
 qt_standard_project_setup()
 
@@ -16,7 +16,14 @@ include_directories(
 qt_add_executable(rhibox
     examplewidget.cpp examplewidget.h cube.h
     main.cpp
-    RhiFBXModel.h
+
+    utils.h
+    model.h model.cpp
+    render-item.h
+    mesh.h mesh.cpp
+    bone.h
+    animator.h
+    animation.h
 
 )
 
@@ -64,21 +71,11 @@ else() # Unix/Linux/Mac
 endif()
 # needs GuiPrivate to be able to include <rhi/qrhi.h>
 
-
-qt_add_resources(rhibox "rhibox"
-    PREFIX
-        "/"
+qt_add_shaders(rhibox "shaders"
+    PREFIX "/"
     FILES
-        "shaders/prebuild/model.vert.qsb"
-        "shaders/prebuild/model.frag.qsb"
-        "shaders/model.vert"
-        "shaders/model.frag"
-        "shaders/prebuild/cube.vert.qsb"
-        "shaders/prebuild/lambert.frag.qsb"
-        "shaders/prebuild/toon.frag.qsb"
-        "shaders/cube.vert"
-        "shaders/lambert.frag"
-        "shaders/toon.frag"
+        "model.vert"
+        "model.frag"
 )
 
 install(TARGETS rhibox
