@@ -24,7 +24,7 @@ void RhiWidget::initialize(QRhiCommandBuffer *)
         return;
     }
 
-    load(url);
+   // load(url);
 }
 
 inline auto ns()
@@ -53,12 +53,13 @@ void RhiWidget::render(QRhiCommandBuffer *cb)
 
         animators_[0]->update(ts - last_ts_);
         const auto transforms = animators_[0]->bone_matrices();
-
         item->create(rhi_, renderTarget());
         item->upload(rub, mvp_, transforms);
     }
 
     last_ts_ = ts;
+
+//........................................................
 
     cb->beginPass(renderTarget(), Qt::black, { 1.0f, 0 }, rub);
 
@@ -78,10 +79,9 @@ void RhiWidget::load(const QString& path)
     animators_.clear();
 
     items_.emplace_back(std::make_unique<Model>(path));
-    animations_.emplace_back(
-        std::make_unique<Animation>(path.toStdString(), dynamic_cast<Model *>(items_.back().get())));
-
+    animations_.emplace_back(std::make_unique<Animation>(path.toStdString(), dynamic_cast<Model *>(items_.back().get())));
     animators_.emplace_back(std::make_unique<Animator>(animations_.back().get()));
+
     update();
 }
 

@@ -151,6 +151,7 @@ inline void Model::init(QRhi *rhi,QRhiRenderPassDescriptor *rp,const QShader &vs
     // set.height = ":/assets/textures/brick/victorian-brick_height.png";
     // set.ao = ":/assets/textures/brick/victorian-brick_ao.png";
 
+
     loadTexture(rhi,QSize(), u,set.albedo,m_texture,m_sampler);
     loadTexture(rhi,QSize(), u,set.normal,m_tex_norm,m_sampler_norm);
     loadTexture(rhi,QSize(), u,set.metallic,m_texture_met,m_sampler_met);
@@ -165,11 +166,11 @@ inline void Model::init(QRhi *rhi,QRhiRenderPassDescriptor *rp,const QShader &vs
     m_srb->setBindings({
         QRhiShaderResourceBinding::uniformBuffer(0,QRhiShaderResourceBinding::VertexStage | QRhiShaderResourceBinding::FragmentStage , m_ubuf.get()),
         QRhiShaderResourceBinding::sampledTexture(1,QRhiShaderResourceBinding::FragmentStage, m_texture.get(), m_sampler.get()),
-        QRhiShaderResourceBinding::sampledTexture(2,QRhiShaderResourceBinding::FragmentStage, m_tex_norm.get(), m_sampler_norm.get()),
-        QRhiShaderResourceBinding::sampledTexture(3,QRhiShaderResourceBinding::FragmentStage, m_texture_met.get(), m_sampler_met.get()),
-        QRhiShaderResourceBinding::sampledTexture(4,QRhiShaderResourceBinding::FragmentStage, m_texture_rough.get(), m_sampler_rough.get()),
-        QRhiShaderResourceBinding::sampledTexture(5,QRhiShaderResourceBinding::FragmentStage, m_texture_ao.get(), m_sampler_ao.get()),
-        QRhiShaderResourceBinding::sampledTexture(6,QRhiShaderResourceBinding::FragmentStage, m_texture_height.get(), m_sampler_height.get()),
+        QRhiShaderResourceBinding::sampledTexture(2,QRhiShaderResourceBinding::FragmentStage, m_tex_norm.get(), m_sampler.get()),
+        QRhiShaderResourceBinding::sampledTexture(3,QRhiShaderResourceBinding::FragmentStage, m_texture_met.get(), m_sampler.get()),
+        QRhiShaderResourceBinding::sampledTexture(4,QRhiShaderResourceBinding::FragmentStage, m_texture_rough.get(), m_sampler.get()),
+        QRhiShaderResourceBinding::sampledTexture(5,QRhiShaderResourceBinding::FragmentStage, m_texture_ao.get(), m_sampler.get()),
+        QRhiShaderResourceBinding::sampledTexture(6,QRhiShaderResourceBinding::FragmentStage, m_texture_height.get(), m_sampler.get()),
         QRhiShaderResourceBinding::sampledTexture(7,QRhiShaderResourceBinding::FragmentStage, shadowmap, shadowsampler)
     });
 

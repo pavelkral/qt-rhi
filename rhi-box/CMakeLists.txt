@@ -14,7 +14,7 @@ include_directories(
 )
 
 qt_add_executable(rhibox
-    examplewidget.cpp examplewidget.h cube.h
+    examplewidget.cpp examplewidget.h
     main.cpp
 
     utils.h
