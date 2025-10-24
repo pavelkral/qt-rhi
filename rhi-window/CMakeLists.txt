@@ -28,8 +28,6 @@ qt_add_executable(rhi-window
     qtrhi3d/gpuinfo.h
     qtrhi3d/fbxmodel.h qtrhi3d/fbxmodel.cpp
     qtrhi3d/assimputils.h
-
-
 )
 
 target_include_directories(rhi-window PRIVATE
