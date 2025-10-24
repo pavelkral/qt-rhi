@@ -360,11 +360,11 @@ void HelloWindow::customInit()
 
     QVector<float> planeVertices;
     QVector<quint16> planeIndices;
-    generatePlane(3.0f, 3.0f, 10, 10, 1.0f, 1.0f, planeVertices, planeIndices);
+    generatePlane(150.0f, 150.0f, 10, 10, 20.0f, 20.0f, planeVertices, planeIndices);
 
-    floor.addVertAndInd(indexedPlaneVertices ,indexedPlaneIndices );
+    floor.addVertAndInd(planeVertices ,planeIndices );
     floor.init(m_rhi.get(), m_rp.get(), vs2, fs2, initialUpdateBatch,shadowMapTexture,shadowMapSampler,set);
-    //floor.transform.position = QVector3D(0, -0.5f, 0);
+    floor.transform.position = QVector3D(0, -0.5f, 0);
     //floor.transform.scale = QVector3D(10, 10, 10);
     //floor.transform.rotation.setX( 270.0f);
 
@@ -392,6 +392,14 @@ void HelloWindow::customInit()
     sphereModel1.init(m_rhi.get(),m_rp.get(), vs2, fs2, initialUpdateBatch,shadowMapTexture,shadowMapSampler,set1);
     sphereModel1.transform.position = QVector3D(-2.0f,1.0f, -6.0f);
     sphereModel1.transform.scale = QVector3D(3.0f,3.0f, 3.0f);
+    QString url = QCoreApplication::applicationDirPath() + "/assets/models/jet/jet.fbx";
+
+    if (!QFile::exists(url)) {
+        qWarning() << "Soubor neexistuje:" << url;
+        return;
+    }
+    model = std::make_unique<FbxModel>(url);
+    model->create(m_rhi.get(),m_sc->currentFrameRenderTarget(),m_rp.get());
 
     models.append(&floor);
     models.append(&cubeModel1);
@@ -527,7 +535,16 @@ void HelloWindow::customRender()
     const QColor clearColorDepth = QColor::fromRgbF(1.0f, 1,1,1);
 
     updateFullscreenTexture(outputSizeInPixels, resourceUpdateBatch);
+    QMatrix4x4 mvp_;
+    mvp_.setToIdentity();
+    QMatrix4x4 model1;
 
+    model1.setToIdentity();
+   // mvp_.perspective(45.0f, rtsz.width() / (float)rtsz.height(), 0.01f, 3000.0f);
+    model1.translate({ -5.0f, 0.0f, -28.0f });
+   // mvp_.rotate(rotation_);
+    mvp_ = m_projection * view * model1;
+    model->updateUbo(resourceUpdateBatch, mvp_);
     //========================================draw====================================================
 
     cb->beginPass(shadowMapRenderTarget, Qt::black, { 1.0f, 0 }, shadowUpdateBatch);
@@ -549,13 +566,12 @@ void HelloWindow::customRender()
     cb->beginPass(m_sc->currentFrameRenderTarget(), clearColor, { 1.0f, 0 }, resourceUpdateBatch);
     cb->setViewport({ 0, 0, float(outputSizeInPixels.width()), float(outputSizeInPixels.height()) });
 
-
-
        sky->draw(cb);
 
         for (auto m : std::as_const(models)) {
             m->draw(cb);
         }
+        model->draw(cb, { 0, 0, float(outputSizeInPixels.width()), float(outputSizeInPixels.height()) });
         cb->setGraphicsPipeline(uiPipeline.get());
         cb->setShaderResources(uiSRB.get());
         cb->draw(3);

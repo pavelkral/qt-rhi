@@ -5,6 +5,7 @@
 #define WINDOW_H
 
 #include "qtrhi3d/camera.h"
+#include "qtrhi3d/fbxmodel.h"
 #include "qtrhi3d/model.h"
 #include "qtrhi3d/proceduralsky.h"
 
@@ -106,6 +107,7 @@ public:
     Model sphereModel1;
     Model lightSphere;
     Model floor;
+    std::unique_ptr<FbxModel> model = nullptr;
     std::unique_ptr<ProceduralSkyRHI> sky = nullptr;
     QVector<Model*> models;
 };

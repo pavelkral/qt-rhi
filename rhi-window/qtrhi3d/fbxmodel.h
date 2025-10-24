@@ -1,5 +1,5 @@
-#ifndef RHI_MODEL_H
-#define RHI_MODEL_H
+#ifndef FBXMODEL_H
+#define FBXMODEL_H
 
 #include <qdir.h>
 #include <rhi/qrhi.h>
@@ -14,9 +14,9 @@
 #include <map>
 #include <memory>
 #include <array>
-#include "utils.h"
+#include "assimputils.h"
 
-struct Vertex {
+struct MVertex {
     QVector3D position{};
     QVector3D normal{};
     QVector2D coords{};
@@ -34,14 +34,14 @@ struct Material {
 class Mesh {
 public:
 
-    Mesh(std::vector<Vertex> verts, std::vector<uint32_t> inds, std::vector<Material> mats, const QMatrix4x4& t)
+    Mesh(std::vector<MVertex> verts, std::vector<uint32_t> inds, std::vector<Material> mats, const QMatrix4x4& t)
         : vertices(std::move(verts)), indices(std::move(inds)), materials(std::move(mats)), transform_(t) {}
 
-    void create(QRhi *rhi, QRhiRenderTarget *rt) {
+    void create(QRhi *rhi, QRhiRenderTarget *rt,QRhiRenderPassDescriptor *rp) {
         if (rhi_ != rhi) pipeline_.reset(), rhi_ = rhi;
         if (!pipeline_) {
             vbuf_.reset(rhi->newBuffer(QRhiBuffer::Immutable, QRhiBuffer::VertexBuffer,
-                                       static_cast<quint32>(vertices.size() * sizeof(Vertex))));
+                                       static_cast<quint32>(vertices.size() * sizeof(MVertex))));
             vbuf_->create();
             ibuf_.reset(rhi->newBuffer(QRhiBuffer::Immutable, QRhiBuffer::IndexBuffer,
                                        static_cast<quint32>(indices.size() * sizeof(uint32_t))));
@@ -71,8 +71,8 @@ public:
             pipeline_.reset(rhi->newGraphicsPipeline());
             pipeline_->setTopology(QRhiGraphicsPipeline::Triangles);
             pipeline_->setShaderStages({
-                { QRhiShaderStage::Vertex, LoadShader(":/vertex.vert.qsb") },
-                { QRhiShaderStage::Fragment, LoadShader(":/fragment.frag.qsb") }
+                { QRhiShaderStage::Vertex, LoadShader(":/shaders/prebuild/model.vert.qsb") },
+                { QRhiShaderStage::Fragment, LoadShader(":/shaders/prebuild/model.frag.qsb") }
             });
             QRhiVertexInputLayout layout{};
             layout.setBindings({ 8 * sizeof(float) });
@@ -83,7 +83,7 @@ public:
             });
             pipeline_->setVertexInputLayout(layout);
             pipeline_->setShaderResourceBindings(srb_.get());
-            pipeline_->setRenderPassDescriptor(rt->renderPassDescriptor());
+            pipeline_->setRenderPassDescriptor(rp);
             pipeline_->setDepthTest(true);
             pipeline_->setDepthWrite(true);
             pipeline_->setCullMode(QRhiGraphicsPipeline::Back);
@@ -91,7 +91,7 @@ public:
         }
     }
 
-    void upload(QRhiResourceUpdateBatch *rub, const QMatrix4x4& mvp) {
+    void updateUbo(QRhiResourceUpdateBatch *rub, const QMatrix4x4& mvp) {
         if (!uploaded_) {
             rub->uploadStaticBuffer(vbuf_.get(), vertices.data());
             rub->uploadStaticBuffer(ibuf_.get(), indices.data());
@@ -110,7 +110,7 @@ public:
     }
 
 public:
-    std::vector<Vertex> vertices;
+    std::vector<MVertex> vertices;
     std::vector<uint32_t> indices;
     std::vector<Material> materials;
 
@@ -133,19 +133,19 @@ private:
 
 //==========================================================================================================================
 
-class Model {
+class FbxModel {
 public:
-    explicit Model(const QString& path) { load(path); }
+    explicit FbxModel(const QString& path) { load(path); }
 
     bool load(const QString& resource) {
         dir_ = QFileInfo(resource).dir().absolutePath().toStdString();
         Assimp::Importer importer;
         const auto scene = importer.ReadFile(resource.toStdString(),
-                                                   aiProcess_Triangulate |
-                                                       aiProcess_GenSmoothNormals |
-                                                       aiProcess_FlipUVs |
-                                                       aiProcess_CalcTangentSpace |
-                                                       aiProcess_GenUVCoords);
+                                             aiProcess_Triangulate |
+                                                 aiProcess_GenSmoothNormals |
+                                                 aiProcess_FlipUVs |
+                                                 aiProcess_CalcTangentSpace |
+                                                 aiProcess_GenUVCoords);
         if (!scene || !scene->mRootNode || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE) {
             qDebug() << "Assimp error:" << importer.GetErrorString();
             return false;
@@ -168,7 +168,7 @@ public:
     }
 
     void load_mesh(const aiScene *scene, const aiMesh *mesh, const QMatrix4x4& transform) {
-        std::vector<Vertex> vertices(mesh->mNumVertices);
+        std::vector<MVertex> vertices(mesh->mNumVertices);
         for (unsigned i = 0; i < mesh->mNumVertices; ++i) {
             vertices[i].position = { mesh->mVertices[i].x, mesh->mVertices[i].y, mesh->mVertices[i].z };
             if (mesh->HasNormals()) vertices[i].normal = { mesh->mNormals[i].x, mesh->mNormals[i].y, mesh->mNormals[i].z };
@@ -193,7 +193,7 @@ public:
         meshes_.emplace_back(std::make_unique<Mesh>(vertices, indices, materials, transform));
     }
 
-    void create(QRhi *rhi, QRhiRenderTarget *rt) {
+    void create(QRhi *rhi, QRhiRenderTarget *rt,QRhiRenderPassDescriptor *rp) {
         if (!created_) {
             for (auto& [path, tex] : textures_) {
                 QImage img;
@@ -206,10 +206,10 @@ public:
                     mat.texture = textures_[mat.path];
             created_ = true;
         }
-        for (auto& mesh : meshes_) mesh->create(rhi, rt);
+        for (auto& mesh : meshes_) mesh->create(rhi, rt,rp);
     }
 
-    void upload(QRhiResourceUpdateBatch *rub, const QMatrix4x4& mvp) {
+    void updateUbo(QRhiResourceUpdateBatch *rub, const QMatrix4x4& mvp) {
         if (!uploaded_) {
             for (auto& [path, tex] : textures_) {
                 QImage img;
@@ -217,7 +217,7 @@ public:
             }
             uploaded_ = true;
         }
-        for (auto& mesh : meshes_) mesh->upload(rub, mvp);
+        for (auto& mesh : meshes_) mesh->updateUbo(rub, mvp);
     }
 
     void draw(QRhiCommandBuffer *cb, const QRhiViewport& vp) {
@@ -232,5 +232,4 @@ private:
     std::map<std::string, std::shared_ptr<QRhiTexture>> textures_;
 };
 
-#endif // RHI_MODEL_H
-
+#endif // FBXMODEL_H

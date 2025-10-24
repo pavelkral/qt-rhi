@@ -4,7 +4,10 @@ project(rhi-window LANGUAGES CXX)
 find_package(Qt6 REQUIRED COMPONENTS Core GuiPrivate Gui Widgets)
 
 qt_standard_project_setup()
+include_directories(
+    ${CMAKE_CURRENT_SOURCE_DIR}/../include
 
+)
 qt_add_executable(rhi-window
     main.cpp
     rhiwindow.cpp
@@ -22,6 +25,8 @@ qt_add_executable(rhi-window
     qtrhi3d/hdrisky.cpp
     qtrhi3d/proceduralsky.cpp
     qtrhi3d/gpuinfo.h
+    qtrhi3d/fbxmodel.h qtrhi3d/fbxmodel.cpp
+    qtrhi3d/assimputils.h
 
 
 )
@@ -31,12 +36,44 @@ set_target_properties(rhi-window PROPERTIES
     MACOSX_BUNDLE TRUE
 )
 
-target_link_libraries(rhi-window PRIVATE
-    Qt6::Core
-    Qt6::Gui
-    Qt6::GuiPrivate
-    Qt6::Widgets
-)
+
+# Platform-specific settings
+if(WIN32)
+    foreach(dll ${DLL_FILES})
+    add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different ${dll} $<TARGET_FILE_DIR:${PROJECT_NAME}>
+
+    )
+    endforeach()
+    # Windows-specific linking
+    message(STATUS "Hodnota CMAKE_CURRENT_BINARY_DIR je: ${CMAKE_CURRENT_BINARY_DIR}")
+    target_link_libraries(rhi-window PRIVATE
+
+        Qt6::Core
+        Qt6::Gui
+        Qt6::GuiPrivate
+        Qt6::Widgets
+        ${CMAKE_CURRENT_BINARY_DIR}/../../../libs/assimp/lib/assimp-vc143-mt.lib
+    )
+
+    # DLLs to copy
+    set(DLL_FILES
+        ${CMAKE_CURRENT_SOURCE_DIR}/../libs/assimp/assimp-vc143-mt.dll
+
+    )
+
+else() # Unix/Linux/Mac
+    find_package(OpenGL REQUIRED)
+    find_package(glfw3 REQUIRED)
+    find_package(assimp REQUIRED)
+
+    target_link_libraries(${PROJECT_NAME}
+
+        ${ASSIMP_LIBRARIES}
+        # IrrKlang is Windows only; remove or handle separately for Unix
+    )
+endif()
+# needs GuiPrivate to be able to include <rhi/qrhi.h>
 
 
 qt_add_resources(rhi-window "rhi-window"
@@ -64,10 +101,14 @@ qt_add_resources(rhi-window "rhi-window"
         "shaders/prebuild/pcgsky.vert.qsb"
         "shaders/prebuild/pcgsky.frag.qsb"
         "shaders/prebuild/mainpbr.frag.qsb"
+        "shaders/prebuild/model.vert.qsb"
+        "shaders/prebuild/model.frag.qsb"
         #"shaders/color.vert.hlsl"
         #"shaders/color.frag.hlsl"
         "shaders/mcolor.vert"
         "shaders/mcolor.frag"
+        "shaders/model.vert"
+        "shaders/model.frag"
         "shaders/quad.vert"
         "shaders/quad.frag"
         "shaders/texture.frag"
