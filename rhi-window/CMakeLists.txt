@@ -2,12 +2,13 @@ cmake_minimum_required(VERSION 3.16)
 project(rhi-window LANGUAGES CXX)
 
 find_package(Qt6 REQUIRED COMPONENTS Core GuiPrivate Gui Widgets)
-
+add_subdirectory(utils)
 qt_standard_project_setup()
 include_directories(
     ${CMAKE_CURRENT_SOURCE_DIR}/../include
 
 )
+
 qt_add_executable(rhi-window
     main.cpp
     rhiwindow.cpp
@@ -28,6 +29,12 @@ qt_add_executable(rhi-window
     qtrhi3d/fbxmodel.h qtrhi3d/fbxmodel.cpp
     qtrhi3d/assimputils.h
 
+
+)
+
+target_include_directories(rhi-window PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/utils
+    ${CMAKE_SOURCE_DIR}/utils
 
 )
 
@@ -53,6 +60,7 @@ if(WIN32)
         Qt6::Gui
         Qt6::GuiPrivate
         Qt6::Widgets
+		utils
         ${CMAKE_CURRENT_BINARY_DIR}/../../../libs/assimp/lib/assimp-vc143-mt.lib
     )
 

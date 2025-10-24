@@ -395,11 +395,12 @@ void HelloWindow::customInit()
     QString url = QCoreApplication::applicationDirPath() + "/assets/models/jet/jet.fbx";
 
     if (!QFile::exists(url)) {
-        qWarning() << "Soubor neexistuje:" << url;
+        qWarning() << "url not exist:" << url;
         return;
     }
     model = std::make_unique<FbxModel>(url);
     model->create(m_rhi.get(),m_sc->currentFrameRenderTarget(),m_rp.get());
+    model->modelInfo();
 
     models.append(&floor);
     models.append(&cubeModel1);
