@@ -235,20 +235,7 @@ HelloWindow::HelloWindow(QRhi::Implementation graphicsApi)
 
     setCursor(Qt::BlankCursor);
 
-      qDebug() << "--- QRhi Configuration ---";
 
-      // 1. Backend
-      QString backendName;
-      switch (graphicsApi) {
-          case QRhi::Null:       backendName = "Null"; break;
-          case QRhi::Vulkan:     backendName = "Vulkan"; break;
-          case QRhi::D3D11:      backendName = "Direct3D 11"; break;
-          case QRhi::D3D12:      backendName = "Direct3D 12"; break;
-          case QRhi::OpenGLES2:   backendName = "OpenGL ES / OpenGL"; break;
-          case QRhi::Metal:      backendName = "Metal"; break;
-          default:               backendName = "Neznamy"; break;
-      }
-      qDebug() << " Backend API:" << backendName;
 
 
 
@@ -400,7 +387,7 @@ void HelloWindow::customInit()
     }
     model = std::make_unique<FbxModel>(url);
     model->create(m_rhi.get(),m_sc->currentFrameRenderTarget(),m_rp.get());
-    model->modelInfo();
+   // model->modelInfo();
 
     models.append(&floor);
     models.append(&cubeModel1);

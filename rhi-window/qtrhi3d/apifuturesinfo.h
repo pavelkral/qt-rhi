@@ -15,11 +15,33 @@ void dumpApiFeatures(QRhi *rhi)
         return;
     }
 
+    Logger::instance().log("===============================", Qt::magenta);
+    Logger::instance().log("QRhi Configuration", Qt::magenta);
+    //CUSTOM_WARNING(QString("API: %1").arg(message));
+    Logger::instance().log("===============================", Qt::magenta);
+    // 1. Backend
+    QString backendName;
+    switch (rhi->backend()) {
+    case QRhi::Null:       backendName = "Null"; break;
+    case QRhi::Vulkan:     backendName = "Vulkan"; break;
+    case QRhi::D3D11:      backendName = "Direct3D 11"; break;
+    case QRhi::D3D12:      backendName = "Direct3D 12"; break;
+    case QRhi::OpenGLES2:   backendName = "OpenGL ES / OpenGL"; break;
+    case QRhi::Metal:      backendName = "Metal"; break;
+    default:               backendName = "Neznamy"; break;
+    }
+    qDebug() << " Backend API:" << backendName;
+
+    Logger::instance().log("===============================", Qt::magenta);
+    Logger::instance().log("Gpu info", Qt::magenta);
+    Logger::instance().log("===============================", Qt::magenta);
     QRhiDriverInfo info = rhi->driverInfo();
     qDebug() << "GPU / Driver name:" << info.deviceName;
     qDebug() << "Driver version:" << info.CpuDevice;
     qDebug() << "Vendor ID:" << QString("0x%1").arg(info.vendorId, 4, 16, QChar('0'));
     qDebug() << "Device ID:" << QString("0x%1").arg(info.deviceId, 4, 16, QChar('0'));
+
+    QList<QPair<QRhi::Feature, const char*>> unsuportedFeatures ;
 
     static const QList<QPair<QRhi::Feature, const char*>> allFeatures = {
         { QRhi::MultisampleTexture, "MultisampleTexture" },
@@ -73,8 +95,8 @@ void dumpApiFeatures(QRhi *rhi)
 
     Logger::instance().log("===============================", Qt::magenta);
     Logger::instance().log("Supported Futures QRhi backend", Qt::magenta);
-    //CUSTOM_WARNING(QString("API: %1").arg(message));
     Logger::instance().log("===============================", Qt::magenta);
+
     int supportedCount = 0;
     for (const auto& featureInfo : allFeatures) {
         if (rhi->isFeatureSupported(featureInfo.first)) {
@@ -82,12 +104,26 @@ void dumpApiFeatures(QRhi *rhi)
             supportedCount++;
         }
         else {
-            qCritical() << "no" << featureInfo.second;
+            unsuportedFeatures.append({featureInfo.first,featureInfo.second});
+           // qCritical() << "no" << featureInfo.second;
         }
+
+
     }
 
     qDebug() << "--- Supported Futures:" << supportedCount << "/" << allFeatures.count() << "---";
     qDebug() << "========================";
+
+    Logger::instance().log("===============================", Qt::magenta);
+    Logger::instance().log("UnSupported Futures QRhi", Qt::magenta);
+    Logger::instance().log("===============================", Qt::magenta);
+
+    for (const auto& featureInfo1 : unsuportedFeatures) {
+
+            qCritical() << "no" << featureInfo1.second;
+    }
+    qCritical() << "--- UnSupported Futures:"  << unsuportedFeatures.count() << "/"<< allFeatures.count() << "---";
+    qCritical() << "========================";
 }
 
 #endif // APIFUTURESINFO_H
