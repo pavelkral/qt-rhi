@@ -9,7 +9,7 @@
 #include <QRandomGenerator>
 #include <rhi/qshader.h>
 #include "qtrhi3d/geometry.h"
-#include "qtrhi3d/gpuinfo.h"
+#include "qtrhi3d/apifuturesinfo.h"
 #include <rhi/qrhi_platform.h>
 
 
@@ -282,7 +282,7 @@ HelloWindow::~HelloWindow()
 }
 void HelloWindow::customInit()
 {
-   // dumpGpuFeatures(m_rhi.get());
+    dumpApiFeatures(m_rhi.get());
 
     initialUpdateBatch = m_rhi->nextResourceUpdateBatch();
 

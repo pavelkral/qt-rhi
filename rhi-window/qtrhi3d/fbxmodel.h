@@ -15,6 +15,7 @@
 #include <map>
 #include <memory>
 #include <array>
+#include <logger.h>
 #include "assimputils.h"
 
 struct MVertex {
@@ -170,7 +171,7 @@ public:
         }
         else {
            // printAnimationsInfo(scene);
-            printFullModelInfo(scene);
+          //  printFullModelInfo(scene);
         }
         meshes_.clear();
         textures_.clear();
@@ -249,9 +250,12 @@ public:
     //=================================================================Debug========================================================
 
     void modelInfo() const {
-        qDebug() << "===============================";
-        qDebug() << " FBX Model Info";
-        qDebug() << "===============================";
+
+        Logger::instance().log("===============================", Qt::magenta);
+        Logger::instance().log("FBX Model Info", Qt::magenta);
+        //CUSTOM_WARNING(QString("API: %1").arg(message));
+        Logger::instance().log("===============================", Qt::magenta);
+
         qDebug() << "Meshes:" << meshes_.size();
         qDebug() << "Textures:" << textures_.size();
         qDebug() << "";
@@ -287,7 +291,10 @@ public:
     }
     static void printMeshInfo(const aiMesh* mesh, const aiMaterial* material)
     {
-        qDebug() << "--------------------------------------------------";
+        Logger::instance().log("===============================", Qt::magenta);
+        Logger::instance().log("FBX Mesh Info", Qt::magenta);
+        //CUSTOM_WARNING(QString("API: %1").arg(message));
+        Logger::instance().log("===============================", Qt::magenta);
         qDebug() << "Mesh name:" << mesh->mName.C_Str();
         qDebug() << "Vertices:" << mesh->mNumVertices;
         qDebug() << "Faces:" << mesh->mNumFaces;
@@ -361,7 +368,10 @@ public:
             return;
         }
 
-        qDebug() << "================ Animations Info ================";
+        Logger::instance().log("===============================", Qt::magenta);
+        Logger::instance().log("Animation Info", Qt::magenta);
+        //CUSTOM_WARNING(QString("API: %1").arg(message));
+        Logger::instance().log("===============================", Qt::magenta);
         qDebug() << "Number of animations:" << scene->mNumAnimations;
 
         for (unsigned int i = 0; i < scene->mNumAnimations; ++i) {
@@ -391,7 +401,10 @@ public:
             return;
         }
 
-        qDebug() << "================ FULL MODEL INFO ================";
+        Logger::instance().log("===============================", Qt::magenta);
+        Logger::instance().log("Full Model Info", Qt::magenta);
+        //CUSTOM_WARNING(QString("API: %1").arg(message));
+        Logger::instance().log("===============================", Qt::magenta);
 
         // --- Mesh info ---
         qDebug() << "Number of meshes:" << scene->mNumMeshes;

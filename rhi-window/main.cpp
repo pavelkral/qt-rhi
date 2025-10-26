@@ -7,15 +7,25 @@
 #include <QtWidgets/qslider.h>
 #include <QtWidgets/qwidget.h>
 #include "rhiwindow.h"
-
+#include <utils.h>
 //#define EDITOR_MODE
 
 int main(int argc, char **argv)
 {
     QApplication app(argc, argv);
     QRhi::Implementation graphicsApi;
+    qInstallMessageHandler(myMessageHandler);
+    Logger::instance().setEnabled(true);
+
     int ret = 0;
 
+#ifndef QT_DEBUG
+    qDebug() << "Release mode";
+    Logger::instance().setDebug(false);
+#else
+    qDebug() << "Debug mode";
+    Logger::instance().setDebug(true);
+#endif
     // Use platform-specific defaults when no command-line arguments given.
 #if defined(Q_OS_WIN)
    //graphicsApi = QRhi::D3D12;

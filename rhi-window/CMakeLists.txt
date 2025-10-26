@@ -25,7 +25,7 @@ qt_add_executable(rhi-window
     qtrhi3d/hdrisky.h
     qtrhi3d/hdrisky.cpp
     qtrhi3d/proceduralsky.cpp
-    qtrhi3d/gpuinfo.h
+    qtrhi3d/apifuturesinfo.h
     qtrhi3d/fbxmodel.h qtrhi3d/fbxmodel.cpp
     qtrhi3d/assimputils.h
 )

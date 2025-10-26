@@ -1,16 +1,17 @@
-#ifndef GPUINFO_H
-#define GPUINFO_H
+#ifndef APIFUTURESINFO_H
+#define APIFUTURESINFO_H
 
 #include <QDebug>
 #include <rhi/qrhi.h>
 #include <QDebug>
 #include <QList>
 #include <QPair>
+#include <logger.h>
 
-void dumpGpuFeatures(QRhi *rhi)
+void dumpApiFeatures(QRhi *rhi)
 {
     if (!rhi) {
-        qWarning() << "printSupportedRhiFeatures: Nelze vypsat funkce, QRhi instance je null.";
+        qWarning() << "printSupportedRhiFeatures:, QRhi is null.";
         return;
     }
 
@@ -70,18 +71,23 @@ void dumpGpuFeatures(QRhi *rhi)
             { QRhi::PerRenderTargetBlending, "PerRenderTargetBlending" }
     };
 
-    qDebug() << "--- Podporované funkce QRhi backendu ---";
-
+    Logger::instance().log("===============================", Qt::magenta);
+    Logger::instance().log("Supported Futures QRhi backend", Qt::magenta);
+    //CUSTOM_WARNING(QString("API: %1").arg(message));
+    Logger::instance().log("===============================", Qt::magenta);
     int supportedCount = 0;
     for (const auto& featureInfo : allFeatures) {
         if (rhi->isFeatureSupported(featureInfo.first)) {
             qDebug() << "ok" << featureInfo.second;
             supportedCount++;
         }
+        else {
+            qCritical() << "no" << featureInfo.second;
+        }
     }
 
-    qDebug() << "--- Celkem podporováno:" << supportedCount << "/" << allFeatures.count() << "---";
+    qDebug() << "--- Supported Futures:" << supportedCount << "/" << allFeatures.count() << "---";
     qDebug() << "========================";
 }
 
-#endif // GPUINFO_H
+#endif // APIFUTURESINFO_H
