@@ -1,15 +1,15 @@
 #include <QApplication>
 #include <QVBoxLayout>
-#include "cuberhiwidget.h"
+#include "rhiwidget.h"
 
 int main(int argc, char **argv) {
     QApplication app(argc, argv);
 
-   // CubeRhiWidget w;
+   // RhiWidget w;
    // w.resize(1280, 600);
   //  w.show();
 
-    CubeRhiWidget *rhiWidget = new CubeRhiWidget;
+    RhiWidget *rhiWidget = new RhiWidget;
 
     QVBoxLayout *layout = new QVBoxLayout;
     layout->addWidget(rhiWidget);

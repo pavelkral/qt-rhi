@@ -1,4 +1,4 @@
-#include "cuberhiwidget.h"
+#include "rhiwidget.h"
 #include <QFile>
 
 static QShader getShader(const QString &name)
@@ -10,7 +10,7 @@ static QShader getShader(const QString &name)
 }
 
 
-void CubeRhiWidget::loadTexture(const QSize &, QRhiResourceUpdateBatch *u)
+void RhiWidget::loadTexture(const QSize &, QRhiResourceUpdateBatch *u)
 {
     if (m_texture)
         return;
@@ -36,7 +36,7 @@ void CubeRhiWidget::loadTexture(const QSize &, QRhiResourceUpdateBatch *u)
 
     u->uploadTexture(m_texture.get(), image);
 }
-void CubeRhiWidget::initialize(QRhiCommandBuffer *cb)
+void RhiWidget::initialize(QRhiCommandBuffer *cb)
 {
     m_rhi = rhi();
 
@@ -74,7 +74,7 @@ void CubeRhiWidget::initialize(QRhiCommandBuffer *cb)
 
 }
 
-void CubeRhiWidget::render(QRhiCommandBuffer *cb)
+void RhiWidget::render(QRhiCommandBuffer *cb)
 {
 
     QRhiResourceUpdateBatch *resourceUpdates = m_rhi->nextResourceUpdateBatch();

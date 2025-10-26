@@ -35,7 +35,7 @@ inline QMatrix4x4 to_qmatrix4x4(aiMatrix4x4 aim)
     qInfo() << "Number of meshes:" << scene->mNumMeshes;
     for (unsigned int i = 0; i < scene->mNumMeshes; ++i) {
         const aiMesh* mesh = scene->mMeshes[i];
-        qDebug() << "--------------------------------------------------";
+        qInfo() << "--------------------------------------------------";
         qDebug() << "Mesh" << i << "Name:" << mesh->mName.C_Str();
         qDebug() << "  Vertices:" << mesh->mNumVertices;
         qDebug() << "  Faces:" << mesh->mNumFaces;
@@ -74,7 +74,8 @@ inline QMatrix4x4 to_qmatrix4x4(aiMatrix4x4 aim)
                     qDebug() << "    Texture type" << label << ":" << path.C_Str();
                 }
             };
-            qInfo() << "Textures:" << scene->mNumMeshes;
+
+            qDebug() << "Textures:" ;
             printTex(aiTextureType_DIFFUSE, "DIFFUSE");
             printTex(aiTextureType_SPECULAR, "SPECULAR");
             printTex(aiTextureType_NORMALS, "NORMALS");
@@ -97,13 +98,14 @@ inline QMatrix4x4 to_qmatrix4x4(aiMatrix4x4 aim)
             // if (AI_SUCCESS == mat->GetTexture(AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_METALLIC_ROUGHNESS_TEXTURE, &metallicRoughnessTex))
             //     qDebug() << "    Metallic-Roughness texture:" << metallicRoughnessTex.C_Str();
         }
+      //  qInfo() << "--------------------------------------------------";
     }
 
     // --- Animation info ---
     if (!scene->HasAnimations()) {
         qInfo() << "No animations in model.";
     } else {
-        qDebug() << "Number of animations:" << scene->mNumAnimations;
+        qInfo()  << "Number of animations:" << scene->mNumAnimations;
         for (unsigned int a = 0; a < scene->mNumAnimations; ++a) {
             const aiAnimation* anim = scene->mAnimations[a];
             double durationSec = anim->mDuration / (anim->mTicksPerSecond != 0 ? anim->mTicksPerSecond : 25.0);

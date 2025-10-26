@@ -10,7 +10,6 @@ struct Vertex
     QVector3D position{};
     QVector3D normal{};
     QVector2D coords{};
-
     int   bone_ids[4]{ -1, -1, -1, -1 };
     float weights[4]{ 0.0f };
 };

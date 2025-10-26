@@ -14,18 +14,11 @@ int main(int argc, char **argv)
 {
     QApplication app(argc, argv);
     QRhi::Implementation graphicsApi;
-    qInstallMessageHandler(myMessageHandler);
-    Logger::instance().setEnabled(true);
+
 
     int ret = 0;
 
-#ifndef QT_DEBUG
-    qDebug() << "Release mode";
-    Logger::instance().setDebug(false);
-#else
-    qDebug() << "Debug mode";
-    Logger::instance().setDebug(true);
-#endif
+
     // Use platform-specific defaults when no command-line arguments given.
 #if defined(Q_OS_WIN)
    //graphicsApi = QRhi::D3D12;
@@ -99,6 +92,15 @@ int main(int argc, char **argv)
     }
 #endif
 
+    qInstallMessageHandler(myMessageHandler);
+    Logger::instance().setEnabled(true);
+#ifndef QT_DEBUG
+    qDebug() << "Release mode";
+    Logger::instance().setDebug(false);
+#else
+    qDebug() << "Debug mode";
+    Logger::instance().setDebug(true);
+#endif
 #ifdef EDITOR_MODE
     {
         QMainWindow mainWindow;

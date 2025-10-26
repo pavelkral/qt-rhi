@@ -1,5 +1,5 @@
-#ifndef CUBERHIWIDGET_H
-#define CUBERHIWIDGET_H
+#ifndef RHIWIDGET_H
+#define RHIWIDGET_H
 
 #include <QRhiWidget>
 #include <QtGui/QMatrix4x4>
@@ -10,7 +10,7 @@
 #include <rhi/qrhi.h>
 #include "model.h"
 
-class CubeRhiWidget : public QRhiWidget {
+class RhiWidget : public QRhiWidget {
     Q_OBJECT
 
 public:
@@ -39,4 +39,4 @@ private:
     float m_rotation = 0.0f;
 };
 
-#endif // CUBERHIWIDGET_H
+#endif // RHIWIDGET_H

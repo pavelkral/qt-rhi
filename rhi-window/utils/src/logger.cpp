@@ -76,8 +76,8 @@ void Logger::log(const QString& message, const QColor& col) {
 
 	//QString timeStampedMessage = QDateTime::currentDateTime()
 		//.toString("yyyy-MM-dd HH:mm:ss.zzz") + " - " + message;
-
-    QString timeStampedMessage = QDateTime::currentDateTime().toString("yyyy-MM-dd HH:mm") + " - " + message;
+ //QString timeStampedMessage = QDateTime::currentDateTime().toString("yyyy-MM-dd HH:mm") + " - " + message;
+    QString timeStampedMessage = message;
    // QString timeStampedMessage =  message;
 
 	const qint64 maxSize = 1024 * 1024;
@@ -178,12 +178,16 @@ void myMessageHandler(QtMsgType type, const QMessageLogContext& context, const Q
     // 	.arg(context.line)
     // 	.arg(function);
 
+    // QString fullMessage = QString("%1 %2 (%3:%4)")
+    //                           .arg(level)
+    //                           .arg(msg)
+    //                           .arg(fileName)
+    //                           .arg(context.line);
     QString fullMessage = QString("%1 %2 (%3:%4)")
                               .arg(level)
                               .arg(msg)
                               .arg(fileName)
                               .arg(context.line);
-
 
 	Logger::instance().log(fullMessage, color);
 

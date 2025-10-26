@@ -9,8 +9,8 @@ set(CMAKE_AUTOMOC ON)
 
 qt_add_executable(rhi-widget
     main.cpp
-    cuberhiwidget.cpp
-    cuberhiwidget.h
+    rhiwidget.cpp
+    rhiwidget.h
     model.cpp
     model.h
 
