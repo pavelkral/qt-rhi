@@ -264,7 +264,7 @@ HelloWindow::~HelloWindow()
 }
 void HelloWindow::customInit()
 {
-    dumpApiFeatures(m_rhi.get());
+    //dumpApiFeatures(m_rhi.get());
 
     initialUpdateBatch = m_rhi->nextResourceUpdateBatch();
 
@@ -272,6 +272,9 @@ void HelloWindow::customInit()
 
 
     sky = std::make_unique<ProceduralSkyRHI>(m_rhi.get(), m_rp.get());
+
+    hsky = std::make_unique<HdriSky>(":/assets/textures/sky.png");
+    hsky->create(m_rhi.get(), m_sc->currentFrameRenderTarget(),m_rp.get(),initialUpdateBatch);
 
     const QSize outputSize = m_sc->currentPixelSize();
     m_projection = createProjection(m_rhi.get(), 45.0f, outputSize.width() / (float)outputSize.height(), 0.1f, 1000.0f);
@@ -498,6 +501,7 @@ void HelloWindow::customRender()
 
     //float time = m_casovac->elapsedSeconds();
     sky->update(resourceUpdateBatch, invView, invProj, sunDir, lightTime);
+    hsky->updateResources(resourceUpdateBatch,view, m_projection);
    // QRhiResourceUpdateBatch *u = rhi->nextResourceUpdateBatch();
     generateCube(1.0f, cVertices, cIndices);
     cubeModel.updateGeometry(m_rhi.get(), resourceUpdateBatch1, cVertices, cIndices);
@@ -524,6 +528,8 @@ void HelloWindow::customRender()
    // mvp_.rotate(rotation_);
     mvp_ = m_projection * view * model1;
     model->updateUbo(resourceUpdateBatch, mvp_);
+
+
     //========================================draw====================================================
 
     cb->beginPass(shadowMapRenderTarget, Qt::black, { 1.0f, 0 }, shadowUpdateBatch);
@@ -545,11 +551,13 @@ void HelloWindow::customRender()
     cb->beginPass(m_sc->currentFrameRenderTarget(), clearColor, { 1.0f, 0 }, resourceUpdateBatch);
     cb->setViewport({ 0, 0, float(outputSizeInPixels.width()), float(outputSizeInPixels.height()) });
 
-       sky->draw(cb);
+      // sky->draw(cb);
+        hsky->draw(cb);
 
         for (auto m : std::as_const(models)) {
             m->draw(cb);
         }
+
         model->draw(cb, { 0, 0, float(outputSizeInPixels.width()), float(outputSizeInPixels.height()) });
         cb->setGraphicsPipeline(uiPipeline.get());
         cb->setShaderResources(uiSRB.get());

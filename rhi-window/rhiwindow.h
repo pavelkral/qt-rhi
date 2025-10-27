@@ -8,7 +8,7 @@
 #include "qtrhi3d/fbxmodel.h"
 #include "qtrhi3d/model.h"
 #include "qtrhi3d/proceduralsky.h"
-
+#include "qtrhi3d/hdrisky.h"
 #include <QWindow>
 #include <QOffscreenSurface>
 #include <QElapsedTimer>
@@ -109,6 +109,7 @@ public:
     Model floor;
     std::unique_ptr<FbxModel> model = nullptr;
     std::unique_ptr<ProceduralSkyRHI> sky = nullptr;
+    std::unique_ptr<HdriSky> hsky;
     QVector<Model*> models;
 };
 

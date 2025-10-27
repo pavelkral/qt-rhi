@@ -171,7 +171,7 @@ public:
         }
         else {
            // printAnimationsInfo(scene);
-            utils::printFullModelInfo(scene);
+          //  utils::printFullModelInfo(scene);
         }
         meshes_.clear();
         textures_.clear();
