@@ -28,6 +28,7 @@ qt_add_executable(rhi-window
     qtrhi3d/apifuturesinfo.h
     qtrhi3d/fbxmodel.h qtrhi3d/fbxmodel.cpp
     qtrhi3d/assimputils.h
+    ../include/stb/image.cpp
 )
 
 target_include_directories(rhi-window PRIVATE
