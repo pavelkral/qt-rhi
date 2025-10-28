@@ -231,7 +231,7 @@ HelloWindow::HelloWindow(QRhi::Implementation graphicsApi)
     : RhiWindow(graphicsApi),
     mainCamera(QVector3D(0.0f, 0.0f, 5.0f))
 {
-  //  setFocusPolicy(Qt::StrongFocus);
+  //setFocusPolicy(Qt::StrongFocus);
     setCursor(Qt::BlankCursor);
 
 }
@@ -275,8 +275,9 @@ void HelloWindow::customInit()
 
     hsky = std::make_unique<HdriSky>("assets/textures/sky.hdr");
     hsky->create(m_rhi.get(),m_rp.get(),initialUpdateBatch);
+    QRhiCommandBuffer *cb = m_sc->currentFrameCommandBuffer();
     hsky->initCubemap(initialUpdateBatch);
-
+  //  hsky->initCubemapOnGPU(initialUpdateBatch,cb);
     const QSize outputSize = m_sc->currentPixelSize();
     m_projection = createProjection(m_rhi.get(), 45.0f, outputSize.width() / (float)outputSize.height(), 0.1f, 1000.0f);
 
@@ -592,25 +593,31 @@ void HelloWindow::keyReleaseEvent(QKeyEvent *e)
 
 void HelloWindow::mouseMoveEvent(QMouseEvent *e)
 {
-
     if (!cameraMovementEnabled) {
         return;
     }
 
+    QPoint localCenter(width() / 2, height() / 2);
+
+
     if (lastMousePosition.isNull()) {
-        lastMousePosition = e->position();
+        lastMousePosition = localCenter;
+
         return;
     }
 
-    float xoffset = e->position().x() - lastMousePosition.x();
-    float yoffset = lastMousePosition.y() - e->position().y();
+    float xoffset = e->position().x() - localCenter.x();
+    float yoffset = localCenter.y() - e->position().y();
 
-    lastMousePosition = e->position();
     mainCamera.ProcessMouseMovement(xoffset, yoffset);
-    // center cursor
-    QPoint center = mapToGlobal(geometry().center());
-    QCursor::setPos(center);
-    lastMousePosition = mapFromGlobal(center);
+
+    QPoint globalCenter = mapToGlobal(localCenter);
+    QCursor::setPos(globalCenter);
+
+
+    lastMousePosition = localCenter;
+
+    e->accept();
 }
 
 void HelloWindow::updateCamera(float dt)

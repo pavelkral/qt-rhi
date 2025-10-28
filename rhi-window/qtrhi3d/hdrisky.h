@@ -14,8 +14,6 @@
 
 #include <rhi/qrhi.h>
 
-// stb_image (make sure stb_image.h is available and STB_IMAGE_IMPLEMENTATION defined in one translation unit)
-
 #include "stb/stb_image.h"
 
 struct HdriVertex { QVector3D pos; };
@@ -27,8 +25,6 @@ public:
 
     void setEquirectangular(const QString &path) { eqPath_ = path; uploaded_ = false; }
 
-    // create: vytvoří QRhi zdroje a zároveň nahraje vertex buffer pomocí rub (uploadStaticBuffer).
-    // Musíš předat platný rub (QRhiResourceUpdateBatch*) vytvořený v rámci inicializace.
     void create(QRhi *rhi, QRhiRenderPassDescriptor *rp, QRhiResourceUpdateBatch *rub) {
         if (!rhi || !rub) return;
         if (rhi_ != rhi) {
@@ -57,7 +53,7 @@ public:
         ubuf_.reset(rhi->newBuffer(QRhiBuffer::Dynamic, QRhiBuffer::UniformBuffer, sizeof(SkyUbo)));
         ubuf_->create();
 
-        sampler_.reset(rhi->newSampler(QRhiSampler::Linear, QRhiSampler::Linear, QRhiSampler::None,
+        sampler_.reset(rhi->newSampler(QRhiSampler::Linear, QRhiSampler::Linear, QRhiSampler::Linear,
                                        QRhiSampler::ClampToEdge, QRhiSampler::ClampToEdge));
         sampler_->create();
 
@@ -96,7 +92,7 @@ public:
         pipelineSky_->setRenderPassDescriptor(rp);
         pipelineSky_->setDepthTest(true);
         pipelineSky_->setDepthWrite(false);
-        pipelineSky_->setCullMode(QRhiGraphicsPipeline::Back);
+        pipelineSky_->setCullMode(QRhiGraphicsPipeline::None);
         pipelineSky_->create();
 
         created_ = true;
@@ -115,8 +111,10 @@ public:
         if (comps < 3) { stbi_image_free(data); qWarning() << "HdriSky: unexpected components"; return; }
 
         std::array<QImage,6> faces;
-        for (int f=0; f<6; ++f) faces[f] = QImage(CUBEMAP_RESOLUTION, CUBEMAP_RESOLUTION, QImage::Format_RGBA8888);
-
+        for (int f=0; f<6; ++f){
+            faces[f] = QImage(CUBEMAP_RESOLUTION, CUBEMAP_RESOLUTION, QImage::Format_ARGB32);
+            //faces[f].fill(Qt::transparent );
+        }
         auto sample = [&](const QVector3D &dir)->QVector3D {
             const float invAtanX = 0.1591f, invAtanY = 0.3183f;
             float u = atan2f(dir.z(), dir.x()) * invAtanX + 0.5f;
@@ -152,7 +150,8 @@ public:
                     int ir = qBound(0, int(mapped.x()*255.0f), 255);
                     int ig = qBound(0, int(mapped.y()*255.0f), 255);
                     int ib = qBound(0, int(mapped.z()*255.0f), 255);
-                    scanline[x] = qRgba(ir, ig, ib, 255);
+                   // scanline[x] = qRgba(ir, ig, ib, 255);
+                    scanline[x] = qRgba(ib, ig, ir, 255);
                 }
             }
         }
@@ -167,6 +166,105 @@ public:
             QRhiTextureUploadDescription uploadDesc({ { face, 0, subresDesc } });
             rub->uploadTexture(envCubemap_.get(), uploadDesc);
         }
+        uploaded_ = true;
+    }
+    // initCubemap: jednorázové načtení HDR (stb), CPU-konverze -> 6 QImage + upload do cubemap pomocí rub.
+    void initCubemapOnGPU(QRhiResourceUpdateBatch *rub,QRhiCommandBuffer *cb) {
+        if (!rhi_ || !created_ || uploaded_) return;
+        if (eqPath_.isEmpty()) { qWarning() << "HdriSky: no eq path"; return; }
+
+        // --- 1. Load HDR texture ---
+        int width=0, height=0, comps=0;
+        stbi_set_flip_vertically_on_load(true);
+        float *data = stbi_loadf(eqPath_.toUtf8().constData(), &width, &height, &comps, 0);
+        if (!data) { qWarning() << "HdriSky: failed to load HDR:" << eqPath_; return; }
+
+        std::unique_ptr<QRhiTexture> hdrTex(rhi_->newTexture(QRhiTexture::RGBA32F, QSize(width,height), 1));
+        hdrTex->create();
+        QByteArray byteData(reinterpret_cast<const char*>(data), width * height * comps * sizeof(float));
+        QRhiTextureSubresourceUploadDescription subresDesc;
+        subresDesc.setData(byteData);
+
+        subresDesc.setSourceSize(QSize(width, height));
+
+        // Zápis obdobný cubemap face uploadu
+        QRhiTextureUploadDescription uploadDesc({ { 0, 0, subresDesc } }); // arrayLayer = 0, mipLevel = 0
+
+        rub->uploadTexture(hdrTex.get(), uploadDesc);
+        stbi_image_free(data);
+
+        // --- 2. Cubemap render target ---
+        envCubemap_.reset(rhi_->newTexture(QRhiTexture::RGBA16F, QSize(CUBEMAP_RESOLUTION,CUBEMAP_RESOLUTION), 1,
+                                           QRhiTexture::CubeMap | QRhiTexture::RenderTarget));
+        envCubemap_->create();
+
+        QRhiTextureRenderTargetDescription rtDesc;
+        QList<QRhiColorAttachment> colorAttachments;
+        for (int face = 0; face < 6; ++face) {
+            QRhiColorAttachment ca(envCubemap_.get());
+            ca.setLayer(face);
+            ca.setLevel(0);
+           // ca.setLoadOp(QRhiRenderPassDescriptor::Clear);
+           // ca.setStoreOp(QRhiRenderPassDescriptor::Store);
+           // ca.setClearColor(QColor(0, 0, 0, 255));
+            colorAttachments.append(ca);
+        }
+       // rtDesc.setColorAttachments(colorAttachments);
+
+        auto initRt = std::unique_ptr<QRhiTextureRenderTarget>(rhi_->newTextureRenderTarget(rtDesc));
+        initRt->create();
+        auto initRp = std::unique_ptr<QRhiRenderPassDescriptor>(initRt->newCompatibleRenderPassDescriptor());
+        initRt->setRenderPassDescriptor(initRp.get());
+
+        // --- 3. Sampler ---
+        auto initSampler = std::unique_ptr<QRhiSampler>(rhi_->newSampler(QRhiSampler::Linear, QRhiSampler::Linear, QRhiSampler::Linear,
+                                                                         QRhiSampler::ClampToEdge, QRhiSampler::ClampToEdge));
+        initSampler->create();
+
+        // --- 4. SRB ---
+        std::vector<QRhiShaderResourceBinding> bindings;
+        bindings.emplace_back(QRhiShaderResourceBinding::uniformBuffer(0, QRhiShaderResourceBinding::VertexStage, ubuf_.get()));
+        bindings.emplace_back(QRhiShaderResourceBinding::sampledTexture(1, QRhiShaderResourceBinding::FragmentStage, hdrTex.get(), initSampler.get()));
+        auto initSrb = std::unique_ptr<QRhiShaderResourceBindings>(rhi_->newShaderResourceBindings());
+        initSrb->setBindings(bindings.begin(), bindings.end());
+        initSrb->create();
+
+        // --- 5. Pipeline (init-only) ---
+        auto initPipeline = std::unique_ptr<QRhiGraphicsPipeline>(rhi_->newGraphicsPipeline());
+        QRhiVertexInputLayout layout{};
+        layout.setBindings({ sizeof(HdriVertex) });
+        layout.setAttributes({ {0, 0, QRhiVertexInputAttribute::Float3, 0} });
+        initPipeline->setVertexInputLayout(layout);
+        initPipeline->setShaderStages({
+            {QRhiShaderStage::Vertex, LoadShader(":/shaders/prebuild/cubemap.vert.qsb")},
+            {QRhiShaderStage::Fragment, LoadShader(":/shaders/prebuild/equirect2cube.frag.qsb")}
+        });
+        initPipeline->setShaderResourceBindings(initSrb.get());
+        initPipeline->setRenderPassDescriptor(initRp.get());
+        initPipeline->setTopology(QRhiGraphicsPipeline::Triangles);
+        initPipeline->setCullMode(QRhiGraphicsPipeline::None);
+        initPipeline->setDepthTest(false);
+        initPipeline->setDepthWrite(false);
+        initPipeline->create();
+
+        // --- 6. Vertex buffer cube ---
+        std::vector<HdriVertex> verts = cubeVertices();
+        auto initVbuf = std::unique_ptr<QRhiBuffer>(rhi_->newBuffer(QRhiBuffer::Immutable,QRhiBuffer::VertexBuffer,sizeof(HdriVertex)*verts.size()));
+        initVbuf->create();
+        rub->uploadStaticBuffer(initVbuf.get(), 0, sizeof(HdriVertex)*verts.size(), verts.data());
+
+        // --- 7. Draw cubemap faces ---
+        //  QRhiCommandBuffer *cb = rhi_->nextFrameCommandBuffer();
+        for (int face=0; face<6; face++) {
+            cb->beginPass(initRt.get(), QColor(0,0,0,255), {1.0f,0});
+            cb->setGraphicsPipeline(initPipeline.get());
+            cb->setShaderResources(initSrb.get());
+            const QRhiCommandBuffer::VertexInput in{initVbuf.get(), 0};
+            cb->setVertexInput(0, 1, &in, nullptr, 0, QRhiCommandBuffer::IndexUInt32);
+            cb->draw(36);
+            cb->endPass();
+        }
+
         uploaded_ = true;
     }
 
