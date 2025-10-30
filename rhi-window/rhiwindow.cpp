@@ -276,7 +276,7 @@ void HelloWindow::customInit()
     hsky = std::make_unique<HdriSky>("assets/textures/sky.hdr");
     hsky->create(m_rhi.get(),m_rp.get(),initialUpdateBatch);
     QRhiCommandBuffer *cb = m_sc->currentFrameCommandBuffer();
-    hsky->initCubemap(initialUpdateBatch);
+   hsky->initCubemap(initialUpdateBatch);
   //  hsky->initCubemapOnGPU(initialUpdateBatch,cb);
     const QSize outputSize = m_sc->currentPixelSize();
     m_projection = createProjection(m_rhi.get(), 45.0f, outputSize.width() / (float)outputSize.height(), 0.1f, 1000.0f);

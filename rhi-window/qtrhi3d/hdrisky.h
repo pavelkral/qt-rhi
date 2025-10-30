@@ -168,99 +168,87 @@ public:
         }
         uploaded_ = true;
     }
-    // initCubemap: jednorázové načtení HDR (stb), CPU-konverze -> 6 QImage + upload do cubemap pomocí rub.
-    void initCubemapOnGPU(QRhiResourceUpdateBatch *rub,QRhiCommandBuffer *cb) {
+
+    void initCubemapOnGPU(QRhiResourceUpdateBatch *rub, QRhiCommandBuffer *cb) {
         if (!rhi_ || !created_ || uploaded_) return;
         if (eqPath_.isEmpty()) { qWarning() << "HdriSky: no eq path"; return; }
 
-        // --- 1. Load HDR texture ---
-        int width=0, height=0, comps=0;
+        int width = 0, height = 0, comps = 0;
         stbi_set_flip_vertically_on_load(true);
         float *data = stbi_loadf(eqPath_.toUtf8().constData(), &width, &height, &comps, 0);
         if (!data) { qWarning() << "HdriSky: failed to load HDR:" << eqPath_; return; }
 
-        std::unique_ptr<QRhiTexture> hdrTex(rhi_->newTexture(QRhiTexture::RGBA32F, QSize(width,height), 1));
-        hdrTex->create();
+        hdrTex_ = std::unique_ptr<QRhiTexture>(rhi_->newTexture(QRhiTexture::RGBA32F, QSize(width,height), 1));
+        hdrTex_->create();
+
         QByteArray byteData(reinterpret_cast<const char*>(data), width * height * comps * sizeof(float));
-        QRhiTextureSubresourceUploadDescription subresDesc;
-        subresDesc.setData(byteData);
-
-        subresDesc.setSourceSize(QSize(width, height));
-
-        // Zápis obdobný cubemap face uploadu
-        QRhiTextureUploadDescription uploadDesc({ { 0, 0, subresDesc } }); // arrayLayer = 0, mipLevel = 0
-
-        rub->uploadTexture(hdrTex.get(), uploadDesc);
         stbi_image_free(data);
 
-        // --- 2. Cubemap render target ---
-        envCubemap_.reset(rhi_->newTexture(QRhiTexture::RGBA16F, QSize(CUBEMAP_RESOLUTION,CUBEMAP_RESOLUTION), 1,
-                                           QRhiTexture::CubeMap | QRhiTexture::RenderTarget));
+        QRhiTextureSubresourceUploadDescription subresDesc(byteData);
+        subresDesc.setSourceSize(QSize(width, height));
+        QRhiTextureUploadDescription uploadDesc({ { 0, 0, subresDesc } });
+        rub->uploadTexture(hdrTex_.get(), uploadDesc);
+
+        envCubemap_ = std::unique_ptr<QRhiTexture>(
+            rhi_->newTexture(QRhiTexture::RGBA16F, QSize(CUBEMAP_RESOLUTION, CUBEMAP_RESOLUTION), 1,
+                             QRhiTexture::CubeMap | QRhiTexture::RenderTarget)
+            );
         envCubemap_->create();
 
+        initSampler_ = std::unique_ptr<QRhiSampler>(
+            rhi_->newSampler(QRhiSampler::Linear, QRhiSampler::Linear, QRhiSampler::Linear,
+                             QRhiSampler::ClampToEdge, QRhiSampler::ClampToEdge)
+            );
+        initSampler_->create();
+
+        // shader bindings
         QRhiTextureRenderTargetDescription rtDesc;
         QList<QRhiColorAttachment> colorAttachments;
         for (int face = 0; face < 6; ++face) {
             QRhiColorAttachment ca(envCubemap_.get());
             ca.setLayer(face);
             ca.setLevel(0);
-           // ca.setLoadOp(QRhiRenderPassDescriptor::Clear);
-           // ca.setStoreOp(QRhiRenderPassDescriptor::Store);
-           // ca.setClearColor(QColor(0, 0, 0, 255));
             colorAttachments.append(ca);
         }
-       // rtDesc.setColorAttachments(colorAttachments);
+        // správně: nastavení přes metodu
+        rtDesc.setColorAttachments(colorAttachments.begin(), colorAttachments.end());
 
-        auto initRt = std::unique_ptr<QRhiTextureRenderTarget>(rhi_->newTextureRenderTarget(rtDesc));
-        initRt->create();
-        auto initRp = std::unique_ptr<QRhiRenderPassDescriptor>(initRt->newCompatibleRenderPassDescriptor());
-        initRt->setRenderPassDescriptor(initRp.get());
+        initRt_.reset(rhi_->newTextureRenderTarget(rtDesc));
+        initSrb_->create();
 
-        // --- 3. Sampler ---
-        auto initSampler = std::unique_ptr<QRhiSampler>(rhi_->newSampler(QRhiSampler::Linear, QRhiSampler::Linear, QRhiSampler::Linear,
-                                                                         QRhiSampler::ClampToEdge, QRhiSampler::ClampToEdge));
-        initSampler->create();
-
-        // --- 4. SRB ---
-        std::vector<QRhiShaderResourceBinding> bindings;
-        bindings.emplace_back(QRhiShaderResourceBinding::uniformBuffer(0, QRhiShaderResourceBinding::VertexStage, ubuf_.get()));
-        bindings.emplace_back(QRhiShaderResourceBinding::sampledTexture(1, QRhiShaderResourceBinding::FragmentStage, hdrTex.get(), initSampler.get()));
-        auto initSrb = std::unique_ptr<QRhiShaderResourceBindings>(rhi_->newShaderResourceBindings());
-        initSrb->setBindings(bindings.begin(), bindings.end());
-        initSrb->create();
-
-        // --- 5. Pipeline (init-only) ---
-        auto initPipeline = std::unique_ptr<QRhiGraphicsPipeline>(rhi_->newGraphicsPipeline());
-        QRhiVertexInputLayout layout{};
+        // pipeline
+        initPipeline_ = std::unique_ptr<QRhiGraphicsPipeline>(rhi_->newGraphicsPipeline());
+        QRhiVertexInputLayout layout;
         layout.setBindings({ sizeof(HdriVertex) });
         layout.setAttributes({ {0, 0, QRhiVertexInputAttribute::Float3, 0} });
-        initPipeline->setVertexInputLayout(layout);
-        initPipeline->setShaderStages({
-            {QRhiShaderStage::Vertex, LoadShader(":/shaders/prebuild/cubemap.vert.qsb")},
+        initPipeline_->setVertexInputLayout(layout);
+        initPipeline_->setShaderStages({
+            {QRhiShaderStage::Vertex, LoadShader(":/shaders/prebuild/equirect2cube.vert.qsb")},
             {QRhiShaderStage::Fragment, LoadShader(":/shaders/prebuild/equirect2cube.frag.qsb")}
         });
-        initPipeline->setShaderResourceBindings(initSrb.get());
-        initPipeline->setRenderPassDescriptor(initRp.get());
-        initPipeline->setTopology(QRhiGraphicsPipeline::Triangles);
-        initPipeline->setCullMode(QRhiGraphicsPipeline::None);
-        initPipeline->setDepthTest(false);
-        initPipeline->setDepthWrite(false);
-        initPipeline->create();
+        initPipeline_->setShaderResourceBindings(initSrb_.get());
+        initPipeline_->setTopology(QRhiGraphicsPipeline::Triangles);
+        initPipeline_->setCullMode(QRhiGraphicsPipeline::None);
+        initPipeline_->setDepthTest(false);
+        initPipeline_->setDepthWrite(false);
+        initPipeline_->create();
 
-        // --- 6. Vertex buffer cube ---
-        std::vector<HdriVertex> verts = cubeVertices();
-        auto initVbuf = std::unique_ptr<QRhiBuffer>(rhi_->newBuffer(QRhiBuffer::Immutable,QRhiBuffer::VertexBuffer,sizeof(HdriVertex)*verts.size()));
-        initVbuf->create();
-        rub->uploadStaticBuffer(initVbuf.get(), 0, sizeof(HdriVertex)*verts.size(), verts.data());
+        // draw faces
+        for (int face = 0; face < 6; ++face) {
+            QRhiColorAttachment ca(envCubemap_.get());
+            ca.setLayer(face);
+            ca.setLevel(0);
+            QRhiTextureRenderTargetDescription rtDesc(ca);
+            auto rt = std::unique_ptr<QRhiTextureRenderTarget>(rhi_->newTextureRenderTarget(rtDesc));
+            auto rp = std::unique_ptr<QRhiRenderPassDescriptor>(rt->newCompatibleRenderPassDescriptor());
+            rt->setRenderPassDescriptor(rp.get());
+            rt->create();
 
-        // --- 7. Draw cubemap faces ---
-        //  QRhiCommandBuffer *cb = rhi_->nextFrameCommandBuffer();
-        for (int face=0; face<6; face++) {
-            cb->beginPass(initRt.get(), QColor(0,0,0,255), {1.0f,0});
-            cb->setGraphicsPipeline(initPipeline.get());
-            cb->setShaderResources(initSrb.get());
-            const QRhiCommandBuffer::VertexInput in{initVbuf.get(), 0};
-            cb->setVertexInput(0, 1, &in, nullptr, 0, QRhiCommandBuffer::IndexUInt32);
+            cb->beginPass(rt.get(), QColor(0,0,0,255), {1.0f, 0});
+            cb->setGraphicsPipeline(initPipeline_.get());
+            cb->setShaderResources(initSrb_.get());
+            const QRhiCommandBuffer::VertexInput in{vbuf_.get(), 0};
+            cb->setVertexInput(0, 1, &in);
             cb->draw(36);
             cb->endPass();
         }
@@ -268,6 +256,182 @@ public:
         uploaded_ = true;
     }
 
+    void initCubemapOnGPU2(QRhiResourceUpdateBatch *rub, QRhiCommandBuffer *cb) {
+        if (!rhi_ || !created_ || uploaded_ || !rub || !cb) return; // Kontrola cb
+        if (eqPath_.isEmpty()) { qWarning() << "HdriSky: no eq path"; return; }
+
+        // --- 1. Načtení HDR textury ---
+        int width=0, height=0, comps=0;
+        stbi_set_flip_vertically_on_load(true);
+        float *data = stbi_loadf(eqPath_.toUtf8().constData(), &width, &height, &comps, 0);
+        if (!data) { qWarning() << "HdriSky: failed to load HDR:" << eqPath_; return; }
+        if (comps < 3) { stbi_image_free(data); qWarning() << "HdriSky: HDR needs 3+ components"; return; }
+
+        // Zvolíme správný formát podle počtu komponent
+        QRhiTexture::Format hdrFormat = QRhiTexture::RGBA32F;
+        int bytesPerPixel = 4 * sizeof(float);
+        if (comps == 3) {
+            hdrFormat = QRhiTexture::RGBA32F;
+            bytesPerPixel = 3 * sizeof(float);
+        }
+
+        hdrTex_ = std::unique_ptr<QRhiTexture>(rhi_->newTexture(hdrFormat, QSize(width, height), 1));
+        hdrTex_->create();
+
+        QByteArray byteData(reinterpret_cast<const char*>(data), width * height * bytesPerPixel);
+        QRhiTextureSubresourceUploadDescription subresDesc;
+        subresDesc.setData(byteData);
+        subresDesc.setSourceSize(QSize(width, height));
+        QRhiTextureUploadDescription uploadDesc({ { 0, 0, subresDesc } });
+        rub->uploadTexture(hdrTex_.get(), uploadDesc);
+        stbi_image_free(data);
+
+        // --- 2. Cílová Cubemap textura ---
+        // Vytvoříme novou cubemapu s vyšší přesností (RGBA16F) a jako RenderTarget
+        envCubemap_.reset(rhi_->newTexture(QRhiTexture::RGBA16F, QSize(CUBEMAP_RESOLUTION, CUBEMAP_RESOLUTION), 1,
+                                           QRhiTexture::CubeMap | QRhiTexture::RenderTarget));
+        envCubemap_->create();
+
+        // --- 3. Sampler pro HDR texturu ---
+        initSampler_ = std::unique_ptr<QRhiSampler>(rhi_->newSampler(QRhiSampler::Linear, QRhiSampler::Linear, QRhiSampler::Linear,
+                                                                         QRhiSampler::ClampToEdge, QRhiSampler::ClampToEdge));
+        initSampler_->create();
+
+        // --- 4. Lokální UBO pro matice ---
+        // Vytvoříme UBO pro 6 sad matic (jedna pro každou stranu)
+        // Musíme respektovat zarovnání pro dynamické offsety
+         qint32 uboStride = sizeof(SkyUbo);
+        // const qint32 minAlign = rhi_->ubo;
+        // if (uboStride % minAlign != 0) {
+        //     uboStride = (uboStride + minAlign - 1) / minAlign * minAlign;
+        // }
+        int blockSize = sizeof(SkyUbo);
+        // zarovnaná velikost bloku
+        int alignedBlockSize = rhi_->ubufAligned(blockSize);
+
+        // když vypočítáš offset pro instanci i:
+       // int offset = i * alignedBlockSize;
+        auto initUbuf = std::unique_ptr<QRhiBuffer>(rhi_->newBuffer(QRhiBuffer::Dynamic, QRhiBuffer::UniformBuffer, uboStride * 6));
+        initUbuf->create();
+
+        // Připravíme data matic
+        QMatrix4x4 captureProjection;
+        captureProjection.perspective(90.0f, 1.0f, 0.1f, 10.0f); // 90° FOV, poměr stran 1:1
+        std::array<QMatrix4x4, 6> captureViews;
+        captureViews[0].lookAt(QVector3D(0,0,0), QVector3D( 1, 0, 0), QVector3D(0,-1, 0)); // +X
+        captureViews[1].lookAt(QVector3D(0,0,0), QVector3D(-1, 0, 0), QVector3D(0,-1, 0)); // -X
+        captureViews[2].lookAt(QVector3D(0,0,0), QVector3D( 0, 1, 0), QVector3D(0, 0, 1)); // +Y
+        captureViews[3].lookAt(QVector3D(0,0,0), QVector3D( 0,-1, 0), QVector3D(0, 0,-1)); // -Y
+        captureViews[4].lookAt(QVector3D(0,0,0), QVector3D( 0, 0, 1), QVector3D(0,-1, 0)); // +Z
+        captureViews[5].lookAt(QVector3D(0,0,0), QVector3D( 0, 0,-1), QVector3D(0,-1, 0)); // -Z
+
+        // Nahrajeme všech 6 matic do bufferu najednou
+        QByteArray uboData(uboStride * 6, 0); // Vynulujeme paměť
+        for (int face = 0; face < 6; ++face) {
+            SkyUbo gpuUbo{};
+            memcpy(gpuUbo.projection, captureProjection.constData(), 16*sizeof(float));
+            memcpy(gpuUbo.view, captureViews[face].constData(), 16*sizeof(float));
+            // Zkopírujeme data na správný offset
+            memcpy(uboData.data() + face * uboStride, &gpuUbo, sizeof(SkyUbo));
+        }
+        rub->updateDynamicBuffer(initUbuf.get(), 0, uboData.size(), uboData.constData());
+
+
+        // --- 5. Lokální SRB pro inicializaci ---
+        std::vector<QRhiShaderResourceBinding> bindings;
+        // Binding 0: Náš nový UBO s dynamickým offsetem
+        bindings.emplace_back(QRhiShaderResourceBinding::uniformBuffer(
+            0, QRhiShaderResourceBinding::VertexStage,
+            initUbuf.get(), 0, uboStride)); // uboStride udává velikost jedné sekce
+        // Binding 1: Vstupní HDR textura
+        bindings.emplace_back(QRhiShaderResourceBinding::sampledTexture(
+            1, QRhiShaderResourceBinding::FragmentStage, hdrTex_.get(), initSampler_.get()));
+
+        auto initSrb = std::unique_ptr<QRhiShaderResourceBindings>(rhi_->newShaderResourceBindings());
+        initSrb->setBindings(bindings.begin(), bindings.end());
+        initSrb->create();
+
+        // --- 6. Pipeline a Render Targety (6x) ---
+        // Potřebujeme 6 render targetů a 6 render passů, jeden pro každou stranu
+        std::array<std::unique_ptr<QRhiTextureRenderTarget>, 6> faceRenderTargets;
+        std::array<std::unique_ptr<QRhiRenderPassDescriptor>, 6> faceRenderPasses;
+        std::unique_ptr<QRhiGraphicsPipeline> initPipeline;
+
+        QRhiViewport viewport(0, 0, CUBEMAP_RESOLUTION, CUBEMAP_RESOLUTION);
+
+        for (int face = 0; face < 6; ++face) {
+            // Nastavíme render target pro danou stranu (layer)
+            QRhiColorAttachment ca;
+            ca.setLayer(face);
+            ca.setTexture(envCubemap_.get());
+           // ca.setLoadOp(QRhiRenderPassDescriptor::DontCare); // Nepotřebujeme čistit, přepisujeme vše
+           // ca.setStoreOp(QRhiRenderPassDescriptor::Store);  // Chceme uložit výsledek
+
+            QRhiTextureRenderTargetDescription rtDesc({ca});
+            faceRenderTargets[face].reset(rhi_->newTextureRenderTarget(rtDesc));
+            faceRenderPasses[face].reset(faceRenderTargets[face]->newCompatibleRenderPassDescriptor());
+            faceRenderTargets[face]->setRenderPassDescriptor(faceRenderPasses[face].get());
+            faceRenderTargets[face]->create();
+
+            // Pipeline vytvoříme jen jednou (všechny passy jsou kompatibilní)
+            if (face == 0) {
+                initPipeline.reset(rhi_->newGraphicsPipeline());
+                QRhiVertexInputLayout layout{};
+                layout.setBindings({ sizeof(HdriVertex) });
+                layout.setAttributes({ {0, 0, QRhiVertexInputAttribute::Float3, 0} });
+                initPipeline->setVertexInputLayout(layout);
+                initPipeline->setShaderStages({
+                    {QRhiShaderStage::Vertex, LoadShader(":/shaders/prebuild/equirect2cube.vert.qsb")},
+                    {QRhiShaderStage::Fragment, LoadShader(":/shaders/prebuild/equirect2cube.frag.qsb")}
+                });
+                initPipeline->setShaderResourceBindings(initSrb.get());
+                initPipeline->setRenderPassDescriptor(faceRenderPasses[0].get()); // Váže se na první RP
+                initPipeline->setTopology(QRhiGraphicsPipeline::Triangles);
+                initPipeline->setCullMode(QRhiGraphicsPipeline::None);
+                initPipeline->setDepthTest(false);
+
+                initPipeline->setDepthWrite(false);
+                initPipeline->create();
+            }
+        }
+
+        // --- 7. Vykreslení 6 stran ---
+        // Nyní máme 6 platných render targetů a pipeline
+        for (int face = 0; face < 6; face++) {
+            // Začneme pass pro konkrétní stranu
+            cb->beginPass(faceRenderTargets[face].get(), QColor(), {1.0f, 0});
+            cb->setGraphicsPipeline(initPipeline.get());
+            cb->setViewport(viewport); // Nastavíme viewport
+            quint32 dynamicOffset = face * alignedBlockSize;
+            // Nastavíme správný offset do UBO pro tuto stranu
+            QRhiCommandBuffer::DynamicOffset dyn;
+            dyn.first = face;
+            dyn.second = alignedBlockSize;
+
+            cb->setShaderResources(initSrb.get(), 1, &dyn); // 1 = počet offsetů
+
+            const QRhiCommandBuffer::VertexInput in{vbuf_.get(), 0};
+            cb->setVertexInput(0, 1, &in, nullptr, 0, QRhiCommandBuffer::IndexUInt32);
+            cb->draw(36);
+            cb->endPass();
+        }
+
+        // --- 8. Oprava hlavního SRB (ŘEŠÍ PÁD PŘI KRESLENÍ) ---
+        // Protože jsme resetovali envCubemap_, musíme aktualizovat srbSky_,
+        // aby ukazoval na novou texturu.
+        std::vector<QRhiShaderResourceBinding> bindingsSky;
+        bindingsSky.emplace_back(QRhiShaderResourceBinding::uniformBuffer(
+            0, QRhiShaderResourceBinding::VertexStage | QRhiShaderResourceBinding::FragmentStage, ubuf_.get()));
+        bindingsSky.emplace_back(QRhiShaderResourceBinding::sampledTexture(
+            1, QRhiShaderResourceBinding::FragmentStage, envCubemap_.get(), sampler_.get())); // Zde použijeme novou mapu
+
+        srbSky_.reset(rhi_->newShaderResourceBindings());
+        srbSky_->setBindings(bindingsSky.begin(), bindingsSky.end());
+        srbSky_->create();
+
+        // Všechny lokální unique_ptr (initUbuf, initSrb, hdrTex, atd.) se zde automaticky uvolní
+        uploaded_ = true;
+    }
     void updateResources(QRhiResourceUpdateBatch *rub, const QMatrix4x4 &view, const QMatrix4x4 &proj) {
         if (!created_ || !rub) return;
         QMatrix4x4 viewNoTrans = view;
@@ -306,6 +470,14 @@ private:
     std::unique_ptr<QRhiTexture> envCubemap_;
     std::unique_ptr<QRhiSampler> sampler_;
     std::unique_ptr<QRhiShaderResourceBindings> srbSky_;
+
+
+    std::unique_ptr<QRhiTextureRenderTarget> initRt_;
+    std::unique_ptr<QRhiRenderPassDescriptor> initRp_;
+    std::unique_ptr<QRhiGraphicsPipeline> initPipeline_;
+    std::unique_ptr<QRhiShaderResourceBindings> initSrb_;
+    std::unique_ptr<QRhiSampler> initSampler_;
+    std::unique_ptr<QRhiTexture> hdrTex_;
 
     static constexpr int CUBEMAP_RESOLUTION = 512;
 
