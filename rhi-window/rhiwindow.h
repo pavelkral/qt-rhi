@@ -21,7 +21,9 @@ public:
     QString graphicsApiName() const;
     void releaseSwapChain();
     QMatrix4x4 m_projection;
-
+    int m_currentFps = 555;
+    QElapsedTimer m_timer;
+    int m_frameCount = 0;
 protected:
     virtual void customInit() = 0;
     virtual void customRender() = 0;
@@ -49,6 +51,9 @@ private:
     bool m_initialized = false;
     bool m_notExposed = false;
     bool m_newlyExposed = false;
+
+
+
 };
 
 //================================================================================================
@@ -111,6 +116,9 @@ public:
     std::unique_ptr<ProceduralSkyRHI> sky = nullptr;
     std::unique_ptr<HdriSky> hsky;
     QVector<Model*> models;
+
+
+
 };
 
 #endif

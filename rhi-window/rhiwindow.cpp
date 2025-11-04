@@ -96,9 +96,10 @@ bool RhiWindow::event(QEvent *e)
 
 void RhiWindow::init()
 {
+    QRhi::Flags rhiFlags = QRhi::EnableDebugMarkers;
     if (m_graphicsApi == QRhi::Null) {
         QRhiNullInitParams params;
-        m_rhi.reset(QRhi::create(QRhi::Null, &params));
+        m_rhi.reset(QRhi::create(QRhi::Null, &params,rhiFlags));
     }
 
 #if QT_CONFIG(opengl)
@@ -107,7 +108,7 @@ void RhiWindow::init()
         QRhiGles2InitParams params;
         params.fallbackSurface = m_fallbackSurface.get();
         params.window = this;
-        m_rhi.reset(QRhi::create(QRhi::OpenGLES2, &params));
+        m_rhi.reset(QRhi::create(QRhi::OpenGLES2, &params,rhiFlags));
     }
 #endif
 
@@ -116,7 +117,7 @@ void RhiWindow::init()
         QRhiVulkanInitParams params;
         params.inst = vulkanInstance();
         params.window = this;
-        m_rhi.reset(QRhi::create(QRhi::Vulkan, &params));
+        m_rhi.reset(QRhi::create(QRhi::Vulkan, &params,rhiFlags));
     }
 #endif
 
@@ -124,7 +125,7 @@ void RhiWindow::init()
     if (m_graphicsApi == QRhi::D3D11) {
      QRhiD3D11InitParams params;
        params.enableDebugLayer = true;
-       m_rhi.reset(QRhi::create(QRhi::D3D11, &params));
+       m_rhi.reset(QRhi::create(QRhi::D3D11, &params,rhiFlags));
      //   QRhiVulkanInitParams params;
     //    params.inst = vulkanInstance();
      //   params.window = this;
@@ -133,7 +134,8 @@ void RhiWindow::init()
     } else if (m_graphicsApi == QRhi::D3D12) {
         QRhiD3D12InitParams params;
         params.enableDebugLayer = true;
-        m_rhi.reset(QRhi::create(QRhi::D3D12, &params));
+        QRhi::Flags rhiFlags = QRhi::EnableDebugMarkers;
+        m_rhi.reset(QRhi::create(QRhi::D3D12, &params,rhiFlags));
     }
 #endif
 
@@ -161,6 +163,8 @@ void RhiWindow::resizeSwapChain()
 {
     m_hasSwapChain = m_sc->createOrResize(); // also handles m_ds
     const QSize outputSize = m_sc->currentPixelSize();
+    m_frameCount = 0;
+    m_timer.restart();
     m_projection = createProjection(m_rhi.get(), 45.0f, outputSize.width() / (float)outputSize.height(), 0.1f, 1000.0f);
 
 }
@@ -207,6 +211,16 @@ void RhiWindow::render()
         requestUpdate();
         return;
     }
+    m_frameCount += 1;
+
+    if (m_timer.elapsed() > 1000) {
+        m_currentFps = m_frameCount;
+        qWarning("ca. %d fps", m_currentFps);
+
+        m_timer.restart();
+        m_frameCount = 0;
+    }
+
 
     customRender();
     m_rhi->endFrame(m_sc.get());
@@ -276,7 +290,7 @@ void HelloWindow::customInit()
     hsky = std::make_unique<HdriSky>("assets/textures/sky.hdr");
     hsky->create(m_rhi.get(),m_rp.get(),initialUpdateBatch);
     QRhiCommandBuffer *cb = m_sc->currentFrameCommandBuffer();
-   hsky->initCubemap(initialUpdateBatch);
+    hsky->initCubemap(initialUpdateBatch);
   //  hsky->initCubemapOnGPU(initialUpdateBatch,cb);
     const QSize outputSize = m_sc->currentPixelSize();
     m_projection = createProjection(m_rhi.get(), 45.0f, outputSize.width() / (float)outputSize.height(), 0.1f, 1000.0f);
@@ -535,39 +549,45 @@ void HelloWindow::customRender()
     //========================================draw====================================================
 
     cb->beginPass(shadowMapRenderTarget, Qt::black, { 1.0f, 0 }, shadowUpdateBatch);
+    cb->debugMarkBegin(QByteArrayLiteral("Shadows"));
     cb->setGraphicsPipeline(shadowPipeline);
     cb->setViewport(QRhiViewport(0, 0, SHADOW_MAP_SIZE.width(), SHADOW_MAP_SIZE.height()));
 
-    for (auto m : std::as_const(models)) {
-          m->DrawForShadow(cb,shadowPipeline,ubo,shadowUpdateBatch);
-    }
+        for (auto m : std::as_const(models)) {
+              m->DrawForShadow(cb,shadowPipeline,ubo,shadowUpdateBatch);
+        }
 
     // floor.DrawForShadow(cb,m_shadowPipeline,ubo,shadowUpdateBatch);
     // cubeModel.DrawForShadow(cb,m_shadowPipeline,ubo,shadowUpdateBatch);
     // cubeModel1.DrawForShadow(cb,m_shadowPipeline,ubo,shadowUpdateBatch);
     // sphereModel1.DrawForShadow(cb,m_shadowPipeline,ubo,shadowUpdateBatch);
     // sphereModel.DrawForShadow(cb,m_shadowPipeline,ubo,shadowUpdateBatch);
-
+    cb->debugMarkEnd();
     cb->endPass();
 
     cb->beginPass(m_sc->currentFrameRenderTarget(), clearColor, { 1.0f, 0 }, resourceUpdateBatch);
-    cb->setViewport({ 0, 0, float(outputSizeInPixels.width()), float(outputSizeInPixels.height()) });
 
+    cb->setViewport({ 0, 0, float(outputSizeInPixels.width()), float(outputSizeInPixels.height()) });
+    cb->debugMarkBegin(QByteArrayLiteral("Sky"));
       // sky->draw(cb);
         hsky->draw(cb);
 
+    cb->debugMarkEnd();
         for (auto m : std::as_const(models)) {
             m->draw(cb);
         }
 
         model->draw(cb, { 0, 0, float(outputSizeInPixels.width()), float(outputSizeInPixels.height()) });
-        cb->setGraphicsPipeline(uiPipeline.get());
-        cb->setShaderResources(uiSRB.get());
-        cb->draw(3);
+
+    cb->setGraphicsPipeline(uiPipeline.get());
+    cb->setShaderResources(uiSRB.get());
+   // cb->resourceUpdate(resourceUpdateBatch);
+    cb->draw(3);
+
     cb->endPass();
 
 }
-//======================================================iNPUT
+//======================================================iNPUT======================================================================
 
 void HelloWindow::keyPressEvent(QKeyEvent *e)
 {
@@ -837,15 +857,29 @@ void HelloWindow::updateFullscreenTexture(const QSize &pixelSize, QRhiResourceUp
     //     int h = 60 + rng->bounded(30);
     //     painter.drawEllipse(QRect(x, y, w, h));
     // }
+      qDebug() << "cal";
+     m_frameCount += 1;
+     if (m_timer.elapsed() > 1000) {
+         m_currentFps = m_frameCount;
 
-
+     }
     painter.setPen(Qt::white);
     QFont font;
     font.setPixelSize(0.04 * qMin(width(), height()));
     painter.setFont(font);
     //painter.drawText(QRectF(QPointF(10, 10), size() - QSize(20, 20)), 0,QLatin1String("QRhi %1 API").arg(graphicsApiName()));
-    painter.drawText(QRectF(QPointF(10, 10), size() - QSize(20, 20)), 0,QLatin1String("QRhi - %1").arg(graphicsApiName()));
+  //  painter.drawText(QRectF(QPointF(10, 10), size() - QSize(20, 20)), 0,QLatin1String("QRhi - %1 - %2 -").arg(graphicsApiName()).arg((int)m_currentFps));
+    // 1. Získejte data pro tisk
+    QString apiName = graphicsApiName();
+    int fpsValue = m_currentFps; // ⭐ Používáme proměnnou, která drží výsledek, ne m_frameCount!
 
+    // 2. Vytvořte finální řetězec pomocí moderního QRegularExpression (pro %1, %2)
+    // a uložte jej do lokální proměnné.
+    QString textToDraw = QStringLiteral("QRhi - %1 - %2 FPS")
+                             .arg(apiName)
+                             .arg(fpsValue);
+
+    painter.drawText(QRectF(QPointF(10, 10), size() - QSize(20, 20)), 0, textToDraw);
     painter.end();
 
     if (m_rhi->isYUpInNDC())
