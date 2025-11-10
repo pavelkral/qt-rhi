@@ -857,7 +857,7 @@ void HelloWindow::updateFullscreenTexture(const QSize &pixelSize, QRhiResourceUp
     //     int h = 60 + rng->bounded(30);
     //     painter.drawEllipse(QRect(x, y, w, h));
     // }
-      qDebug() << "cal";
+    //  qDebug() << "cal";
      m_frameCount += 1;
      if (m_timer.elapsed() > 1000) {
          m_currentFps = m_frameCount;
