@@ -6,8 +6,8 @@
 #include <QMimeData>
 #include <QMouseEvent>
 
-RhiWidget::RhiWidget()
-{
+RhiWidget::RhiWidget(QRhi::Implementation graphicsApi, QWidget *parent)
+   {
     setAcceptDrops(true);
     setSampleCount(4);
 }
@@ -17,6 +17,16 @@ void RhiWidget::initialize(QRhiCommandBuffer *)
     if (rhi_ != rhi()) {
         rhi_ = rhi();
     }
+    // TOTO JE VÁŠ DEBUG VÝPIS
+    if (rhi_) {
+        qDebug() << "[RHI WIDGET] RHI backend byl úspěšně inicializován:";
+     //   qDebug() << "[RHI WIDGET] -> Požadováno:" << graphicsApi; // Vrací, co jste chtěli
+        qDebug() << "[RHI WIDGET] -> Skutečně běží:" << rhi_->backendName(); // Vrací, co reálně běží
+    } else {
+        qCritical() << "[RHI WIDGET] Selhání inicializace RHI! RHI je null.";
+        return;
+    }
+
     QString url = QCoreApplication::applicationDirPath() + "/assets/models/jet/jet.fbx";
 
     if (!QFile::exists(url)) {

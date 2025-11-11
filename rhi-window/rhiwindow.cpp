@@ -534,6 +534,7 @@ void HelloWindow::customRender()
     const QColor clearColorDepth = QColor::fromRgbF(1.0f, 1,1,1);
 
     updateFullscreenTexture(outputSizeInPixels, resourceUpdateBatch);
+    updateUI(outputSizeInPixels, resourceUpdateBatch);
     QMatrix4x4 mvp_;
     mvp_.setToIdentity();
     QMatrix4x4 model1;
@@ -858,11 +859,11 @@ void HelloWindow::updateFullscreenTexture(const QSize &pixelSize, QRhiResourceUp
     //     painter.drawEllipse(QRect(x, y, w, h));
     // }
     //  qDebug() << "cal";
-     m_frameCount += 1;
-     if (m_timer.elapsed() > 1000) {
-         m_currentFps = m_frameCount;
+     // m_frameCount += 1;
+     // if (m_timer.elapsed() > 1000) {
+     //     m_currentFps = m_frameCount;
 
-     }
+     // }
     painter.setPen(Qt::white);
     QFont font;
     font.setPixelSize(0.04 * qMin(width(), height()));
@@ -887,7 +888,65 @@ void HelloWindow::updateFullscreenTexture(const QSize &pixelSize, QRhiResourceUp
 
     u->uploadTexture(uiTexture.get(), image);
 }
+void HelloWindow::updateUI(const QSize &pixelSize, QRhiResourceUpdateBatch *u)
+{
 
+
+    QImage image(pixelSize, QImage::Format_RGBA8888_Premultiplied);
+    image.setDevicePixelRatio(devicePixelRatio());
+    image.fill(Qt::transparent );
+    QPainter painter(&image);
+    // painter.setRenderHint(QPainter::Antialiasing, true);
+
+    // // --- sky ---
+    // QLinearGradient skyGradient(QPointF(0, 0), QPointF(0, pixelSize.height()));
+    // skyGradient.setColorAt(0.0, QColor::fromRgbF(0.53f, 0.81f, 0.98f, 1.0f)); // light blue
+    // skyGradient.setColorAt(1.0, QColor::fromRgbF(0.0f, 0.4f, 0.8f, 1.0f));   // dark blue
+    // painter.fillRect(QRectF(QPointF(0, 0), pixelSize), skyGradient);
+
+    // --- clouds ---
+    // painter.setPen(Qt::NoPen);
+    // painter.setBrush(QColor(255, 255, 255, 100));
+
+    // QRandomGenerator *rng = QRandomGenerator::global();
+    // int cloudCount = 6;
+    // for (int i = 0; i < cloudCount; ++i) {
+    //     int x = (pixelSize.width() / cloudCount) * i + rng->bounded(50);
+    //     int y = pixelSize.height() / 5 + (rng->bounded(60) - 30);
+    //     int w = 120 + rng->bounded(80);
+    //     int h = 60 + rng->bounded(30);
+    //     painter.drawEllipse(QRect(x, y, w, h));
+    // }
+    //  qDebug() << "cal";
+    m_frameCount += 1;
+    if (m_timer.elapsed() > 1000) {
+        m_currentFps = m_frameCount;
+
+    }
+    painter.setPen(Qt::white);
+    QFont font;
+    font.setPixelSize(0.04 * qMin(width(), height()));
+    painter.setFont(font);
+    //painter.drawText(QRectF(QPointF(10, 10), size() - QSize(20, 20)), 0,QLatin1String("QRhi %1 API").arg(graphicsApiName()));
+    //  painter.drawText(QRectF(QPointF(10, 10), size() - QSize(20, 20)), 0,QLatin1String("QRhi - %1 - %2 -").arg(graphicsApiName()).arg((int)m_currentFps));
+    // 1. Získejte data pro tisk
+    QString apiName = graphicsApiName();
+    int fpsValue = m_currentFps; // ⭐ Používáme proměnnou, která drží výsledek, ne m_frameCount!
+
+    // 2. Vytvořte finální řetězec pomocí moderního QRegularExpression (pro %1, %2)
+    // a uložte jej do lokální proměnné.
+    QString textToDraw = QStringLiteral("QRhi - %1 - %2 FPS")
+                             .arg(apiName)
+                             .arg(fpsValue);
+
+    painter.drawText(QRectF(QPointF(10, 10), size() - QSize(20, 20)), 0, textToDraw);
+    painter.end();
+
+    if (m_rhi->isYUpInNDC())
+        image = image.mirrored();
+
+    u->uploadTexture(uiTexture.get(), image);
+}
 // qDebug() << "lightprojection = " << lightProjection << "\n";
 //  qDebug() << "lightview = " << lightView << "\n";
 // qDebug() << "lightspace = " << ubo.lightSpace << "\n";

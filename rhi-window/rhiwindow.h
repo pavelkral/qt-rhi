@@ -68,6 +68,7 @@ public:
     void customRender() override;
     void initShadowMapResources(QRhi *rhi);
     void releaseShadowMapResources();
+    void updateUI(const QSize &pixelSize, QRhiResourceUpdateBatch *u);
 protected:
     void keyPressEvent(QKeyEvent *e) override;
     void keyReleaseEvent(QKeyEvent *e) override;

@@ -16,8 +16,14 @@
 
 #include "stb/stb_image.h"
 
-struct HdriVertex { QVector3D pos; };
-struct alignas(16) SkyUbo { float projection[16]; float view[16]; };
+struct HdriVertex {
+    QVector3D pos;
+};
+struct alignas(16) SkyUbo {
+
+    float projection[16];
+    float view[16];
+};
 
 class HdriSky {
 public:

@@ -13,7 +13,7 @@ class RhiWidget : public QRhiWidget
     Q_OBJECT
 
 public:
-    RhiWidget();
+    explicit RhiWidget(QRhi::Implementation graphicsApi = QRhi::Null, QWidget *parent = nullptr);
 
     void initialize(QRhiCommandBuffer *) override;
 
