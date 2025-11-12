@@ -7,9 +7,9 @@ int main(int argc, char** argv)
 {
 
     QApplication app(argc, argv);
-    RhiWidget  widget(QRhi::D3D12);
-    widget.setApi(QRhiWidget::Api::Direct3D12);
-    widget.resize(1920,1080);
+    RhiWidget  widget(QRhi::D3D11);
+    widget.setApi(QRhiWidget::Api::Direct3D11);
+    widget.resize(1280,720);
     widget.show();
     return app.exec();
 }
