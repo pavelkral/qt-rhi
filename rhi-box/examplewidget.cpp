@@ -31,7 +31,7 @@ void RhiWidget::initialize(QRhiCommandBuffer *)
         return;
     }
 
-    load(url);
+   // load(url);
 }
 
 inline auto ns()
