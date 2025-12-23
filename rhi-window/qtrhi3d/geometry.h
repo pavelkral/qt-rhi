@@ -10,6 +10,8 @@
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
 #endif
+
+
 void generatePlane(float width, float depth, int segX, int segZ,
                    float tileU, float tileV,
                    QVector<float>& vertices, QVector<quint16>& indices)
